@@ -1,0 +1,19 @@
+PORT: 3000
+LOG_LEVEL: info
+DB:
+  USER: dimo
+  PASSWORD: dimo
+  PORT: 5432
+  HOST: localhost
+  NAME: accounts_api
+  MAX_OPEN_CONNECTIONS: 5
+  MAX_IDLE_CONNECTIONS: 5
+SERVICE_NAME: accounts-api
+EMAIL_HOST: localhost
+EMAIL_PORT: 1025
+EMAIL_USERNAME: dimo
+EMAIL_PASSWORD: dimo
+EMAIL_FROM: mailer@dimo.zone
+JWT_KEY_SET_URL: http://127.0.0.1:5556/dex/keys
+EVENTS_TOPIC: topic.event
+KAFKA_BROKERS: 127.0.0.1:9092

@@ -1,0 +1,20 @@
+version: "3.9"
+
+services:
+  postgresql:
+    image: postgres:13.4-alpine  # Latest version supported by RDS
+    container_name: pg-accounts-api
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=dimo
+      - POSTGRES_PASSWORD=dimo
+      - POSTGRES_DB=accounts_api
+    volumes:
+      - ./resources/data:/var/log/postgresql/data:delegated
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: mail-accounts-api
+    ports:
+      - "1025:1025"
+      - "8025:8025"
