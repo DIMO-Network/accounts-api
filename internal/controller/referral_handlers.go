@@ -58,7 +58,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
+		models.AccountWhere.ID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Email),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), d.dbs.DBS().Reader)

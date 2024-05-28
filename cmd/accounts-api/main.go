@@ -85,7 +85,7 @@ func main() {
 
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	v1Account := app.Group("/v1/account", jwtware.New(jwtware.Config{
+	v1 := app.Group("/v1/account", jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{settings.JWTKeySetURL},
 	}))
 
@@ -94,24 +94,24 @@ func main() {
 	//get or create account based on whether the 0x or email links to an existing account
 	//search is performed through wallets or emails table, whichever way you came in
 	// ^ ae- aren't we assuming people will only be coming in via wallet?
-	v1Account.Get("/", accountController.GetUserAccount)
+	v1.Get("/", accountController.GetUserAccount)
 
 	//update account other data(region,etc)
-	v1Account.Put("/", accountController.UpdateUser)
+	v1.Put("/", accountController.UpdateUser)
 	//delete account and all associated links, cascade
-	v1Account.Delete("/", accountController.DeleteUser)
+	v1.Delete("/", accountController.DeleteUser)
 	//agree to terms of service, can only be called after both email and wallet are linked
-	v1Account.Post("/agree-tos", accountController.AgreeTOS)
+	v1.Post("/agree-tos", accountController.AgreeTOS)
 	//agree to terms of service, can only be called after both email and wallet are linked
-	v1Account.Post("/referral/submit", accountController.SubmitReferralCode)
+	v1.Post("/referral/submit", accountController.SubmitReferralCode)
 	//link a wallet to the account, required a signed JWT from auth server
-	v1Account.Post("/link/wallet/token", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/wallet/token", accountController.GenerateEthereumChallenge)
 	//link a google account to the account, required a signed JWT from auth server
-	v1Account.Post("/link/email/token", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/email/token", accountController.GenerateEthereumChallenge)
 	//link some other email to the account, no JWT can be provider, so code is sent.
-	v1Account.Post("/link/email", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/email", accountController.GenerateEthereumChallenge)
 	//confirm the email code
-	v1Account.Post("/link/email/confirm", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/email/confirm", accountController.GenerateEthereumChallenge)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 

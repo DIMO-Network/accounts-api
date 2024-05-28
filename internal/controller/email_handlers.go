@@ -32,10 +32,10 @@ func (d *Controller) SendConfirmationEmail(c *fiber.Ctx) error {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
 	}
-	logger := d.log.With().Str("userId", userAccount.ID).Logger()
+	logger := d.log.With().Str("userId", userAccount.DexID).Logger()
 
 	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
+		models.AccountWhere.ID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Email),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), d.dbs.DBS().Reader)
@@ -128,7 +128,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	}
 
 	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
+		models.AccountWhere.ID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Email),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), d.dbs.DBS().Reader)

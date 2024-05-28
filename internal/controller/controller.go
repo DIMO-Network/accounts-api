@@ -21,12 +21,12 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 	"github.com/volatiletech/null/v8"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Sorted JSON array of valid ISO 3116-1 apha-3 codes
@@ -47,6 +47,13 @@ type Controller struct {
 	eventService    services.EventService
 	devicesClient   services.DeviceService
 	amClient        pb.AftermarketDeviceServiceClient
+}
+
+type Account struct {
+	DexID           string
+	EthereumAddress common.Address
+	EmailAddress    string
+	ProviderID      string
 }
 
 func NewAccountController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) Controller {
@@ -79,18 +86,49 @@ func NewAccountController(settings *config.Settings, dbs db.Store, eventService 
 	}
 }
 
-func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, error) {
+func getUserAccountInfos(c *fiber.Ctx) (*Account, error) {
+	var acct Account
+	if token, ok := c.Locals("user").(*jwt.Token); ok {
+		claims := token.Claims.(jwt.MapClaims)
+
+		if acctID, ok := claims["sub"].(string); ok {
+			acct.DexID = acctID
+		}
+
+		if provider, ok := claims["provider_id"].(string); ok {
+			acct.ProviderID = provider
+		}
+
+		if addr, ok := claims["ethereum_address"].(string); ok {
+			acct.EthereumAddress = common.HexToAddress(addr)
+		}
+
+		if eml, ok := claims["email_address"].(string); ok {
+			if emailPattern.MatchString(eml) {
+				acct.EmailAddress = eml
+			}
+		}
+
+		return &acct, nil
+	}
+	return nil, fmt.Errorf("failed to parse user account infos")
+}
+
+func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Wallet, error) {
 	userAccount, err := getUserAccountInfos(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return nil, err
 	}
 
-	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
-		qm.Load(models.AccountRels.Email),
-		qm.Load(models.AccountRels.Wallet),
-	).One(c.Context(), d.dbs.DBS().Reader)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback() //nolint
+
+	var acct *models.Wallet
+	acct, err = d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
@@ -98,7 +136,7 @@ func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, erro
 	}
 
 	if acct == nil {
-		acct, err = d.createUser(c, userAccount)
+		acct, err = d.createUser(c.Context(), userAccount, tx)
 		if err != nil {
 			return nil, err
 		}
@@ -107,89 +145,86 @@ func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, erro
 	return acct, nil
 }
 
-func (d *Controller) createUser(c *fiber.Ctx, userAccount *Account) (*models.Account, error) {
-	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	if err != nil {
+func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, tx *sql.Tx) (*models.Wallet, error) {
+	var userWallet *models.Wallet
+	var err error
+
+	// AE: we can check if eth addr and email or valid and search on whichever is...
+	// but it seems like we're expecting eth addr in every jwt?
+	userWallet, err = models.Wallets(
+		models.WalletWhere.EthereumAddress.EQ(userAccount.EthereumAddress.Bytes()),
+		qm.Load(models.WalletRels.Account),
+		qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
+	).One(ctx, tx)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
-	defer tx.Rollback() //nolint
 
-	token := c.Locals("user").(*jwt.Token)
-	claims := token.Claims.(jwt.MapClaims)
-	providerID, ok := getStringClaim(claims, "provider_id")
-	if !ok {
-		return nil, errors.New("no provider_id claim in ID token")
+	if userWallet == nil {
+		userWallet, err = d.createUser(ctx, userAccount, tx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	referralCode, err := d.GenerateReferralCode(c.Context())
+	return userWallet, nil
+}
 
-	acct := &models.Account{
-		ID:           userAccount.ID,
+func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *sql.Tx) (*models.Wallet, error) {
+	referralCode, err := d.GenerateReferralCode(ctx)
+	acct := models.Account{
+		ID:           userAccount.DexID,
 		ReferralCode: null.StringFrom(referralCode),
 	}
-	if err := acct.Insert(c.Context(), tx, boil.Infer()); err != nil {
+	if err := acct.Insert(ctx, tx, boil.Infer()); err != nil {
 		return nil, err
+	}
+
+	// AE Confirm: we expect to always see eth address in jwt
+	mixAddr, err := common.NewMixedcaseAddressFromString(userAccount.EthereumAddress.Hex())
+	if err != nil {
+		return nil, fmt.Errorf("invalid ethereum_address %s", userAccount.EthereumAddress.Hex())
+	}
+	if !mixAddr.ValidChecksum() {
+		d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", userAccount.EthereumAddress.Hex())
+	}
+
+	wallet := &models.Wallet{
+		AccountID:       userAccount.DexID,
+		EthereumAddress: mixAddr.Address().Bytes(),
+		Confirmed:       true, // ??
+		Provider:        null.StringFrom(userAccount.ProviderID),
+	}
+
+	if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
+		return nil, fmt.Errorf("failed to insert wallet: %w", err)
 	}
 
 	var email models.Email
-	var wallet models.Wallet
-	switch providerID {
-	case "apple", "google":
-		emailAddr, ok := getStringClaim(claims, "email")
-		if !ok {
-			return nil, fmt.Errorf("provider %s but no email claim in ID token", providerID)
-		}
-		if !emailPattern.MatchString(emailAddr) {
-			return nil, fmt.Errorf("invalid email address %s", email)
+	if userAccount.EmailAddress != "" {
+		email = models.Email{
+			AccountID:    userAccount.DexID,
+			EmailAddress: userAccount.EmailAddress,
+			Confirmed:    false,
 		}
 
-		email.AccountID = userAccount.ID
-		email.EmailAddress = emailAddr
-		email.Confirmed = true
-
-		if err := email.Insert(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+		if err := email.Insert(ctx, tx, boil.Infer()); err != nil {
 			return nil, fmt.Errorf("failed to insert email: %w", err)
 		}
-
-	case "web3":
-		ethereum, ok := getStringClaim(claims, "ethereum_address")
-		if !ok {
-			return nil, fmt.Errorf("provider %s but no ethereum_address claim in ID token", providerID)
-		}
-
-		mixAddr, err := common.NewMixedcaseAddressFromString(ethereum)
-		if err != nil {
-			return nil, fmt.Errorf("invalid ethereum_address %s", ethereum)
-		}
-		if !mixAddr.ValidChecksum() {
-			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", ethereum)
-		}
-
-		wallet.AccountID = userAccount.ID
-		wallet.EthereumAddress = mixAddr.Address().Bytes()
-		wallet.Confirmed = true
-		wallet.Provider = null.StringFrom("Other")
-
-		if err := wallet.Insert(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
-			return nil, fmt.Errorf("failed to insert wallet: %w", err)
-		}
-
-	default:
-		return nil, fmt.Errorf("unrecognized provider_id %s", providerID)
 	}
 
+	// do we want to change this event to include the eth addr?
 	msg := UserCreationEventData{
 		Timestamp: time.Now(),
-		UserID:    userAccount.ID,
-		Method:    providerID,
+		UserID:    userAccount.DexID,
+		Method:    userAccount.ProviderID,
 	}
-	err = d.eventService.Emit(&services.Event{
+	if err := d.eventService.Emit(&services.Event{
 		Type:    UserCreationEventType,
-		Subject: userAccount.ID,
+		Subject: userAccount.DexID,
 		Source:  "accounts-api",
 		Data:    msg,
-	})
-	if err != nil {
+	}); err != nil {
 		d.log.Err(err).Msg("Failed sending user creation event")
 	}
 
@@ -197,19 +232,17 @@ func (d *Controller) createUser(c *fiber.Ctx, userAccount *Account) (*models.Acc
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	acct.R.Email = &email
-	acct.R.Wallet = &wallet
-
-	return acct, nil
+	return wallet, nil
 }
 
-func (d *Controller) formatUserAcctResponse(ctx context.Context, acct *models.Account) (*UserResponse, error) {
+func (d *Controller) formatUserAcctResponse(ctx context.Context, userWallet *models.Wallet) (*UserResponse, error) {
 	userResp := &UserResponse{
-		ID:           acct.ID,
-		CreatedAt:    acct.CreatedAt,
-		CountryCode:  acct.CountryCode.String,
-		AgreedTOSAt:  acct.AgreedTosAt.Time,
-		ReferralCode: acct.ReferralCode.String,
+		ID: userWallet.AccountID,
+	}
+
+	acct := userWallet.R.Account
+	if acct == nil {
+		return nil, fmt.Errorf("account not found for wallet %s", userWallet.AccountID)
 	}
 
 	if acct.ReferredBy.Valid {
@@ -271,60 +304,7 @@ func errorResponseHandler(c *fiber.Ctx, err error, status int) error {
 	return c.Status(status).JSON(ErrorResponse{msg})
 }
 
-type Account struct {
-	ID              string
-	EthereumAddress common.Address
-}
-
-// TODO: Is "sub" now expected to be the account ID?
-func getUserAccountInfos(c *fiber.Ctx) (*Account, error) {
-	var acct Account
-	if token, ok := c.Locals("user").(*jwt.Token); ok {
-		claims := token.Claims.(jwt.MapClaims)
-
-		// are we sure eth addr will always be here going forward?
-		if acctID, ok := claims["sub"].(string); ok {
-			acct.ID = acctID
-		}
-
-		if addr, ok := claims["ethereum_address"].(string); ok {
-			acct.EthereumAddress = common.HexToAddress(addr)
-		}
-		return &acct, nil
-	}
-	return nil, fmt.Errorf("failed to parse user account infos")
-}
-
-func getUserAccount(c *fiber.Ctx, tx *sql.Tx) (*models.Account, error) {
-	userAccount, err := getUserAccountInfos(c)
-	if err != nil {
-		return nil, err
-	}
-
-	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
-		qm.Load(models.AccountRels.Email),
-		qm.Load(models.AccountRels.Wallet),
-	).One(c.Context(), tx)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return nil, err
-		}
-	}
-
-	return acct, nil
-}
-
 func inSorted(v []string, x string) bool {
 	i := sort.SearchStrings(v, x)
 	return i < len(v) && v[i] == x
-}
-
-func getStringClaim(claims jwt.MapClaims, key string) (value string, ok bool) {
-	if rawValue, ok := claims[key]; ok {
-		if value, ok := rawValue.(string); ok {
-			return value, true
-		}
-	}
-	return "", false
 }

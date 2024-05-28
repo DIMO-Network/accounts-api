@@ -36,7 +36,7 @@ func (d *Controller) GenerateEthereumChallenge(c *fiber.Ctx) error {
 	}
 
 	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
+		models.AccountWhere.ID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Email),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), d.dbs.DBS().Reader)
@@ -57,7 +57,7 @@ func (d *Controller) GenerateEthereumChallenge(c *fiber.Ctx) error {
 
 	nonce, err := generateNonce()
 	if err != nil {
-		d.log.Err(err).Str("userId", userAccount.ID).Msg("Failed to generate nonce.")
+		d.log.Err(err).Str("userId", userAccount.DexID).Msg("Failed to generate nonce.")
 		return opaqueInternalError
 	}
 
@@ -67,7 +67,7 @@ func (d *Controller) GenerateEthereumChallenge(c *fiber.Ctx) error {
 	userEth.Challenge = null.StringFrom(challenge)
 
 	if _, err := userEth.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
-		d.log.Err(err).Str("userId", userAccount.ID).Msg("Failed to update database record with new challenge.")
+		d.log.Err(err).Str("userId", userAccount.DexID).Msg("Failed to update database record with new challenge.")
 		return opaqueInternalError
 	}
 
@@ -94,7 +94,7 @@ func (d *Controller) SubmitEthereumChallenge(c *fiber.Ctx) error {
 	}
 
 	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
+		models.AccountWhere.ID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Email),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), d.dbs.DBS().Reader)

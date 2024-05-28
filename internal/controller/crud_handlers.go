@@ -8,7 +8,6 @@ import (
 	"time"
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -46,13 +45,19 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Failure 403 {object} controllers.ErrorResponse
 // @Router /v1/user [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
+	userAccount, err := getUserAccountInfos(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
+
 	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback() //nolint
 
-	acct, err := getUserAccount(c, tx)
+	userWallet, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		d.log.Err(err).Msg("failed to get user account")
 		return err
@@ -61,6 +66,11 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	var body UserUpdateRequest
 	if err := c.BodyParser(&body); err != nil {
 		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+	}
+
+	acct := userWallet.R.Account
+	if acct == nil {
+		return fmt.Errorf("account not found")
 	}
 
 	if body.CountryCode.Defined {
@@ -88,38 +98,11 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		}
 	}
 
-	if body.Web3.Address.Defined {
-		var wallet models.Wallet
-		if acct.R.Wallet == nil {
-			wallet.AccountID = acct.ID
-			wallet.Confirmed = false
-			wallet.Provider = null.StringFrom("Other")
-		}
-
-		if !body.Web3.Address.Value.Valid {
-			return err
-		}
-
-		mixAddr, err := common.NewMixedcaseAddressFromString(body.Web3.Address.Value.String)
-		if err != nil {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Invalid Ethereum address %s.", mixAddr))
-		}
-
-		wallet.EthereumAddress = mixAddr.Address().Bytes()
-		if body.Web3.InApp {
-			wallet.Provider = null.StringFrom("InApp")
-		}
-
-		if err := wallet.Upsert(c.Context(), d.dbs.DBS().Writer, true, []string{models.WalletColumns.EthereumAddress}, boil.Infer(), boil.Infer()); err != nil {
-			return err
-		}
-	}
-
 	if _, err := acct.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 		return err
 	}
 
-	userResp, err := d.formatUserAcctResponse(c.Context(), acct)
+	userResp, err := d.formatUserAcctResponse(c.Context(), userWallet)
 	if err != nil {
 		return err
 
@@ -148,7 +131,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback() //nolint
 
-	acct, err := models.FindAccount(c.Context(), tx, userAccount.ID)
+	acct, err := models.FindAccount(c.Context(), tx, userAccount.DexID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return errorResponseHandler(c, err, fiber.StatusBadRequest)
@@ -192,7 +175,7 @@ func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
 	}
 
 	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.ID),
+		models.AccountWhere.ID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Email),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), d.dbs.DBS().Reader)
