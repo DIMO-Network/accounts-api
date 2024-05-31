@@ -104,13 +104,16 @@ var WalletWhere = struct {
 // WalletRels is where relationship names are stored.
 var WalletRels = struct {
 	Account string
+	Dex     string
 }{
 	Account: "Account",
+	Dex:     "Dex",
 }
 
 // walletR is where relationships are stored.
 type walletR struct {
 	Account *Account `boil:"Account" json:"Account" toml:"Account" yaml:"Account"`
+	Dex     *Account `boil:"Dex" json:"Dex" toml:"Dex" yaml:"Dex"`
 }
 
 // NewStruct creates a new relationship struct
@@ -123,6 +126,13 @@ func (r *walletR) GetAccount() *Account {
 		return nil
 	}
 	return r.Account
+}
+
+func (r *walletR) GetDex() *Account {
+	if r == nil {
+		return nil
+	}
+	return r.Dex
 }
 
 // walletL is where Load methods for each relationship are stored.
@@ -452,6 +462,17 @@ func (o *Wallet) Account(mods ...qm.QueryMod) accountQuery {
 	return Accounts(queryMods...)
 }
 
+// Dex pointed to by the foreign key.
+func (o *Wallet) Dex(mods ...qm.QueryMod) accountQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"dex_id\" = ?", o.DexID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Accounts(queryMods...)
+}
+
 // LoadAccount allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (walletL) LoadAccount(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWallet interface{}, mods queries.Applicator) error {
@@ -572,6 +593,126 @@ func (walletL) LoadAccount(ctx context.Context, e boil.ContextExecutor, singular
 	return nil
 }
 
+// LoadDex allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (walletL) LoadDex(ctx context.Context, e boil.ContextExecutor, singular bool, maybeWallet interface{}, mods queries.Applicator) error {
+	var slice []*Wallet
+	var object *Wallet
+
+	if singular {
+		var ok bool
+		object, ok = maybeWallet.(*Wallet)
+		if !ok {
+			object = new(Wallet)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeWallet)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeWallet))
+			}
+		}
+	} else {
+		s, ok := maybeWallet.(*[]*Wallet)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeWallet)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeWallet))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &walletR{}
+		}
+		args[object.DexID] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &walletR{}
+			}
+
+			args[obj.DexID] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`accounts_api.accounts`),
+		qm.WhereIn(`accounts_api.accounts.dex_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Account")
+	}
+
+	var resultSlice []*Account
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Account")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for accounts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for accounts")
+	}
+
+	if len(accountAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Dex = foreign
+		if foreign.R == nil {
+			foreign.R = &accountR{}
+		}
+		foreign.R.DexWallet = object
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.DexID == foreign.DexID {
+				local.R.Dex = foreign
+				if foreign.R == nil {
+					foreign.R = &accountR{}
+				}
+				foreign.R.DexWallet = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetAccount of the wallet to the related item.
 // Sets o.R.Account to related.
 // Adds o to related.R.Wallet.
@@ -614,6 +755,53 @@ func (o *Wallet) SetAccount(ctx context.Context, exec boil.ContextExecutor, inse
 		}
 	} else {
 		related.R.Wallet = o
+	}
+
+	return nil
+}
+
+// SetDex of the wallet to the related item.
+// Sets o.R.Dex to related.
+// Adds o to related.R.DexWallet.
+func (o *Wallet) SetDex(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Account) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"accounts_api\".\"wallets\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"dex_id"}),
+		strmangle.WhereClause("\"", "\"", 2, walletPrimaryKeyColumns),
+	)
+	values := []interface{}{related.DexID, o.EthereumAddress}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.DexID = related.DexID
+	if o.R == nil {
+		o.R = &walletR{
+			Dex: related,
+		}
+	} else {
+		o.R.Dex = related
+	}
+
+	if related.R == nil {
+		related.R = &accountR{
+			DexWallet: o,
+		}
+	} else {
+		related.R.DexWallet = o
 	}
 
 	return nil

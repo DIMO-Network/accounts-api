@@ -93,25 +93,31 @@ func main() {
 
 	//get or create account based on whether the 0x or email links to an existing account
 	//search is performed through wallets or emails table, whichever way you came in
-	// ^ ae- aren't we assuming people will only be coming in via wallet?
-	v1.Get("/", accountController.GetUserAccount)
+	v1.Get("/", accountController.GetOrCreateUserAccount)
 
 	//update account other data(region,etc)
 	v1.Put("/", accountController.UpdateUser)
+
 	//delete account and all associated links, cascade
 	v1.Delete("/", accountController.DeleteUser)
+
 	//agree to terms of service, can only be called after both email and wallet are linked
 	v1.Post("/agree-tos", accountController.AgreeTOS)
+
 	//agree to terms of service, can only be called after both email and wallet are linked
 	v1.Post("/referral/submit", accountController.SubmitReferralCode)
+
 	//link a wallet to the account, required a signed JWT from auth server
-	v1.Post("/link/wallet/token", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/wallet/token", accountController.LinkWalletToken)
+
 	//link a google account to the account, required a signed JWT from auth server
-	v1.Post("/link/email/token", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/email/token", accountController.LinkEmailToken)
+
 	//link some other email to the account, no JWT can be provider, so code is sent.
-	v1.Post("/link/email", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/email", accountController.LinkEmail)
+
 	//confirm the email code
-	v1.Post("/link/email/confirm", accountController.GenerateEthereumChallenge)
+	v1.Post("/link/email/confirm", accountController.ConfirmEmail)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
 
@@ -139,11 +145,11 @@ func migrateDatabase(ctx context.Context, _ zerolog.Logger, settings *db.Setting
 		command = "up"
 	}
 
-	_, err = db.Exec("CREATE SCHEMA IF NOT EXISTS users_api;")
+	_, err = db.Exec("CREATE SCHEMA IF NOT EXISTS accounts_api;")
 	if err != nil {
 		return err
 	}
-	goose.SetTableName("users_api.migrations")
+	goose.SetTableName("accounts_api.migrations")
 	return goose.RunContext(ctx, command, db, migrationsDir)
 }
 

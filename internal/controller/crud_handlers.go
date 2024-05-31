@@ -9,19 +9,20 @@ import (
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
-// GetUserAccount godoc
+// GetOrCreateUserAccount godoc
 // @Summary Get attributes for the authenticated user.
 // @Produce json
 // @Success 200 {object} controllers.UserResponse
 // @Failure 403 {object} controllers.ErrorResponse
 // @Security BearerAuth
 // @Router /v1/user [get]
-func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
+func (d *Controller) GetOrCreateUserAccount(c *fiber.Ctx) error {
 	acct, err := d.getOrCreateUserAccount(c)
 	if err != nil {
 		return err
@@ -45,7 +46,7 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Failure 403 {object} controllers.ErrorResponse
 // @Router /v1/user [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
-	userAccount, err := getUserAccountInfos(c)
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -57,7 +58,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback() //nolint
 
-	userWallet, err := d.getUserAccount(c.Context(), userAccount, tx)
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		d.log.Err(err).Msg("failed to get user account")
 		return err
@@ -65,12 +66,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 
 	var body UserUpdateRequest
 	if err := c.BodyParser(&body); err != nil {
-		return errorResponseHandler(c, err, fiber.StatusBadRequest)
-	}
-
-	acct := userWallet.R.Account
-	if acct == nil {
-		return fmt.Errorf("account not found")
+		return err
 	}
 
 	if body.CountryCode.Defined {
@@ -93,16 +89,12 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 
 		email.EmailAddress = body.Email.Address.Value.String
 
-		if err := email.Upsert(c.Context(), d.dbs.DBS().Writer, true, []string{models.EmailColumns.EmailAddress}, boil.Infer(), boil.Infer()); err != nil {
+		if _, err := email.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
 			return err
 		}
 	}
 
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
-		return err
-	}
-
-	userResp, err := d.formatUserAcctResponse(c.Context(), userWallet)
+	userResp, err := d.formatUserAcctResponse(c.Context(), acct)
 	if err != nil {
 		return err
 
@@ -119,7 +111,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 // @Failure 409 {object} controllers.ErrorResponse "Returned if the user still has devices."
 // @Router /v1/user [delete]
 func (d *Controller) DeleteUser(c *fiber.Ctx) error {
-	userAccount, err := getUserAccountInfos(c)
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -134,19 +126,19 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	acct, err := models.FindAccount(c.Context(), tx, userAccount.DexID)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return errorResponseHandler(c, err, fiber.StatusBadRequest)
+			return err
 		}
 		return err
 	}
 
-	// TODO-- should this now be based on eth address?
+	// base this on eth addr
 	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: acct.ID})
 	if err != nil {
 		return err
 	}
 
 	if l := len(dr.UserDevices); l > 0 {
-		return errorResponseHandler(c, fmt.Errorf("user must delete %d devices first", l), fiber.StatusConflict)
+		return fmt.Errorf("user must delete %d devices first", l)
 	}
 
 	if _, err := acct.Delete(c.Context(), d.dbs.DBS().Writer); err != nil {
@@ -168,7 +160,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 // @Failure 400 {object} controllers.ErrorResponse
 // @Router /v1/user/agree-tos [post]
 func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
-	userAccount, err := getUserAccountInfos(c)
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -192,4 +184,72 @@ func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// LinkWalletToken godoc
+// @Summary Link a wallet to existing email account; require a signed JWT from auth server
+// @Success 204
+// @Failure 400 {object} controllers.ErrorResponse
+// @Router /v1/link/wallet/token [post]
+func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
+	userAccount, err := getuserAccountInfosToken(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
+
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint
+
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	if err != nil {
+		return err
+	}
+
+	if acct.R.Email == nil {
+		return fmt.Errorf("no email address associated with user account")
+	}
+
+	if acct.R.Wallet != nil {
+		return errorResponseHandler(c, fmt.Errorf("account already has linked wallet"), fiber.StatusBadRequest)
+
+	}
+
+	var tb TokenBody
+	if err := c.BodyParser(&tb); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
+	}
+
+	// TODO AE: this is a hack, we need to parse and verify the token
+	tbClaims := jwt.MapClaims{}
+	p := jwt.NewParser()
+	_, _, _ = p.ParseUnverified(tb.Token, &tbClaims)
+
+	infos := getUserAccountInfos(tbClaims)
+
+	wallet := models.Wallet{
+		AccountID:       acct.ID,
+		EthereumAddress: infos.EthereumAddress.Bytes(),
+		DexID:           infos.DexID,
+		Confirmed:       true,
+		Provider:        null.StringFrom(infos.ProviderID),
+	}
+
+	if err := wallet.Insert(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return c.SendStatus(fiber.StatusNoContent)
+}
+
+// TODO AE: find out what body will be
+type TokenBody struct {
+	Token string `json:"token"`
 }

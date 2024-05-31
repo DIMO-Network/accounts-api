@@ -25,6 +25,7 @@ import (
 // Account is an object representing the database table.
 type Account struct {
 	ID           string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	DexID        string      `boil:"dex_id" json:"dex_id" toml:"dex_id" yaml:"dex_id"`
 	CreatedAt    time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	CountryCode  null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
 	CustomerIoID null.String `boil:"customer_io_id" json:"customer_io_id,omitempty" toml:"customer_io_id" yaml:"customer_io_id,omitempty"`
@@ -39,6 +40,7 @@ type Account struct {
 
 var AccountColumns = struct {
 	ID           string
+	DexID        string
 	CreatedAt    string
 	CountryCode  string
 	CustomerIoID string
@@ -48,6 +50,7 @@ var AccountColumns = struct {
 	ReferredAt   string
 }{
 	ID:           "id",
+	DexID:        "dex_id",
 	CreatedAt:    "created_at",
 	CountryCode:  "country_code",
 	CustomerIoID: "customer_io_id",
@@ -59,6 +62,7 @@ var AccountColumns = struct {
 
 var AccountTableColumns = struct {
 	ID           string
+	DexID        string
 	CreatedAt    string
 	CountryCode  string
 	CustomerIoID string
@@ -68,6 +72,7 @@ var AccountTableColumns = struct {
 	ReferredAt   string
 }{
 	ID:           "accounts.id",
+	DexID:        "accounts.dex_id",
 	CreatedAt:    "accounts.created_at",
 	CountryCode:  "accounts.country_code",
 	CustomerIoID: "accounts.customer_io_id",
@@ -203,6 +208,7 @@ func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsN
 
 var AccountWhere = struct {
 	ID           whereHelperstring
+	DexID        whereHelperstring
 	CreatedAt    whereHelpertime_Time
 	CountryCode  whereHelpernull_String
 	CustomerIoID whereHelpernull_String
@@ -212,6 +218,7 @@ var AccountWhere = struct {
 	ReferredAt   whereHelpernull_Time
 }{
 	ID:           whereHelperstring{field: "\"accounts_api\".\"accounts\".\"id\""},
+	DexID:        whereHelperstring{field: "\"accounts_api\".\"accounts\".\"dex_id\""},
 	CreatedAt:    whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
 	CountryCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
 	CustomerIoID: whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"customer_io_id\""},
@@ -223,17 +230,23 @@ var AccountWhere = struct {
 
 // AccountRels is where relationship names are stored.
 var AccountRels = struct {
-	Email  string
-	Wallet string
+	Email     string
+	DexEmail  string
+	Wallet    string
+	DexWallet string
 }{
-	Email:  "Email",
-	Wallet: "Wallet",
+	Email:     "Email",
+	DexEmail:  "DexEmail",
+	Wallet:    "Wallet",
+	DexWallet: "DexWallet",
 }
 
 // accountR is where relationships are stored.
 type accountR struct {
-	Email  *Email  `boil:"Email" json:"Email" toml:"Email" yaml:"Email"`
-	Wallet *Wallet `boil:"Wallet" json:"Wallet" toml:"Wallet" yaml:"Wallet"`
+	Email     *Email  `boil:"Email" json:"Email" toml:"Email" yaml:"Email"`
+	DexEmail  *Email  `boil:"DexEmail" json:"DexEmail" toml:"DexEmail" yaml:"DexEmail"`
+	Wallet    *Wallet `boil:"Wallet" json:"Wallet" toml:"Wallet" yaml:"Wallet"`
+	DexWallet *Wallet `boil:"DexWallet" json:"DexWallet" toml:"DexWallet" yaml:"DexWallet"`
 }
 
 // NewStruct creates a new relationship struct
@@ -248,6 +261,13 @@ func (r *accountR) GetEmail() *Email {
 	return r.Email
 }
 
+func (r *accountR) GetDexEmail() *Email {
+	if r == nil {
+		return nil
+	}
+	return r.DexEmail
+}
+
 func (r *accountR) GetWallet() *Wallet {
 	if r == nil {
 		return nil
@@ -255,12 +275,19 @@ func (r *accountR) GetWallet() *Wallet {
 	return r.Wallet
 }
 
+func (r *accountR) GetDexWallet() *Wallet {
+	if r == nil {
+		return nil
+	}
+	return r.DexWallet
+}
+
 // accountL is where Load methods for each relationship are stored.
 type accountL struct{}
 
 var (
-	accountAllColumns            = []string{"id", "created_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
-	accountColumnsWithoutDefault = []string{"id", "created_at"}
+	accountAllColumns            = []string{"id", "dex_id", "created_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountColumnsWithoutDefault = []string{"id", "dex_id", "created_at"}
 	accountColumnsWithDefault    = []string{"country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
@@ -582,10 +609,32 @@ func (o *Account) Email(mods ...qm.QueryMod) emailQuery {
 	return Emails(queryMods...)
 }
 
+// DexEmail pointed to by the foreign key.
+func (o *Account) DexEmail(mods ...qm.QueryMod) emailQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"dex_id\" = ?", o.DexID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Emails(queryMods...)
+}
+
 // Wallet pointed to by the foreign key.
 func (o *Account) Wallet(mods ...qm.QueryMod) walletQuery {
 	queryMods := []qm.QueryMod{
 		qm.Where("\"account_id\" = ?", o.ID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Wallets(queryMods...)
+}
+
+// DexWallet pointed to by the foreign key.
+func (o *Account) DexWallet(mods ...qm.QueryMod) walletQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"dex_id\" = ?", o.DexID),
 	}
 
 	queryMods = append(queryMods, mods...)
@@ -702,6 +751,123 @@ func (accountL) LoadEmail(ctx context.Context, e boil.ContextExecutor, singular 
 					foreign.R = &emailR{}
 				}
 				foreign.R.Account = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// LoadDexEmail allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (accountL) LoadDexEmail(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAccount interface{}, mods queries.Applicator) error {
+	var slice []*Account
+	var object *Account
+
+	if singular {
+		var ok bool
+		object, ok = maybeAccount.(*Account)
+		if !ok {
+			object = new(Account)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAccount))
+			}
+		}
+	} else {
+		s, ok := maybeAccount.(*[]*Account)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAccount))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &accountR{}
+		}
+		args[object.DexID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &accountR{}
+			}
+
+			args[obj.DexID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`accounts_api.emails`),
+		qm.WhereIn(`accounts_api.emails.dex_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Email")
+	}
+
+	var resultSlice []*Email
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Email")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for emails")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for emails")
+	}
+
+	if len(emailAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.DexEmail = foreign
+		if foreign.R == nil {
+			foreign.R = &emailR{}
+		}
+		foreign.R.Dex = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.DexID == foreign.DexID {
+				local.R.DexEmail = foreign
+				if foreign.R == nil {
+					foreign.R = &emailR{}
+				}
+				foreign.R.Dex = local
 				break
 			}
 		}
@@ -827,6 +993,123 @@ func (accountL) LoadWallet(ctx context.Context, e boil.ContextExecutor, singular
 	return nil
 }
 
+// LoadDexWallet allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-1 relationship.
+func (accountL) LoadDexWallet(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAccount interface{}, mods queries.Applicator) error {
+	var slice []*Account
+	var object *Account
+
+	if singular {
+		var ok bool
+		object, ok = maybeAccount.(*Account)
+		if !ok {
+			object = new(Account)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAccount))
+			}
+		}
+	} else {
+		s, ok := maybeAccount.(*[]*Account)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAccount))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &accountR{}
+		}
+		args[object.DexID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &accountR{}
+			}
+
+			args[obj.DexID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`accounts_api.wallets`),
+		qm.WhereIn(`accounts_api.wallets.dex_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Wallet")
+	}
+
+	var resultSlice []*Wallet
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Wallet")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for wallets")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for wallets")
+	}
+
+	if len(walletAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.DexWallet = foreign
+		if foreign.R == nil {
+			foreign.R = &walletR{}
+		}
+		foreign.R.Dex = object
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.DexID == foreign.DexID {
+				local.R.DexWallet = foreign
+				if foreign.R == nil {
+					foreign.R = &walletR{}
+				}
+				foreign.R.Dex = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetEmail of the account to the related item.
 // Sets o.R.Email to related.
 // Adds o to related.R.Account.
@@ -877,6 +1160,56 @@ func (o *Account) SetEmail(ctx context.Context, exec boil.ContextExecutor, inser
 	return nil
 }
 
+// SetDexEmail of the account to the related item.
+// Sets o.R.DexEmail to related.
+// Adds o to related.R.Dex.
+func (o *Account) SetDexEmail(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Email) error {
+	var err error
+
+	if insert {
+		related.DexID = o.DexID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"accounts_api\".\"emails\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"dex_id"}),
+			strmangle.WhereClause("\"", "\"", 2, emailPrimaryKeyColumns),
+		)
+		values := []interface{}{o.DexID, related.EmailAddress}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.DexID = o.DexID
+	}
+
+	if o.R == nil {
+		o.R = &accountR{
+			DexEmail: related,
+		}
+	} else {
+		o.R.DexEmail = related
+	}
+
+	if related.R == nil {
+		related.R = &emailR{
+			Dex: o,
+		}
+	} else {
+		related.R.Dex = o
+	}
+	return nil
+}
+
 // SetWallet of the account to the related item.
 // Sets o.R.Wallet to related.
 // Adds o to related.R.Account.
@@ -923,6 +1256,56 @@ func (o *Account) SetWallet(ctx context.Context, exec boil.ContextExecutor, inse
 		}
 	} else {
 		related.R.Account = o
+	}
+	return nil
+}
+
+// SetDexWallet of the account to the related item.
+// Sets o.R.DexWallet to related.
+// Adds o to related.R.Dex.
+func (o *Account) SetDexWallet(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Wallet) error {
+	var err error
+
+	if insert {
+		related.DexID = o.DexID
+
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	} else {
+		updateQuery := fmt.Sprintf(
+			"UPDATE \"accounts_api\".\"wallets\" SET %s WHERE %s",
+			strmangle.SetParamNames("\"", "\"", 1, []string{"dex_id"}),
+			strmangle.WhereClause("\"", "\"", 2, walletPrimaryKeyColumns),
+		)
+		values := []interface{}{o.DexID, related.EthereumAddress}
+
+		if boil.IsDebug(ctx) {
+			writer := boil.DebugWriterFrom(ctx)
+			fmt.Fprintln(writer, updateQuery)
+			fmt.Fprintln(writer, values)
+		}
+		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+			return errors.Wrap(err, "failed to update foreign table")
+		}
+
+		related.DexID = o.DexID
+	}
+
+	if o.R == nil {
+		o.R = &accountR{
+			DexWallet: related,
+		}
+	} else {
+		o.R.DexWallet = related
+	}
+
+	if related.R == nil {
+		related.R = &walletR{
+			Dex: o,
+		}
+	} else {
+		related.R.Dex = o
 	}
 	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"accounts-api/models"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
@@ -19,17 +18,14 @@ import (
 )
 
 func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
-	alphabet := []rune("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-	b := make([]rune, 12)
-	for i := range b {
-		b[i] = alphabet[rand.Intn(len(alphabet))]
-	}
+	rand.New(rand.NewSource(time.Now().UnixNano()))
+	alphabet := []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 	for {
 		// Generate a random 12-character code
-		codeB := make([]rune, 12)
-		for i := range b {
-			b[i] = alphabet[rand.Intn(len(alphabet))]
+		codeB := make([]byte, 12)
+		for i := range codeB {
+			codeB[i] = alphabet[rand.Intn(len(alphabet))]
 		}
 		code := string(codeB)
 
@@ -51,21 +47,21 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 // @Failure 500 {object} controllers.ErrorResponse
 // @Router /v1/user/submit-referral-code [post]
 func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
-	userAccount, err := getUserAccountInfos(c)
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
 	}
 
-	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.DexID),
-		qm.Load(models.AccountRels.Email),
-		qm.Load(models.AccountRels.Wallet),
-	).One(c.Context(), d.dbs.DBS().Reader)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
+		return err
+	}
+	defer tx.Rollback() //nolint
+
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	if err != nil {
+		return errorResponseHandler(c, err, fiber.StatusBadRequest)
 	}
 
 	if acct.ReferredBy.Valid {

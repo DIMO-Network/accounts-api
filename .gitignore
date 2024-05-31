@@ -21,8 +21,11 @@ resources/redis/
 .vscode
 
 dist/
-.idea/
+
+# ignore sample data
+.data/
+
 # ignore settings file as it could contain secrets
 settings.yaml
 
-test.json
+test.json 

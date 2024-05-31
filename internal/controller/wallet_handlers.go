@@ -29,7 +29,7 @@ import (
 // @Failure 500 {object} controllers.ErrorResponse
 // @Router /v1/user/web3/challenge/generate [post]
 func (d *Controller) GenerateEthereumChallenge(c *fiber.Ctx) error {
-	userAccount, err := getUserAccountInfos(c)
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -87,7 +87,7 @@ func (d *Controller) GenerateEthereumChallenge(c *fiber.Ctx) error {
 // @Failure 500 {object} controllers.ErrorResponse
 // @Router /v1/user/web3/challenge/submit [post]
 func (d *Controller) SubmitEthereumChallenge(c *fiber.Ctx) error {
-	userAccount, err := getUserAccountInfos(c)
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err

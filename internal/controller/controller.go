@@ -20,6 +20,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
+	"github.com/segmentio/ksuid"
 	"github.com/volatiletech/null/v8"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -57,7 +58,6 @@ type Account struct {
 }
 
 func NewAccountController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) Controller {
-	// rand.New(rand.NewSource(time.Now().UnixNano()))
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		panic(err)
@@ -86,36 +86,45 @@ func NewAccountController(settings *config.Settings, dbs db.Store, eventService 
 	}
 }
 
-func getUserAccountInfos(c *fiber.Ctx) (*Account, error) {
-	var acct Account
-	if token, ok := c.Locals("user").(*jwt.Token); ok {
-		claims := token.Claims.(jwt.MapClaims)
-
-		if acctID, ok := claims["sub"].(string); ok {
-			acct.DexID = acctID
-		}
-
-		if provider, ok := claims["provider_id"].(string); ok {
-			acct.ProviderID = provider
-		}
-
-		if addr, ok := claims["ethereum_address"].(string); ok {
-			acct.EthereumAddress = common.HexToAddress(addr)
-		}
-
-		if eml, ok := claims["email_address"].(string); ok {
-			if emailPattern.MatchString(eml) {
-				acct.EmailAddress = eml
-			}
-		}
-
-		return &acct, nil
+func getuserAccountInfosToken(c *fiber.Ctx) (*Account, error) {
+	token, ok := c.Locals("user").(*jwt.Token)
+	if !ok {
+		return nil, errors.New("failed to get user token")
 	}
-	return nil, fmt.Errorf("failed to parse user account infos")
+
+	infos := getUserAccountInfos(token.Claims.(jwt.MapClaims))
+	if infos.DexID == "" && infos.ProviderID == "" && (infos.EthereumAddress.Hex() == "" || infos.EmailAddress == "") {
+		return nil, errors.New("failed to parse user account infos")
+	}
+
+	return infos, nil
 }
 
-func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Wallet, error) {
-	userAccount, err := getUserAccountInfos(c)
+func getUserAccountInfos(claims jwt.MapClaims) *Account {
+	var acct Account
+	if acctID, ok := claims["sub"].(string); ok {
+		acct.DexID = acctID
+	}
+
+	if provider, ok := claims["provider_id"].(string); ok {
+		acct.ProviderID = provider
+	}
+
+	if addr, ok := claims["ethereum_address"].(string); ok {
+		acct.EthereumAddress = common.HexToAddress(addr)
+	}
+
+	if eml, ok := claims["email"].(string); ok {
+		if emailPattern.MatchString(eml) {
+			acct.EmailAddress = eml
+		}
+	}
+
+	return &acct
+}
+
+func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, error) {
+	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return nil, err
@@ -127,93 +136,86 @@ func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Wallet, error
 	}
 	defer tx.Rollback() //nolint
 
-	var acct *models.Wallet
-	acct, err = d.getUserAccount(c.Context(), userAccount, tx)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
+	if exists, err := models.Accounts(
+		models.AccountWhere.DexID.EQ(userAccount.DexID),
+	).Exists(c.Context(), tx); err != nil {
+		return nil, err
+	} else if !exists {
+		if err := d.createUser(c.Context(), userAccount, tx); err != nil && !errors.Is(err, sql.ErrNoRows) {
 			return nil, err
 		}
 	}
 
-	if acct == nil {
-		acct, err = d.createUser(c.Context(), userAccount, tx)
-		if err != nil {
-			return nil, err
-		}
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user account: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("failed to commit get or create user account tx: %w", err)
 	}
 
 	return acct, nil
 }
 
-func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, tx *sql.Tx) (*models.Wallet, error) {
-	var userWallet *models.Wallet
-	var err error
-
-	// AE: we can check if eth addr and email or valid and search on whichever is...
-	// but it seems like we're expecting eth addr in every jwt?
-	userWallet, err = models.Wallets(
-		models.WalletWhere.EthereumAddress.EQ(userAccount.EthereumAddress.Bytes()),
-		qm.Load(models.WalletRels.Account),
-		qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
+func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, tx *sql.Tx) (*models.Account, error) {
+	return models.Accounts(
+		models.AccountWhere.DexID.EQ(userAccount.DexID),
+		qm.Load(models.AccountRels.Wallet),
+		qm.Load(models.AccountRels.Email),
 	).One(ctx, tx)
-	if err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return nil, err
-	}
-
-	if userWallet == nil {
-		userWallet, err = d.createUser(ctx, userAccount, tx)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return userWallet, nil
 }
 
-func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *sql.Tx) (*models.Wallet, error) {
+func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *sql.Tx) error {
 	referralCode, err := d.GenerateReferralCode(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to generate referral code: %w", err)
+	}
+
 	acct := models.Account{
-		ID:           userAccount.DexID,
+		ID:           ksuid.New().String(),
+		DexID:        userAccount.DexID,
 		ReferralCode: null.StringFrom(referralCode),
 	}
+
 	if err := acct.Insert(ctx, tx, boil.Infer()); err != nil {
-		return nil, err
+		return err
 	}
 
-	// AE Confirm: we expect to always see eth address in jwt
-	mixAddr, err := common.NewMixedcaseAddressFromString(userAccount.EthereumAddress.Hex())
-	if err != nil {
-		return nil, fmt.Errorf("invalid ethereum_address %s", userAccount.EthereumAddress.Hex())
-	}
-	if !mixAddr.ValidChecksum() {
-		d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", userAccount.EthereumAddress.Hex())
-	}
+	switch userAccount.ProviderID {
+	case "web3":
+		mixAddr, err := common.NewMixedcaseAddressFromString(userAccount.EthereumAddress.Hex())
+		if err != nil {
+			return fmt.Errorf("invalid ethereum_address %s", userAccount.EthereumAddress.Hex())
+		}
+		if !mixAddr.ValidChecksum() {
+			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", userAccount.EthereumAddress.Hex())
+		}
 
-	wallet := &models.Wallet{
-		AccountID:       userAccount.DexID,
-		EthereumAddress: mixAddr.Address().Bytes(),
-		Confirmed:       true, // ??
-		Provider:        null.StringFrom(userAccount.ProviderID),
-	}
+		wallet := &models.Wallet{
+			AccountID:       acct.ID,
+			DexID:           userAccount.DexID,
+			EthereumAddress: mixAddr.Address().Bytes(),
+			Confirmed:       true,
+			Provider:        null.StringFrom(userAccount.ProviderID),
+		}
 
-	if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
-		return nil, fmt.Errorf("failed to insert wallet: %w", err)
-	}
-
-	var email models.Email
-	if userAccount.EmailAddress != "" {
-		email = models.Email{
-			AccountID:    userAccount.DexID,
+		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
+			return fmt.Errorf("failed to insert wallet: %w", err)
+		}
+	case "apple", "google":
+		email := models.Email{
+			AccountID:    acct.ID,
+			DexID:        userAccount.DexID,
 			EmailAddress: userAccount.EmailAddress,
-			Confirmed:    false,
+			Confirmed:    true,
 		}
 
 		if err := email.Insert(ctx, tx, boil.Infer()); err != nil {
-			return nil, fmt.Errorf("failed to insert email: %w", err)
+			return fmt.Errorf("failed to insert email: %w", err)
 		}
 	}
 
-	// do we want to change this event to include the eth addr?
 	msg := UserCreationEventData{
 		Timestamp: time.Now(),
 		UserID:    userAccount.DexID,
@@ -221,46 +223,38 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 	}
 	if err := d.eventService.Emit(&services.Event{
 		Type:    UserCreationEventType,
-		Subject: userAccount.DexID,
+		Subject: acct.ID,
 		Source:  "accounts-api",
 		Data:    msg,
 	}); err != nil {
-		d.log.Err(err).Msg("Failed sending user creation event")
+		d.log.Err(err).Msg("Failed sending account creation event")
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
-	return wallet, nil
+	return nil
 }
 
-func (d *Controller) formatUserAcctResponse(ctx context.Context, userWallet *models.Wallet) (*UserResponse, error) {
+func (d *Controller) formatUserAcctResponse(ctx context.Context, userAccount *models.Account) (*UserResponse, error) {
 	userResp := &UserResponse{
-		ID: userWallet.AccountID,
+		ID: userAccount.ID,
 	}
 
-	acct := userWallet.R.Account
-	if acct == nil {
-		return nil, fmt.Errorf("account not found for wallet %s", userWallet.AccountID)
+	if userAccount.ReferredBy.Valid {
+		userResp.ReferredBy = userAccount.ReferredBy.String
+		userResp.ReferredAt = userAccount.ReferredAt.Time
 	}
 
-	if acct.ReferredBy.Valid {
-		userResp.ReferredBy = acct.ReferredBy.String
-		userResp.ReferredAt = acct.ReferredAt.Time
+	if userAccount.R.Email != nil {
+		userResp.Email.Address = userAccount.R.Email.EmailAddress
+		userResp.Email.Confirmed = userAccount.R.Email.Confirmed
+		userResp.Email.ConfirmationSentAt = userAccount.R.Email.ConfirmationSent.Time
 	}
 
-	if acct.R.Email != nil {
-		userResp.Email.Address = acct.R.Email.EmailAddress
-		userResp.Email.Confirmed = acct.R.Email.Confirmed
-		userResp.Email.ConfirmationSentAt = acct.R.Email.ConfirmationSent.Time
-	}
+	if userAccount.R.Wallet != nil {
+		userResp.Web3.Address = common.BytesToAddress(userAccount.R.Wallet.EthereumAddress)
+		userResp.Web3.Confirmed = userAccount.R.Wallet.Confirmed
+		userResp.Web3.Provider = userAccount.R.Wallet.Provider.String
 
-	if acct.R.Wallet != nil {
-		userResp.Web3.Address = common.BytesToAddress(acct.R.Wallet.EthereumAddress)
-		userResp.Web3.Confirmed = acct.R.Wallet.Confirmed
-		userResp.Web3.Provider = acct.R.Wallet.Provider.String
-
+		// graphql query here?
 		devices, err := d.devicesClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{UserId: userResp.ID})
 		if err != nil {
 			return nil, fmt.Errorf("couldn't retrieve user's vehicles: %w", err)

@@ -97,13 +97,16 @@ var EmailWhere = struct {
 // EmailRels is where relationship names are stored.
 var EmailRels = struct {
 	Account string
+	Dex     string
 }{
 	Account: "Account",
+	Dex:     "Dex",
 }
 
 // emailR is where relationships are stored.
 type emailR struct {
 	Account *Account `boil:"Account" json:"Account" toml:"Account" yaml:"Account"`
+	Dex     *Account `boil:"Dex" json:"Dex" toml:"Dex" yaml:"Dex"`
 }
 
 // NewStruct creates a new relationship struct
@@ -116,6 +119,13 @@ func (r *emailR) GetAccount() *Account {
 		return nil
 	}
 	return r.Account
+}
+
+func (r *emailR) GetDex() *Account {
+	if r == nil {
+		return nil
+	}
+	return r.Dex
 }
 
 // emailL is where Load methods for each relationship are stored.
@@ -445,6 +455,17 @@ func (o *Email) Account(mods ...qm.QueryMod) accountQuery {
 	return Accounts(queryMods...)
 }
 
+// Dex pointed to by the foreign key.
+func (o *Email) Dex(mods ...qm.QueryMod) accountQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"dex_id\" = ?", o.DexID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Accounts(queryMods...)
+}
+
 // LoadAccount allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
 func (emailL) LoadAccount(ctx context.Context, e boil.ContextExecutor, singular bool, maybeEmail interface{}, mods queries.Applicator) error {
@@ -565,6 +586,126 @@ func (emailL) LoadAccount(ctx context.Context, e boil.ContextExecutor, singular 
 	return nil
 }
 
+// LoadDex allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (emailL) LoadDex(ctx context.Context, e boil.ContextExecutor, singular bool, maybeEmail interface{}, mods queries.Applicator) error {
+	var slice []*Email
+	var object *Email
+
+	if singular {
+		var ok bool
+		object, ok = maybeEmail.(*Email)
+		if !ok {
+			object = new(Email)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeEmail)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeEmail))
+			}
+		}
+	} else {
+		s, ok := maybeEmail.(*[]*Email)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeEmail)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeEmail))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &emailR{}
+		}
+		args[object.DexID] = struct{}{}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &emailR{}
+			}
+
+			args[obj.DexID] = struct{}{}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`accounts_api.accounts`),
+		qm.WhereIn(`accounts_api.accounts.dex_id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Account")
+	}
+
+	var resultSlice []*Account
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Account")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for accounts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for accounts")
+	}
+
+	if len(accountAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Dex = foreign
+		if foreign.R == nil {
+			foreign.R = &accountR{}
+		}
+		foreign.R.DexEmail = object
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.DexID == foreign.DexID {
+				local.R.Dex = foreign
+				if foreign.R == nil {
+					foreign.R = &accountR{}
+				}
+				foreign.R.DexEmail = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 // SetAccount of the email to the related item.
 // Sets o.R.Account to related.
 // Adds o to related.R.Email.
@@ -607,6 +748,53 @@ func (o *Email) SetAccount(ctx context.Context, exec boil.ContextExecutor, inser
 		}
 	} else {
 		related.R.Email = o
+	}
+
+	return nil
+}
+
+// SetDex of the email to the related item.
+// Sets o.R.Dex to related.
+// Adds o to related.R.DexEmail.
+func (o *Email) SetDex(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Account) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"accounts_api\".\"emails\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"dex_id"}),
+		strmangle.WhereClause("\"", "\"", 2, emailPrimaryKeyColumns),
+	)
+	values := []interface{}{related.DexID, o.EmailAddress}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.DexID = related.DexID
+	if o.R == nil {
+		o.R = &emailR{
+			Dex: related,
+		}
+	} else {
+		o.R.Dex = related
+	}
+
+	if related.R == nil {
+		related.R = &accountR{
+			DexEmail: o,
+		}
+	} else {
+		related.R.DexEmail = o
 	}
 
 	return nil
