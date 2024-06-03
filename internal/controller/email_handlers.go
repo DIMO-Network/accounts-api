@@ -42,12 +42,12 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+			return err
 		}
 	}
 
 	if acct.R.Email != nil {
-		return errorResponseHandler(c, fmt.Errorf("email address already associated with account"), fiber.StatusBadRequest)
+		return fmt.Errorf("email address already associated with account")
 	}
 
 	key := generateConfirmationKey()
@@ -61,11 +61,11 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	}
 
 	if err := d.sendConfirmationEmail(userEmail.EmailAddress, key); err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		return err
 	}
 
 	if _, err := userEmail.Update(c.Context(), tx, boil.Infer()); err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		return err
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -95,41 +95,41 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
-			return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+			return err
 		}
 	}
 
 	if acct.R.Email == nil {
-		return errorResponseHandler(c, fmt.Errorf("no email address associated with user account"), fiber.StatusBadRequest)
+		return fmt.Errorf("no email address associated with user account")
 	}
 
 	// can we be linking multtiple email addrs to the same account?
 	if acct.R.Email.Confirmed {
-		return errorResponseHandler(c, fmt.Errorf("email already confirmed"), fiber.StatusBadRequest)
+		return fmt.Errorf("email already confirmed")
 	}
 
 	if !acct.R.Email.ConfirmationSent.Valid || !acct.R.Email.Code.Valid {
-		return errorResponseHandler(c, fmt.Errorf("email confirmation never sent"), fiber.StatusBadRequest)
+		return fmt.Errorf("email confirmation never sent")
 	}
 
 	if time.Since(acct.R.Email.ConfirmationSent.Time) > d.allowedLateness {
-		return errorResponseHandler(c, fmt.Errorf("email confirmation message expired"), fiber.StatusBadRequest)
+		return fmt.Errorf("email confirmation message expired")
 	}
 
 	confirmationBody := new(ConfirmEmailRequest)
 	if err := c.BodyParser(confirmationBody); err != nil {
-		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+		return err
 	}
 
 	if confirmationBody.Key != acct.R.Email.Code.String {
-		return errorResponseHandler(c, fmt.Errorf("email confirmation code invalid"), fiber.StatusBadRequest)
+		return fmt.Errorf("email confirmation code invalid")
 	}
 
 	acct.R.Email.Confirmed = true
 	acct.R.Email.Code = null.StringFromPtr(nil)
 	acct.R.Email.ConfirmationSent = null.TimeFromPtr(nil)
 	if _, err := acct.R.Email.Update(c.Context(), tx, boil.Infer()); err != nil {
-		return errorResponseHandler(c, err, fiber.StatusInternalServerError)
+		return err
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
@@ -155,16 +155,16 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 
 	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
-		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+		return err
 	}
 
 	if acct.R.Wallet == nil {
-		return errorResponseHandler(c, fmt.Errorf("no wallet associated with user account"), fiber.StatusBadRequest)
+		return fmt.Errorf("no wallet associated with user account")
 	}
 
 	// unless we want to allow more than one email to be associated with an account...?
 	if acct.R.Email != nil {
-		return errorResponseHandler(c, fmt.Errorf("account already has linked email"), fiber.StatusBadRequest)
+		return fmt.Errorf("account already has linked email")
 
 	}
 
@@ -187,7 +187,11 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		EmailAddress: infos.EmailAddress,
 	}
 
-	if err := email.Insert(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+	if err := email.Insert(c.Context(), tx, boil.Infer()); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 

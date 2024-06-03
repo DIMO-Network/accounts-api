@@ -6,17 +6,20 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 )
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-var opaqueInternalError = fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 
 type ConfirmEmailRequest struct {
 	// Key is the 6-digit number from the confirmation email
 	Key string `json:"key" example:"010990"`
+}
+
+// TODO AE: find out what body will be
+type TokenBody struct {
+	Token string `json:"token"`
 }
 
 type UserResponseEmail struct {

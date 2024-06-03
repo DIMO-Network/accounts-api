@@ -61,15 +61,15 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 
 	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
-		return errorResponseHandler(c, err, fiber.StatusBadRequest)
+		return fmt.Errorf("failed to get user account to submit referral code: %w", err)
 	}
 
 	if acct.ReferredBy.Valid {
-		return fiber.NewError(fiber.StatusBadRequest, "cannot accept more than one referral code per user ")
+		return fiber.NewError(fiber.StatusBadRequest, "cannot accept more than one referral code per user")
 	}
 
 	if acct.ReferredAt.Valid {
-		return fiber.NewError(fiber.StatusBadRequest, "Already entered a referral code.")
+		return fiber.NewError(fiber.StatusBadRequest, "already entered a referral code.")
 	}
 
 	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: acct.ID})
@@ -101,7 +101,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	referrer, err := models.Accounts(
 		models.AccountWhere.ReferralCode.EQ(null.StringFrom(referralCode)),
 		qm.Load(models.AccountRels.Wallet),
-	).One(c.Context(), d.dbs.DBS().Reader)
+	).One(c.Context(), tx)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return fiber.NewError(fiber.StatusBadRequest, "No user with that referral code found.")
@@ -130,7 +130,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 
 	acct.ReferredBy = null.StringFrom(referrer.ReferralCode.String)
 	acct.ReferredAt = null.TimeFrom(time.Now())
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Writer, boil.Whitelist(models.AccountColumns.ReferredBy, models.AccountColumns.ReferredAt)); err != nil {
+	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.ReferredBy, models.AccountColumns.ReferredAt)); err != nil {
 		return err
 	}
 

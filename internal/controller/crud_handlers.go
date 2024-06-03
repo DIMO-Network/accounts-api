@@ -9,10 +9,8 @@ import (
 
 	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 // GetOrCreateUserAccount godoc
@@ -71,7 +69,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 
 	if body.CountryCode.Defined {
 		if body.CountryCode.Value.Valid && !inSorted(d.countryCodes, body.CountryCode.Value.String) {
-			return errorResponseHandler(c, fmt.Errorf("invalid country code"), fiber.StatusBadRequest)
+			return errors.New("invalid country code")
 		}
 		acct.CountryCode = body.CountryCode.Value
 	}
@@ -89,7 +87,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 
 		email.EmailAddress = body.Email.Address.Value.String
 
-		if _, err := email.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+		if _, err := email.Update(c.Context(), tx, boil.Infer()); err != nil {
 			return err
 		}
 	}
@@ -141,7 +139,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 		return fmt.Errorf("user must delete %d devices first", l)
 	}
 
-	if _, err := acct.Delete(c.Context(), d.dbs.DBS().Writer); err != nil {
+	if _, err := acct.Delete(c.Context(), tx); err != nil {
 		return err
 	}
 
@@ -166,38 +164,6 @@ func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct, err := models.Accounts(
-		models.AccountWhere.ID.EQ(userAccount.DexID),
-		qm.Load(models.AccountRels.Email),
-		qm.Load(models.AccountRels.Wallet),
-	).One(c.Context(), d.dbs.DBS().Reader)
-	if err != nil {
-		if !errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
-	}
-
-	acct.AgreedTosAt = null.TimeFrom(time.Now())
-
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
-		return err
-	}
-
-	return c.SendStatus(fiber.StatusNoContent)
-}
-
-// LinkWalletToken godoc
-// @Summary Link a wallet to existing email account; require a signed JWT from auth server
-// @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
-// @Router /v1/link/wallet/token [post]
-func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
-	if err != nil {
-		d.log.Err(err).Msg("failed to parse user")
-		return err
-	}
-
 	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return err
@@ -209,36 +175,9 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if acct.R.Email == nil {
-		return fmt.Errorf("no email address associated with user account")
-	}
+	acct.AgreedTosAt = null.TimeFrom(time.Now())
 
-	if acct.R.Wallet != nil {
-		return errorResponseHandler(c, fmt.Errorf("account already has linked wallet"), fiber.StatusBadRequest)
-
-	}
-
-	var tb TokenBody
-	if err := c.BodyParser(&tb); err != nil {
-		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
-	}
-
-	// TODO AE: this is a hack, we need to parse and verify the token
-	tbClaims := jwt.MapClaims{}
-	p := jwt.NewParser()
-	_, _, _ = p.ParseUnverified(tb.Token, &tbClaims)
-
-	infos := getUserAccountInfos(tbClaims)
-
-	wallet := models.Wallet{
-		AccountID:       acct.ID,
-		EthereumAddress: infos.EthereumAddress.Bytes(),
-		DexID:           infos.DexID,
-		Confirmed:       true,
-		Provider:        null.StringFrom(infos.ProviderID),
-	}
-
-	if err := wallet.Insert(c.Context(), d.dbs.DBS().Writer, boil.Infer()); err != nil {
+	if _, err := acct.Update(c.Context(), tx, boil.Infer()); err != nil {
 		return err
 	}
 
@@ -247,9 +186,4 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-// TODO AE: find out what body will be
-type TokenBody struct {
-	Token string `json:"token"`
 }
