@@ -11,6 +11,8 @@ import (
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+var UserCreationEventType = "com.dimo.zone.user.create"
+var digits = []rune("0123456789")
 
 type ConfirmEmailRequest struct {
 	// Key is the 6-digit number from the confirmation email
@@ -26,7 +28,7 @@ type UserResponseEmail struct {
 	// Address is the email address for the user.
 	Address string `json:"address" swaggertype:"string" example:"koblitz@dimo.zone",omitempty`
 	// Confirmed indicates whether the user has confirmed the address by entering a code.
-	Confirmed bool `json:"confirmed" example:"false",omitempty`
+	Confirmed bool `example:"false" json:"confirmed",omitempty`
 	// ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
 	// be present if we've sent an email but the code has not been sent back to us.
 	ConfirmationSentAt time.Time `json:"confirmationSentAt" swaggertype:"string" example:"2021-12-01T09:01:12Z",omitempty`
@@ -74,8 +76,6 @@ type SubmitReferralCodeResponse struct {
 	Message string `json:"message"`
 }
 
-const UserCreationEventType = "com.dimo.zone.user.create"
-
 type UserCreationEventData struct {
 	Timestamp time.Time `json:"timestamp"`
 	UserID    string    `json:"userId"`
@@ -106,8 +106,6 @@ type UserUpdateRequest struct {
 	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
 }
 
-var digits = []rune("0123456789")
-
 type ChallengeResponse struct {
 	// Challenge is the message to be signed.
 	Challenge string `json:"challenge"`
@@ -133,4 +131,9 @@ type AlternateAccountsResponse struct {
 	// OtherAccounts is a list of any other accounts that share email or
 	// ethereum address with the provided token.
 	OtherAccounts []*AltAccount `json:"otherAccounts"`
+}
+
+type ErrorRes struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
 }

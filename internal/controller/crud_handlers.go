@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 // GetOrCreateUserAccount godoc
@@ -121,7 +122,9 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback() //nolint
 
-	acct, err := models.FindAccount(c.Context(), tx, userAccount.DexID)
+	acct, err := models.Accounts(
+		models.AccountWhere.DexID.EQ(userAccount.DexID),
+		qm.Load(models.AccountRels.Wallet)).One(c.Context(), tx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return err
@@ -129,17 +132,16 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	// base this on eth addr
-	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: acct.ID})
-	if err != nil {
-		return err
-	}
-
-	if l := len(dr.UserDevices); l > 0 {
-		return fmt.Errorf("user must delete %d devices first", l)
+	if acct.R.Wallet != nil {
+		if ownedVehicles, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.EthereumAddress)); err != nil {
+			return err
+		} else if ownedVehicles {
+			return fmt.Errorf("user must burn on-chain vehicles before deleting account")
+		}
 	}
 
 	if _, err := acct.Delete(c.Context(), tx); err != nil {
+		fmt.Println("Error: ", err)
 		return err
 	}
 
@@ -148,7 +150,6 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	d.log.Info().Str("userId", acct.ID).Msg("Deleted user.")
-
 	return c.SendStatus(fiber.StatusNoContent)
 }
 

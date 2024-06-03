@@ -60,7 +60,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		EthereumAddress: infos.EthereumAddress.Bytes(),
 		DexID:           infos.DexID,
 		Confirmed:       true,
-		Provider:        null.StringFrom(infos.ProviderID),
+		Provider:        null.StringFrom("Turnkey"), // where does this come from?
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {

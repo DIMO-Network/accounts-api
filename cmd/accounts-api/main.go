@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"strconv"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
@@ -22,6 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 )
+
+// do we want a grpc service in this repo?
 
 func main() {
 	gitSha1 := os.Getenv("GIT_SHA1")
@@ -75,9 +76,7 @@ func main() {
 
 	go func() {
 		monApp := fiber.New(fiber.Config{DisableStartupMessage: true})
-
 		monApp.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
-
 		if err := monApp.Listen(":" + settings.MonitoringPort); err != nil {
 			logger.Fatal().Err(err).Str("port", settings.MonitoringPort).Msg("Failed to start monitoring web server.")
 		}
@@ -89,9 +88,12 @@ func main() {
 		JWKSetURLs: []string{settings.JWTKeySetURL},
 	}))
 
-	accountController := controller.NewAccountController(&settings, dbs, nil, &logger)
+	accountController, err := controller.NewAccountController(&settings, dbs, nil, nil, &logger)
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to start account controller")
+	}
 
-	//get or create account based on whether the 0x or email links to an existing account
+	//create account based on whether the 0x or email links to an existing account
 	//search is performed through wallets or emails table, whichever way you came in
 	v1.Get("/", accountController.GetOrCreateUserAccount)
 
@@ -120,8 +122,6 @@ func main() {
 	v1.Post("/link/email/confirm", accountController.ConfirmEmail)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
-
-	// go startGRPCServer(settings, dbs, &logger)
 
 	// Start Server
 	if err := app.Listen(":" + settings.Port); err != nil {
@@ -153,10 +153,6 @@ func migrateDatabase(ctx context.Context, _ zerolog.Logger, settings *db.Setting
 	return goose.RunContext(ctx, command, db, migrationsDir)
 }
 
-// TODO
-func startGRPCServer(settings *config.Settings, dbs db.Store, logger *zerolog.Logger) {
-}
-
 func healthCheck(c *fiber.Ctx) error {
 	res := map[string]interface{}{
 		"data": "Server is up and running",
@@ -171,18 +167,7 @@ func healthCheck(c *fiber.Ctx) error {
 	return nil
 }
 
-type ErrorRes struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
-
-const skipErrorLogKey = "skipErrorLog"
-
-func SkipErrorLog(c *fiber.Ctx) {
-	c.Locals(skipErrorLogKey, true)
-}
-
-func GetLogger(c *fiber.Ctx, d *zerolog.Logger) *zerolog.Logger {
+func getLogger(c *fiber.Ctx, d *zerolog.Logger) *zerolog.Logger {
 	m := c.Locals("logger")
 	if m == nil {
 		return d
@@ -198,7 +183,7 @@ func GetLogger(c *fiber.Ctx, d *zerolog.Logger) *zerolog.Logger {
 
 // ErrorHandler custom handler to log recovered errors using our logger and return json instead of string
 func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction bool) error {
-	logger = GetLogger(c, logger)
+	logger = getLogger(c, logger)
 
 	code := fiber.StatusInternalServerError // Default 500 statuscode
 
@@ -208,21 +193,19 @@ func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 		// Override status code if fiber.Error type
 		code = e.Code
 	}
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-	codeStr := strconv.Itoa(code)
 
-	if c.Locals(skipErrorLogKey) != true {
-		logger.Err(err).Str("httpStatusCode", codeStr).
-			Str("httpMethod", c.Method()).
-			Str("httpPath", c.Path()).
-			Msg("caught an error from http request")
-	}
+	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
+	logger.Err(err).Int("httpStatusCode", code).
+		Str("httpMethod", c.Method()).
+		Str("httpPath", c.Path()).
+		Msg("caught an error from http request")
+
 	// return an opaque error if we're in a higher level environment and we haven't specified an fiber type err.
 	if !isFiberErr && isProduction {
 		err = fiber.NewError(fiber.StatusInternalServerError, "Internal error")
 	}
 
-	return c.Status(code).JSON(ErrorRes{
+	return c.Status(code).JSON(controller.ErrorRes{
 		Code:    code,
 		Message: err.Error(),
 	})

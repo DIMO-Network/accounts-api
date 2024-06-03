@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
@@ -72,13 +71,12 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "already entered a referral code.")
 	}
 
-	dr, err := d.devicesClient.ListUserDevicesForUser(c.Context(), &pb.ListUserDevicesForUserRequest{UserId: acct.ID})
-	if err != nil {
-		return err
-	}
-
-	if len(dr.UserDevices) != 0 {
-		return fiber.NewError(fiber.StatusBadRequest, "Can't enter a referral code after adding vehicles.")
+	if acct.R.Wallet != nil {
+		if devicesPaired, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.EthereumAddress)); err != nil {
+			return err
+		} else if devicesPaired {
+			return fiber.NewError(fiber.StatusBadRequest, "Can't enter a referral code after adding vehicles.")
+		}
 	}
 
 	var body SubmitReferralCodeRequest

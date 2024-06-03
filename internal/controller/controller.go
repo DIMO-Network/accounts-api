@@ -14,7 +14,6 @@ import (
 	"accounts-api/internal/services"
 	"accounts-api/models"
 
-	pb "github.com/DIMO-Network/devices-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -22,8 +21,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	"github.com/volatiletech/null/v8"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -46,8 +43,7 @@ type Controller struct {
 	countryCodes    []string
 	emailTemplate   *template.Template
 	eventService    services.EventService
-	devicesClient   services.DeviceService
-	amClient        pb.AftermarketDeviceServiceClient
+	identityService services.IdentityService
 }
 
 type Account struct {
@@ -57,33 +53,22 @@ type Account struct {
 	ProviderID      string
 }
 
-func NewAccountController(settings *config.Settings, dbs db.Store, eventService services.EventService, logger *zerolog.Logger) Controller {
+func NewAccountController(settings *config.Settings, dbs db.Store, eventService services.EventService, idSvc services.IdentityService, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
-		panic(err)
-	}
-	t := template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail))
-
-	gc, err := grpc.Dial(settings.DevicesAPIGRPCAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	dc := pb.NewUserDeviceServiceClient(gc)
-
-	amc := pb.NewAftermarketDeviceServiceClient(gc)
-
-	return Controller{
+	return &Controller{
 		Settings:        settings,
 		dbs:             dbs,
 		log:             logger,
-		allowedLateness: 5 * time.Minute,
+		allowedLateness: settings.AllowableEmailConfirmationLateness * time.Minute,
 		countryCodes:    countryCodes,
-		emailTemplate:   t,
+		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),
 		eventService:    eventService,
-		devicesClient:   dc,
-		amClient:        amc,
-	}
+		identityService: idSvc,
+	}, nil
 }
 
 func getuserAccountInfosToken(c *fiber.Ctx) (*Account, error) {
@@ -197,7 +182,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 			DexID:           userAccount.DexID,
 			EthereumAddress: mixAddr.Address().Bytes(),
 			Confirmed:       true,
-			Provider:        null.StringFrom(userAccount.ProviderID),
+			Provider:        null.StringFrom("Turnkey"), // where are we getting this from? what are valid options?
 		}
 
 		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -244,58 +229,36 @@ func (d *Controller) formatUserAcctResponse(ctx context.Context, userAccount *mo
 	}
 
 	if userAccount.R.Email != nil {
-		userResp.Email.Address = userAccount.R.Email.EmailAddress
-		userResp.Email.Confirmed = userAccount.R.Email.Confirmed
-		userResp.Email.ConfirmationSentAt = userAccount.R.Email.ConfirmationSent.Time
+		userResp.Email = &UserResponseEmail{
+			Address:            userAccount.R.Email.EmailAddress,
+			Confirmed:          userAccount.R.Email.Confirmed,
+			ConfirmationSentAt: userAccount.R.Email.ConfirmationSent.Time,
+		}
 	}
 
 	if userAccount.R.Wallet != nil {
-		userResp.Web3.Address = common.BytesToAddress(userAccount.R.Wallet.EthereumAddress)
-		userResp.Web3.Confirmed = userAccount.R.Wallet.Confirmed
-		userResp.Web3.Provider = userAccount.R.Wallet.Provider.String
-
-		// graphql query here?
-		devices, err := d.devicesClient.ListUserDevicesForUser(ctx, &pb.ListUserDevicesForUserRequest{UserId: userResp.ID})
-		if err != nil {
-			return nil, fmt.Errorf("couldn't retrieve user's vehicles: %w", err)
+		userResp.Web3 = &UserResponseWeb3{
+			Address:   common.BytesToAddress(userAccount.R.Wallet.EthereumAddress),
+			Confirmed: userAccount.R.Wallet.Confirmed,
+			Provider:  userAccount.R.Wallet.Provider.String,
 		}
 
-		for _, amd := range devices.UserDevices {
-			if amd.TokenId != nil {
-				userResp.Web3.Used = true
-				break
-			}
+		if web3Used, err := d.identityService.VehiclesOwned(ctx, userResp.Web3.Address); err != nil {
+			return nil, fmt.Errorf("couldn't retrieve user vehicles: %w", err)
+		} else if web3Used {
+			userResp.Web3.Used = true
 		}
 
 		if !userResp.Web3.Used {
-			ams, err := d.amClient.ListAftermarketDevicesForUser(ctx, &pb.ListAftermarketDevicesForUserRequest{UserId: userResp.ID})
-			if err != nil {
-				return nil, fmt.Errorf("couldn't retrieve user's aftermarket devices: %w", err)
-			}
-
-			for _, am := range ams.AftermarketDevices {
-				if len(am.OwnerAddress) == 20 {
-					userResp.Web3.Used = true
-					break
-				}
+			if web3Used, err := d.identityService.AftermarketDevicesOwned(ctx, userResp.Web3.Address); err != nil {
+				return nil, fmt.Errorf("couldn't retrieve user aftermarket devices: %w", err)
+			} else if web3Used {
+				userResp.Web3.Used = true
 			}
 		}
-
 	}
 
 	return userResp, nil
-}
-
-type ErrorResponse struct {
-	ErrorMessage string `json:"errorMessage"`
-}
-
-func errorResponseHandler(c *fiber.Ctx, err error, status int) error {
-	msg := ""
-	if err != nil {
-		msg = err.Error()
-	}
-	return c.Status(status).JSON(ErrorResponse{msg})
 }
 
 func inSorted(v []string, x string) bool {

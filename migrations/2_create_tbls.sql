@@ -20,7 +20,7 @@ CREATE TABLE accounts(
 CREATE TABLE emails(
     email_address TEXT PRIMARY KEY,
     account_id TEXT UNIQUE NOT NULL
-        CONSTRAINT emails_account_id_fkey REFERENCES accounts(id),
+        CONSTRAINT emails_account_id_fkey REFERENCES accounts(id) ON DELETE CASCADE,
     dex_id TEXT UNIQUE NOT NULL
         CONSTRAINT emails_dex_id_fkey REFERENCES accounts(dex_id),
     confirmed BOOLEAN NOT NULL,
@@ -37,7 +37,7 @@ CREATE TYPE wallet_provider AS ENUM(
 CREATE TABLE wallets(
     ethereum_address BYTEA PRIMARY KEY,
     account_id TEXT UNIQUE NOT NULL
-        CONSTRAINT wallets_account_id_fkey REFERENCES accounts(id),
+        CONSTRAINT wallets_account_id_fkey REFERENCES accounts(id) ON DELETE CASCADE,
         CONSTRAINT wallets_ethereum_address_check CHECK (length(ethereum_address) = 20),
     dex_id TEXT UNIQUE NOT NULL
         CONSTRAINT wallets_dex_id_fkey REFERENCES accounts(dex_id),

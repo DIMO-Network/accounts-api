@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"accounts-api/internal/config"
+	"accounts-api/internal/services"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/docker/go-connections/nat"
@@ -23,6 +24,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
+	"github.com/segmentio/ksuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -104,7 +106,6 @@ $$ LANGUAGE plpgsql;
 
 func handleContainerStartErr(ctx context.Context, err error, container testcontainers.Container, t *testing.T) (db.Store, testcontainers.Container) {
 	if err != nil {
-		fmt.Println("start container error: " + err.Error())
 		if container != nil {
 			container.Terminate(ctx) //nolint
 		}
@@ -170,11 +171,25 @@ func BuildRequest(method, url, body string) *http.Request {
 }
 
 // AuthInjectorTestHandler injects fake jwt with sub
-func AuthInjectorTestHandler(userID string) fiber.Handler {
+func EmailBasedAuthInjector(dexID, email string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"sub": userID,
-			"nbf": time.Now().Unix(),
+			"provider_id": "google",
+			"sub":         dexID,
+			"email":       email,
+		})
+
+		c.Locals("user", token)
+		return c.Next()
+	}
+}
+
+func WalletBasedAuthInjector(dexID string, ethAddr common.Address) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"provider_id":      "web3",
+			"sub":              ksuid.New().String(),
+			"ethereum_address": ethAddr.Hex(),
 		})
 
 		c.Locals("user", token)
@@ -210,4 +225,39 @@ func GenerateWallet() (*ecdsa.PrivateKey, *common.Address, error) {
 	userAddr := crypto.PubkeyToAddress(privateKey.PublicKey)
 
 	return privateKey, &userAddr, nil
+}
+
+type eventService struct{}
+
+func (e *eventService) Emit(event *services.Event) error {
+	return nil
+}
+
+func NewEventService() services.EventService {
+	return &eventService{}
+}
+
+type identityService struct {
+	Pass bool
+}
+
+func (i *identityService) VehiclesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
+	if i.Pass {
+		fmt.Println("should pass", i.Pass)
+		return true, nil
+	}
+	fmt.Println("shouldnt pass: ", i.Pass)
+	return false, nil
+}
+
+func (i *identityService) AftermarketDevicesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
+	if i.Pass {
+		return true, nil
+	}
+	return false, nil
+}
+
+func NewIdentityService(settings *config.Settings, pass bool) services.IdentityService {
+	fmt.Println("setting pass status to ", pass)
+	return &identityService{Pass: pass}
 }
