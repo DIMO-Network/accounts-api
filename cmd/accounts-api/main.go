@@ -2,6 +2,7 @@ package main
 
 import (
 	"accounts-api/internal/config"
+	"accounts-api/internal/services"
 	"context"
 	"database/sql"
 	"encoding/json"
@@ -21,8 +22,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
 )
-
-// do we want a grpc service in this repo?
 
 func main() {
 	gitSha1 := os.Getenv("GIT_SHA1")
@@ -88,7 +87,10 @@ func main() {
 		JWKSetURLs: []string{settings.JWTKeySetURL},
 	}))
 
-	accountController, err := controller.NewAccountController(&settings, dbs, nil, nil, &logger)
+	idSvc := services.NewIdentityService(&settings)
+	eventSvc := services.NewEventService(&logger, &settings)
+	emailSvc := services.NewEmailService(&settings)
+	accountController, err := controller.NewAccountController(ctx, dbs, eventSvc, idSvc, emailSvc, &settings, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to start account controller")
 	}

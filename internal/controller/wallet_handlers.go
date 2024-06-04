@@ -4,6 +4,7 @@ import (
 	"accounts-api/models"
 	_ "embed"
 	"errors"
+	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -50,8 +51,11 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 
 	// TODO AE: this is a hack, we need to parse and verify the token
 	tbClaims := jwt.MapClaims{}
-	p := jwt.NewParser()
-	_, _, _ = p.ParseUnverified(tb.Token, &tbClaims)
+	_, err = jwt.ParseWithClaims(tb.Token, &tbClaims, d.jwkResource.Keyfunc)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 
 	infos := getUserAccountInfos(tbClaims)
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log"
 	"sort"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"accounts-api/models"
 
 	"github.com/DIMO-Network/shared/db"
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
@@ -27,23 +29,24 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
+//go:embed resources/confirmation_email.html
+var rawConfirmationEmail string
+
 // Sorted JSON array of valid ISO 3116-1 apha-3 codes
 //
 //go:embed resources/country_codes.json
 var rawCountryCodes []byte
 
-//go:embed resources/confirmation_email.html
-var rawConfirmationEmail string
-
 type Controller struct {
-	Settings        *config.Settings
 	dbs             db.Store
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
-	emailTemplate   *template.Template
 	eventService    services.EventService
 	identityService services.IdentityService
+	emailService    services.EmailService
+	jwkResource     keyfunc.Keyfunc
+	emailTemplate   *template.Template
 }
 
 type Account struct {
@@ -53,21 +56,26 @@ type Account struct {
 	ProviderID      string
 }
 
-func NewAccountController(settings *config.Settings, dbs db.Store, eventService services.EventService, idSvc services.IdentityService, logger *zerolog.Logger) (*Controller, error) {
+func NewAccountController(ctx context.Context, dbs db.Store, eventService services.EventService, idSvc services.IdentityService, emlSvc services.EmailService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		return nil, err
 	}
 
+	jwkResource, err := keyfunc.NewDefaultCtx(ctx, []string{settings.JWTKeySetURL}) // Context is used to end the refresh goroutine.
+	if err != nil {
+		log.Fatalf("Failed to create a keyfunc.Keyfunc from the server's URL.\nError: %s", err)
+	}
+
 	return &Controller{
-		Settings:        settings,
 		dbs:             dbs,
 		log:             logger,
 		allowedLateness: settings.AllowableEmailConfirmationLateness * time.Minute,
 		countryCodes:    countryCodes,
-		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),
 		eventService:    eventService,
 		identityService: idSvc,
+		jwkResource:     jwkResource,
+		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),
 	}, nil
 }
 

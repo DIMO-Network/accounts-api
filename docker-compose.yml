@@ -18,3 +18,11 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
+
+  dex:
+    image: dexidp/dex
+    volumes:
+      - ./dex/config.docker.yaml:/etc/dex/config.docker.yaml
+      - ./dex/saml-ca.pem:/etc/dex/saml-ca.pem:ro
+    ports:
+      - '5556:5556'

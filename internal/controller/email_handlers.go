@@ -2,15 +2,10 @@ package controller
 
 import (
 	"accounts-api/models"
-	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
 	"math/rand"
-	"mime/multipart"
-	"mime/quotedprintable"
-	"net/smtp"
-	"net/textproto"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -50,17 +45,17 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("email address already associated with account")
 	}
 
-	key := generateConfirmationKey()
+	confKey := generateConfirmationKey()
 	userEmail := &models.Email{
 		AccountID:        acct.ID,
 		DexID:            userAccount.DexID,
 		EmailAddress:     userAccount.EmailAddress,
 		Confirmed:        false,
-		Code:             null.StringFrom(key),
+		Code:             null.StringFrom(confKey),
 		ConfirmationSent: null.TimeFrom(time.Now()),
 	}
 
-	if err := d.sendConfirmationEmail(userEmail.EmailAddress, key); err != nil {
+	if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, userAccount.EmailAddress, confKey); err != nil {
 		return err
 	}
 
@@ -196,53 +191,6 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)
-}
-
-func (d *Controller) sendConfirmationEmail(userEmail, key string) error {
-	auth := smtp.PlainAuth("", d.Settings.EmailUsername, d.Settings.EmailPassword, d.Settings.EmailHost)
-	addr := fmt.Sprintf("%s:%s", d.Settings.EmailHost, d.Settings.EmailPort)
-
-	var partsBuffer bytes.Buffer
-	w := multipart.NewWriter(&partsBuffer)
-	defer w.Close() //nolint
-
-	p, err := w.CreatePart(textproto.MIMEHeader{"Content-Type": {"text/plain"}, "Content-Transfer-Encoding": {"quoted-printable"}})
-	if err != nil {
-		return err
-	}
-
-	pw := quotedprintable.NewWriter(p)
-	if _, err := pw.Write([]byte("Hi,\r\n\r\nYour email verification code is: " + key + "\r\n")); err != nil {
-		return err
-	}
-	pw.Close()
-
-	h, err := w.CreatePart(textproto.MIMEHeader{"Content-Type": {"text/html"}, "Content-Transfer-Encoding": {"quoted-printable"}})
-	if err != nil {
-		return err
-	}
-
-	hw := quotedprintable.NewWriter(h)
-	if err := d.emailTemplate.Execute(hw, struct{ Key string }{key}); err != nil {
-		return err
-	}
-	hw.Close()
-
-	var buffer bytes.Buffer
-	buffer.WriteString("From: DIMO <" + d.Settings.EmailFrom + ">\r\n" +
-		"To: " + userEmail + "\r\n" +
-		"Subject: [DIMO] Verification Code\r\n" +
-		"Content-Type: multipart/alternative; boundary=\"" + w.Boundary() + "\"\r\n" +
-		"\r\n")
-	if _, err := partsBuffer.WriteTo(&buffer); err != nil {
-		return err
-	}
-
-	if err := smtp.SendMail(addr, auth, d.Settings.EmailFrom, []string{userEmail}, buffer.Bytes()); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func generateConfirmationKey() string {

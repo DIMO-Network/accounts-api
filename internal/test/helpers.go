@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"database/sql"
 	"fmt"
+	"html/template"
 	"net/http"
 	"os"
 	"strconv"
@@ -172,6 +173,8 @@ func BuildRequest(method, url, body string) *http.Request {
 
 // AuthInjectorTestHandler injects fake jwt with sub
 func EmailBasedAuthInjector(dexID, email string) fiber.Handler {
+	// provider, err := oidc.NewProvider(context.Background(), "http://127.0.0.1:5556/dex/keys")
+	// provider.
 	return func(c *fiber.Ctx) error {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"provider_id": "google",
@@ -242,22 +245,24 @@ type identityService struct {
 }
 
 func (i *identityService) VehiclesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	if i.Pass {
-		fmt.Println("should pass", i.Pass)
-		return true, nil
-	}
-	fmt.Println("shouldnt pass: ", i.Pass)
-	return false, nil
+	return i.Pass, nil
 }
 
 func (i *identityService) AftermarketDevicesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	if i.Pass {
-		return true, nil
-	}
-	return false, nil
+	return i.Pass, nil
 }
 
-func NewIdentityService(settings *config.Settings, pass bool) services.IdentityService {
-	fmt.Println("setting pass status to ", pass)
+func NewIdentityService(pass bool) services.IdentityService {
 	return &identityService{Pass: pass}
+}
+
+type emailService struct {
+}
+
+func NewEmailService() services.EmailService {
+	return &emailService{}
+}
+
+func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate *template.Template, userEmail, confCode string) error {
+	return nil
 }

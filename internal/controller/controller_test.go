@@ -8,9 +8,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"testing"
 
 	"github.com/DIMO-Network/shared/db"
+	"github.com/MicahParks/keyfunc/v3"
+	"github.com/ethereum/go-ethereum/common"
+	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/segmentio/ksuid"
@@ -25,25 +29,39 @@ var secretKey = []byte("secret-key")
 type AccountControllerTestSuite struct {
 	suite.Suite
 	app             *fiber.App
+	settings        *config.Settings
 	pdb             db.Store
 	container       testcontainers.Container
 	ctx             context.Context
-	controller      Controller
+	controller      *Controller
 	eventService    services.EventService
 	identityService services.IdentityService
+	emailService    services.EmailService
 }
 
 // SetupSuite starts container db
 func (s *AccountControllerTestSuite) SetupSuite() {
-	s.ctx = context.Background()
-	s.pdb, s.container = test.StartContainerDatabase(s.ctx, s.T(), migrationsDirRelPath)
-	s.eventService = test.NewEventService()
-	s.identityService = test.NewIdentityService(&config.Settings{}, true)
 	s.app = fiber.New()
+	s.ctx = context.Background()
+	s.eventService = test.NewEventService()
+	s.emailService = test.NewEmailService()
+	s.identityService = test.NewIdentityService(true)
+	s.pdb, s.container = test.StartContainerDatabase(s.ctx, s.T(), migrationsDirRelPath)
+	s.settings = &config.Settings{
+		JWTKeySetURL: "http://127.0.0.1:5556/dex/keys",
+	}
 
-	acctCont, err := NewAccountController(&config.Settings{}, s.pdb, s.eventService, s.identityService, test.Logger())
+	s.app.Use(jwtware.New(jwtware.Config{
+		JWKSetURLs: []string{s.settings.JWTKeySetURL},
+	}))
+
+	s.controller = s.RecreateAccountController()
+}
+
+func (s *AccountControllerTestSuite) RecreateAccountController() *Controller {
+	acctCont, err := NewAccountController(s.ctx, s.pdb, s.eventService, s.identityService, s.emailService, s.settings, test.Logger())
 	s.Require().NoError(err)
-	s.controller = *acctCont
+	return acctCont
 }
 
 // TearDownSuite cleanup at end by terminating container
@@ -104,6 +122,75 @@ func (s *AccountControllerTestSuite) Test_CRUD_EmailBasedAccount() {
 	s.Require().NoError(err)
 	s.Assert().Equal(204, putResp.StatusCode)
 
+	// finalCheckReq := test.BuildRequest("GET", "/", "")
+	// finalCheckResp, _ := s.app.Test(finalCheckReq)
+	// body, err := io.ReadAll(finalCheckResp.Body)
+	// s.Require().NoError(err)
+	// s.Assert().Equal(200, finalCheckResp.StatusCode)
+
+	// var check UserResponse
+	// if err := json.Unmarshal(body, &check); err != nil {
+	// 	s.Require().NoError(err)
+	// }
+
+	// s.Assert().Equal(userEmail, check.Email.Address)
+	// s.Assert().NotNil(check.Web3)
+
+	// Delete Account
+	s.identityService = test.NewIdentityService(false) // need to reset mock to return false
+	s.controller = s.RecreateAccountController()
+	deleteReq := test.BuildRequest("DELETE", "/", "")
+	deleteResp, _ := s.app.Test(deleteReq)
+	_, err = io.ReadAll(deleteReq.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, deleteResp.StatusCode)
+
+}
+
+func (s *AccountControllerTestSuite) Test_CRUD_WalletBasedAccount() {
+	userWallet := "test_email@gmail.com"
+	userEmail := "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
+	dexID := ksuid.New().String()
+	userAuth := test.WalletBasedAuthInjector(dexID, common.HexToAddress(userWallet))
+	s.app.Get("/", userAuth, s.controller.GetOrCreateUserAccount)
+	s.app.Post("/link/email/token", userAuth, s.controller.LinkWalletToken)
+	s.app.Delete("/", userAuth, s.controller.DeleteUser)
+
+	// Get Request Create Account
+	getReq := test.BuildRequest("GET", "/", "")
+	getResp, _ := s.app.Test(getReq)
+	getBody, err := io.ReadAll(getResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(200, getResp.StatusCode)
+
+	var userResp UserResponse
+	if err := json.Unmarshal(getBody, &userResp); err != nil {
+		s.Require().NoError(err)
+	}
+
+	s.Assert().Equal(userEmail, userResp.Email.Address)
+	s.Assert().Nil(userResp.Web3)
+
+	// Link Wallet
+	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
+		"provider_id":   "web3",
+		"sub":           dexID,
+		"email_address": userEmail,
+	})
+
+	tokenString, err := token.SignedString(secretKey)
+	s.Require().NoError(err)
+
+	var tb TokenBody
+	tb.Token = tokenString
+	b, _ := json.Marshal(tb)
+
+	putReq := test.BuildRequest("POST", "/link/email/token", string(b))
+	putResp, _ := s.app.Test(putReq)
+	_, err = io.ReadAll(putResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, putResp.StatusCode)
+
 	finalCheckReq := test.BuildRequest("GET", "/", "")
 	finalCheckResp, _ := s.app.Test(finalCheckReq)
 	body, err := io.ReadAll(finalCheckResp.Body)
@@ -118,9 +205,9 @@ func (s *AccountControllerTestSuite) Test_CRUD_EmailBasedAccount() {
 	s.Assert().Equal(userEmail, check.Email.Address)
 	s.Assert().NotNil(check.Web3)
 
-	s.identityService = test.NewIdentityService(&config.Settings{}, false)
-	ctrl, _ := NewAccountController(&config.Settings{}, s.pdb, s.eventService, s.identityService, test.Logger())
-	s.controller = *ctrl
+	// Delete Account
+	s.identityService = test.NewIdentityService(false) // need to reset mock to return false
+	s.controller = s.RecreateAccountController()
 	deleteReq := test.BuildRequest("DELETE", "/", "")
 	deleteResp, _ := s.app.Test(deleteReq)
 	_, err = io.ReadAll(deleteReq.Body)
@@ -143,16 +230,21 @@ func (s *AccountControllerTestSuite) Test_GenerateReferralCode() {
 
 func (s *AccountControllerTestSuite) Test_JWTDecode() {
 
-	bodyToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6IjVmNjRiYzQwZjMwYmIzMWY0NGQzOGM3MzhiZTc3OTEzYTM5Yzc3OTQifQ.eyJpc3MiOiJodHRwczovL2F1dGguZGV2LmRpbW8uem9uZSIsInByb3ZpZGVyX2lkIjoiZ29vZ2xlIiwic3ViIjoiQ2hVeE1ETTNOelUxTWpFNE9URXdOemswTVRJeE5EY1NCbWR2YjJkc1pRIiwiYXVkIjoiZGltby1kcml2ZXIiLCJleHAiOjE3MTgzMDQxODMsImlhdCI6MTcxNzA5NDU4Mywibm9uY2UiOiIxWEpZcWNsbTV4bUQ3NWM3WVNmSFl2aU5sdGtoaElTU1RjcUNYU0tCcHNZIiwiYXRfaGFzaCI6Im5NaHlVOEItc0twOGR5RWJNN0JCRGciLCJjX2hhc2giOiJQaDdKSERoZ1dSMXJfeGVTSDR6UmlnIiwiZW1haWwiOiJhbGx5c29uLmVuZ2xpc2hAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWV9.TeI8a4cetrt52tXnvBHVqSm9cNGsKUEDqYs6HZCEQIH4RtsroZNvBc5fpIQeFKoUxzUBFH64U_geAyDgOC5zabMMBo8oeRQLj_KNwIrsrUYukHf79VCYH89J1nShMvYWuJISjw9bmnndK5GD5KKcCGXhW8qUDUqJNBTk0hI76FkBp7jx1yma3_qIcApyI7bnhxgCJhrrTZ41Y3aByZOnOXYyt-4uu7WM545Jnz9MChu27bZGA_O0RBvSObJ_M1pb7nI10bUH2DRXwo1-7BurPF-clewr4riOxv9jGFzJyVgPvpQN2vyecWWkRVqxHEB672EEQBX0M-pe-HajLYGmKw"
+	bodyToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImMzMjNkZjkyMjY3ZTg5YzUyYjBlYjY5ZDE3Y2Y5MGU4NTdlOTczNGEifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJtb2NrIiwic3ViIjoiQ2cwd0xUTTROUzB5T0RBNE9TMHdFZ1J0YjJOciIsImF1ZCI6ImV4YW1wbGUtYXBwIiwiZXhwIjoxNzE3NTcwMjg4LCJpYXQiOjE3MTc1MjcwODgsImF0X2hhc2giOiJZendVUnlqTnNVc2RuNm1NVVUyeGhRIiwiZW1haWwiOiJraWxnb3JlQGtpbGdvcmUudHJvdXQiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IktpbGdvcmUgVHJvdXQifQ.Bk9PBrb3arTdBgLPWjzUh9Yu08LAwNp0-Ncwe3v9ZbWOWddWfL41DYkDYqoyo3nUx52rNTwX1GSHGoYHFwcL7IkKJlcmQif-sXQCvPksNyngw4uXeueff3bwxtEUg2MLjqHXBhgvUSC_bCbZ0ejSfuZAtJGVaqCuYf9pN6JBcb9qjRltBwbQkUFwChuZSYLB3RrLesvTY0MOWIGJMBiug8FP_rJ8sLBvQ2QuQZiCZVF3Epy25OIRv2DplLMxehbmAA2kHVlOA0CfmEtEymvh1Hf5lRlwq-7vWdsZ26j5Ui4pOo5zvO90jmeOKejc8jI4Ivrz411L_92apvpbsS9uAw"
 
-	p := jwt.NewParser()
-	clm := jwt.MapClaims{}
-	_, _, _ = p.ParseUnverified(bodyToken, &clm)
+	jwkResource, err := keyfunc.NewDefaultCtx(context.Background(), []string{"http://127.0.0.1:5556/dex/keys"}) // Context is used to end the refresh goroutine.
+	if err != nil {
+		log.Fatalf("Failed to create a keyfunc.Keyfunc from the server's URL.\nError: %s", err)
+	}
 
-	claims := getUserAccountInfos(clm)
+	tbClaims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(bodyToken, &tbClaims, jwkResource.Keyfunc)
+	s.Require().NoError(err)
 
-	s.Assert().Equal(claims.DexID, "ChUxMDM3NzU1MjE4OTEwNzk0MTIxNDcSBmdvb2dsZQ")
-	s.Assert().Equal(claims.EmailAddress, "allyson.english@gmail.com")
-	s.Assert().Equal(claims.ProviderID, "google")
+	claims := getUserAccountInfos(tbClaims)
+
+	s.Assert().Equal(claims.DexID, "Cg0wLTM4NS0yODA4OS0wEgRtb2Nr")
+	s.Assert().Equal(claims.EmailAddress, "kilgore@kilgore.trout")
+	s.Assert().Equal(claims.ProviderID, "mock")
 
 }
