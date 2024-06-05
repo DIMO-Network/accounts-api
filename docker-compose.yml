@@ -25,5 +25,5 @@ services:
     ports:
       - "5556:5556"
     volumes:
-      - ./config.docker.yaml:/config.docker.yaml
-      - ./dex.db:/dex.db
+      - ./internal/test/config.docker.yaml:/config.docker.yaml
+      - ./internal/test/dex.db:/dex.db

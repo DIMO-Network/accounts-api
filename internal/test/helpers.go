@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -39,6 +40,7 @@ func StartContainerDatabase(ctx context.Context, t *testing.T, migrationsDirRelP
 	dbURL := func(_ string, port nat.Port) string {
 		return fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", settings.DB.User, settings.DB.Password, port.Port(), settings.DB.Name)
 	}
+
 	cr := testcontainers.ContainerRequest{
 		Image:        "postgres:12.9-alpine",
 		Env:          map[string]string{"POSTGRES_USER": settings.DB.User, "POSTGRES_PASSWORD": settings.DB.Password, "POSTGRES_DB": settings.DB.Name},
@@ -108,22 +110,22 @@ $$ LANGUAGE plpgsql;
 // StartContainerDex starts postgres container with default test settings. Caller must terminate container.
 func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Container {
 	dexPort := "5556"
+	wd, err := os.Getwd()
+	basepath := strings.Replace(wd, "/controller", "", 1)
 	dexCr := testcontainers.ContainerRequest{
 		Image:        "dexidp/dex",
 		Cmd:          []string{"dex", "serve", "/config.docker.yaml"},
-		ExposedPorts: []string{fmt.Sprintf("%s:%s/tcp", dexPort, dexPort)},
-		Mounts: testcontainers.ContainerMounts{
+		ExposedPorts: []string{fmt.Sprintf("%s/tcp", dexPort)},
+		Files: []testcontainers.ContainerFile{
 			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: "./config.docker.yaml",
-				},
-				Target: "/config.docker.yaml",
+				HostFilePath:      filepath.Join(basepath, "/test/config.docker.yaml"),
+				ContainerFilePath: "/config.docker.yaml",
+				FileMode:          0o755,
 			},
 			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: "./dex.db",
-				},
-				Target: "/dex.db",
+				HostFilePath:      filepath.Join(basepath, "/test/dex.db"),
+				ContainerFilePath: "/dex.db",
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -150,6 +152,20 @@ func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Contain
 	fmt.Printf("dex container session %s ready and running at port: %s \n", dexContainer.SessionID(), mappedPort)
 
 	return dexContainer
+}
+
+func GetContainerAddress(tc testcontainers.Container) (string, error) {
+	mappedPort, err := tc.MappedPort(context.Background(), nat.Port("5556/tcp"))
+	if err != nil {
+		return "", err
+	}
+
+	host, err := tc.Host(context.Background())
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, mappedPort.Port()), nil
 }
 
 func handleContainerStartErr(ctx context.Context, err error, container testcontainers.Container, t *testing.T) (db.Store, testcontainers.Container) {
