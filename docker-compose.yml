@@ -21,8 +21,9 @@ services:
 
   dex:
     image: dexidp/dex
-    volumes:
-      - ./dex/config.docker.yaml:/etc/dex/config.docker.yaml
-      - ./dex/saml-ca.pem:/etc/dex/saml-ca.pem:ro
+    command: dex serve /config.docker.yaml
     ports:
-      - '5556:5556'
+      - "5556:5556"
+    volumes:
+      - ./dex/config.docker.yaml:/config.docker.yaml
+      - ./dex/dex.db:/dex/dex.db
