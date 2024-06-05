@@ -4,7 +4,6 @@ import (
 	"accounts-api/models"
 	_ "embed"
 	"errors"
-	"fmt"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
@@ -49,22 +48,20 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "failed to parse request body.")
 	}
 
-	// TODO AE: this is a hack, we need to parse and verify the token
 	tbClaims := jwt.MapClaims{}
 	_, err = jwt.ParseWithClaims(tb.Token, &tbClaims, d.jwkResource.Keyfunc)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
 
 	infos := getUserAccountInfos(tbClaims)
-
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
 		DexID:           infos.DexID,
 		Confirmed:       true,
-		Provider:        null.StringFrom("Turnkey"), // where does this come from?
+		// TODO AE: what's supposed to be here?
+		Provider: null.StringFrom("Turnkey"), // where does this come from?
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {

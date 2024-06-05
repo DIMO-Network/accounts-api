@@ -41,7 +41,8 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		}
 	}
 
-	if acct.R.Email != nil {
+	// TODO AE: do we want to allow multiple email addresses to be associated with an account
+	if acct.R.Email != nil && acct.R.Email.Confirmed {
 		return fmt.Errorf("email address already associated with account")
 	}
 
@@ -157,7 +158,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fmt.Errorf("no wallet associated with user account")
 	}
 
-	// unless we want to allow more than one email to be associated with an account...?
+	// TODO AE: unless we want to allow more than one email to be associated with an account...?
 	if acct.R.Email != nil {
 		return fmt.Errorf("account already has linked email")
 
@@ -168,13 +169,13 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	// TODO AE: this is a hack, we need to parse and verify the token
 	tbClaims := jwt.MapClaims{}
-	p := jwt.NewParser()
-	_, _, _ = p.ParseUnverified(tb.Token, &tbClaims)
+	_, err = jwt.ParseWithClaims(tb.Token, &tbClaims, d.jwkResource.Keyfunc)
+	if err != nil {
+		return err
+	}
 
 	infos := getUserAccountInfos(tbClaims)
-
 	email := models.Email{
 		AccountID:    acct.ID,
 		DexID:        infos.DexID,

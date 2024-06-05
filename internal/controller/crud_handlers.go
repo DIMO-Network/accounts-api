@@ -75,6 +75,8 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		acct.CountryCode = body.CountryCode.Value
 	}
 
+	// TODO AE: are we still allowing this type of update or will the user have to go through the Link endpoint?
+	// assuming we are no longer allowing someone to link an eth addr through this endpoint
 	if body.Email.Address.Defined {
 		var email models.Email
 		if acct.R.Email == nil {
