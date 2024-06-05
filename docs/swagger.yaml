@@ -1,0 +1,47 @@
+info:
+  contact: {}
+paths:
+  /v1/link/email:
+    post:
+      responses: {}
+      summary: Send a confirmation email to the authenticated user
+  /v1/link/email/token:
+    post:
+      responses: {}
+      summary: Link an email to existing wallet account; require a signed JWT from
+        auth server
+  /v1/link/wallet/token:
+    post:
+      responses: {}
+      summary: Link a wallet to existing email account; require a signed JWT from
+        auth server
+  /v1/user:
+    delete:
+      responses:
+        "204":
+          description: No Content
+      summary: Delete the authenticated user. Fails if the user has any devices.
+    get:
+      produces:
+      - application/json
+      responses: {}
+      security:
+      - BearerAuth: []
+      summary: Get attributes for the authenticated user.
+    put:
+      responses: {}
+  /v1/user/agree-tos:
+    post:
+      responses: {}
+      summary: Agree to the current terms of service
+  /v1/user/confirm-email:
+    post:
+      consumes:
+      - application/json
+      responses: {}
+      summary: Submit an email confirmation key
+  /v1/user/submit-referral-code:
+    post:
+      responses: {}
+      summary: Takes the referral code, validates and stores it
+swagger: "2.0"

@@ -105,6 +105,53 @@ $$ LANGUAGE plpgsql;
 	return pdb, pgContainer
 }
 
+// StartContainerDex starts postgres container with default test settings. Caller must terminate container.
+func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Container {
+	dexPort := "5556"
+	dexCr := testcontainers.ContainerRequest{
+		Image:        "dexidp/dex",
+		Cmd:          []string{"dex", "serve", "/config.docker.yaml"},
+		ExposedPorts: []string{fmt.Sprintf("%s:%s/tcp", dexPort, dexPort)},
+		Mounts: testcontainers.ContainerMounts{
+			{
+				Source: testcontainers.GenericVolumeMountSource{
+					Name: "./config.docker.yaml",
+				},
+				Target: "/config.docker.yaml",
+			},
+			{
+				Source: testcontainers.GenericVolumeMountSource{
+					Name: "./dex.db",
+				},
+				Target: "/dex.db",
+			},
+		},
+	}
+
+	dexContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: dexCr,
+		Started:          true,
+	})
+	if err != nil {
+		if dexContainer != nil {
+			dexContainer.Terminate(ctx) //nolint
+		}
+		t.Fatal(err)
+	}
+	mappedPort, err := dexContainer.MappedPort(ctx, nat.Port(dexPort))
+	if err != nil {
+		if err != nil {
+			if dexContainer != nil {
+				dexContainer.Terminate(ctx) //nolint
+			}
+			t.Fatal(err)
+		}
+	}
+	fmt.Printf("dex container session %s ready and running at port: %s \n", dexContainer.SessionID(), mappedPort)
+
+	return dexContainer
+}
+
 func handleContainerStartErr(ctx context.Context, err error, container testcontainers.Container, t *testing.T) (db.Store, testcontainers.Container) {
 	if err != nil {
 		if container != nil {

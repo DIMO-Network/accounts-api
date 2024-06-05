@@ -1,0 +1,72 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "contact": {}
+    },
+    "paths": {
+        "/v1/link/email": {
+            "post": {
+                "summary": "Send a confirmation email to the authenticated user",
+                "responses": {}
+            }
+        },
+        "/v1/link/email/token": {
+            "post": {
+                "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
+                "responses": {}
+            }
+        },
+        "/v1/link/wallet/token": {
+            "post": {
+                "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
+                "responses": {}
+            }
+        },
+        "/v1/user": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get attributes for the authenticated user.",
+                "responses": {}
+            },
+            "put": {
+                "responses": {}
+            },
+            "delete": {
+                "summary": "Delete the authenticated user. Fails if the user has any devices.",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    }
+                }
+            }
+        },
+        "/v1/user/agree-tos": {
+            "post": {
+                "summary": "Agree to the current terms of service",
+                "responses": {}
+            }
+        },
+        "/v1/user/confirm-email": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "Submit an email confirmation key",
+                "responses": {}
+            }
+        },
+        "/v1/user/submit-referral-code": {
+            "post": {
+                "summary": "Takes the referral code, validates and stores it",
+                "responses": {}
+            }
+        }
+    }
+}

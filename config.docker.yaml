@@ -11,15 +11,9 @@ issuer: http://127.0.0.1:5556/dex
 #
 # See the documentation (https://dexidp.io/docs/storage/) for further information.
 storage:
-  type: postgres
+  type: sqlite3
   config:
-    host: postgres
-    port: 5432
-    database: dex
-    user: dimo
-    password: dimo
-    ssl:
-      mode: disable
+    file: /dex.db
 
   # type: mysql
   # config:
@@ -118,9 +112,8 @@ staticClients:
     redirectURIs:
       - 'http://127.0.0.1:5555/callback'
     name: 'Example App'
-    # secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+    secret: ZXhhbXBsZS1hcHAtc2VjcmV0
     idTokenExpiry: '12h'
-    public: true
   - id: IrbblpeZJRMewq8suTx0PcmHlporj6yZ
     redirectURIs:
       - 'http://localhost:3000'
@@ -131,13 +124,13 @@ staticClients:
 #      - /device/callback
 #    name: 'Static Client for Device Flow'
 #    public: true
-connectors:
-  - type: mockCallback
-    id: mock
-    name: Example
-  - type: web3
-    id: web3
-    name: Web3
+# connectors:
+#   - type: mockCallback
+#     id: mock
+#     name: Example
+#   - type: web3
+#     id: web3
+#     name: Web3
 #  config:
 #   infuraId: $INFURA_ID
 # - type: google
