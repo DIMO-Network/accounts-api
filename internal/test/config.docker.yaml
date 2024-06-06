@@ -113,7 +113,7 @@ staticClients:
       - 'http://127.0.0.1:5555/callback'
     name: 'Example App'
     secret: ZXhhbXBsZS1hcHAtc2VjcmV0
-    idTokenExpiry: '12h'
+    idTokenExpiry: '60000h'
   - id: IrbblpeZJRMewq8suTx0PcmHlporj6yZ
     redirectURIs:
       - 'http://localhost:3000'
