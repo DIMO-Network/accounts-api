@@ -9,7 +9,7 @@ import (
 	"github.com/volatiletech/null/v8"
 )
 
-var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
+var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{12}$`)
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 var UserCreationEventType = "com.dimo.zone.user.create"
 var digits = []rune("0123456789")
@@ -88,22 +88,11 @@ type optionalString struct {
 }
 
 // UserUpdateRequest describes a user's request to modify or delete certain fields
+// Currently contains only CountryCode as dedicated endpoints exist for other types
+// of updates a user might make
 type UserUpdateRequest struct {
-	Email struct {
-		// Address, if present, should be a valid email address. Note when this field
-		// is modified the user's verification status will reset.
-		Address optionalString `json:"address" swaggertype:"string" example:"neal@dimo.zone"`
-	} `json:"email"`
-	Web3 struct {
-		// Address, if present, should be a valid ethereum address. Note when this field
-		// is modified the user's address verification status will reset.
-		Address optionalString `json:"address" swaggertype:"string" example:"0x71C7656EC7ab88b098defB751B7401B5f6d8976F"`
-		// InApp, if true, indicates that the address above corresponds to an in-app wallet.
-		// You can only set this when setting a new wallet. It defaults to false.
-		InApp bool `json:"inApp" example:"true"`
-	} `json:"web3"`
-	// CountryCode, if specified, should be a valid ISO 3166-1 alpha-3 country code
-	CountryCode optionalString `json:"countryCode" swaggertype:"string" example:"USA"`
+	// CountryCode should be a valid ISO 3166-1 alpha-3 country code
+	CountryCode string `json:"countryCode" swaggertype:"string" example:"USA"`
 }
 
 type ChallengeResponse struct {

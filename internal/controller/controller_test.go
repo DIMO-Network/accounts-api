@@ -4,10 +4,12 @@ import (
 	"accounts-api/internal/config"
 	"accounts-api/internal/services"
 	"accounts-api/internal/test"
+	"accounts-api/models"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"testing"
 	"time"
 
@@ -20,11 +22,20 @@ import (
 	"github.com/segmentio/ksuid"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-const migrationsDirRelPath = "../../migrations"
-
-var secretKey = []byte("secret-key")
+var (
+	secretKey            = []byte("secret-key")
+	migrationsDirRelPath = "../../migrations"
+	dexIDEmail           = "Cg0wLTM4NS0yODA4OS0wEgZnb29nbGU"
+	dexIDWallet          = "CioweGYzOUZkNmU1MWFhZDg4RjZGNGNlNmFCODgyNzI3OWNmZkZiOTIyNjYSBHdlYjM"
+	userWallet           = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
+	userEmail            = "kilgore@kilgore.trout"
+	emailProvider        = "google"
+	emailBasedAuthToken  = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJnb29nbGUiLCJzdWIiOiJDZzB3TFRNNE5TMHlPREE0T1Mwd0VnWm5iMjluYkdVIiwiYXVkIjoiZXhhbXBsZS1hcHAiLCJleHAiOjE5MzM2ODgxMjEsImlhdCI6MTcxNzY4ODEyMSwiYXRfaGFzaCI6Ild5RjhCcm8zNWxKUnIzSjdTTHJoa3ciLCJlbWFpbCI6ImtpbGdvcmVAa2lsZ29yZS50cm91dCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiS2lsZ29yZSBUcm91dCJ9.Vie9vL3o8duL2XSv4q9kBISuFD2N-MGrKDGpHObD47JpEFzaT5RI2dv9EY6ckOHIbggqFIOfpBuK30J0bgBOnZXJFg_nxekZGKkBaBHg6_y6cKDX4Mw9zzTU_zu3Wc-NgEJ1JZJWR2r7AHv_FxvyRDj6BuC3akfUli4ApA_lSdl4VL-2z4yocKNxHWxdEJBp4LOSOix-lfQKseHaHqmA4b3SAgwL_LcoW3-4wkK0dtW5Uzk_Bo64DTMAiQ239vMa_JMclt9R1X4s-0NOOcIhXPmYxDDS9l8J0u1_p_DRuAhkn3nFdXtQ0MhYFhQWBb9hVPINBEZsupIEyM-dpe-iOA"
+	walletBasedAuthToken = "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJ3ZWIzIiwic3ViIjoiQ2lvd2VHWXpPVVprTm1VMU1XRmhaRGc0UmpaR05HTmxObUZDT0RneU56STNPV05tWmtaaU9USXlOallTQkhkbFlqTSIsImF1ZCI6ImV4YW1wbGUtYXBwIiwiZXhwIjoxOTMzNjg5MDAyLCJpYXQiOjE3MTc2ODkwMDIsImF0X2hhc2giOiJtR2NsQ3Y3ekR4Z1FZWGtVaDFwdV9RIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJldGhlcmV1bV9hZGRyZXNzIjoiMHhmMzlGZDZlNTFhYWQ4OEY2RjRjZTZhQjg4MjcyNzljZmZGYjkyMjY2IiwibmFtZSI6IjB4ZjM5RmQ2ZTUxYWFkODhGNkY0Y2U2YUI4ODI3Mjc5Y2ZmRmI5MjI2NiJ9.lYk7Odm51_tbEBfDkLwKeZUGWN_T8FwezIipxFWENRmFgzxFeX9KK0qm0eEpBoEEXcsaDPA52eYnVd-XTOq5ymBJW3eEcwr3EOkUsv-FlwD9fZXVD9X62-HXLNkA0lpxxY9WLc3JjgSM2Gnn2001Pmj5uNcYfGH2m6EBXli7EJufOHb8_D6S3lQZNpK_bNidOvu6pP1v3F3hFZWJl0aG4VMoJFPuJo3Wv1lToq4Jc9ZuxUJ7VqYRNPRCPFRFUWel6in4Rf1GpT1X-GyuILDiwn_MOwpc1ndw2YvabfTcZsiCflmtB1DsEC6bJXhFbEE7pUao_PmhpgBcISbDhsETqw"
+)
 
 type AccountControllerTestSuite struct {
 	suite.Suite
@@ -60,13 +71,19 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 		JWKSetURLs: []string{s.settings.JWTKeySetURL},
 	}))
 
-	s.controller = s.RecreateAccountController()
-}
-
-func (s *AccountControllerTestSuite) RecreateAccountController() *Controller {
 	acctCont, err := NewAccountController(s.ctx, s.pdb, s.eventService, s.identityService, s.emailService, s.settings, test.Logger())
-	s.Require().NoError(err)
-	return acctCont
+	s.controller = acctCont
+	s.app.Get("/", s.controller.GetOrCreateUserAccount)
+	s.app.Put("/", s.controller.UpdateUser)
+	s.app.Delete("/", s.controller.DeleteUser)
+
+	s.app.Post("/agree-tos", s.controller.AgreeTOS)
+	s.app.Post("/referral/submit", s.controller.SubmitReferralCode)
+	s.app.Post("/link/wallet/token", s.controller.LinkWalletToken)
+	s.app.Post("/link/email/token", s.controller.LinkEmailToken)
+	s.app.Post("/link/email", s.controller.LinkEmail)
+	s.app.Post("/link/email/confirm", s.controller.ConfirmEmail)
+
 }
 
 // TearDownSuite cleanup at end by terminating containers
@@ -91,14 +108,8 @@ func TestDevicesControllerTestSuite(t *testing.T) {
 }
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_CreateAndDelete() {
-	userEmail := "test_email@gmail.com"
-	dexID := ksuid.New().String()
-	userAuth := test.EmailBasedAuthInjector(dexID, userEmail)
-	s.app.Get("/", userAuth, s.controller.GetOrCreateUserAccount)
-	s.app.Delete("/", userAuth, s.controller.DeleteUser)
-
-	// Get Request Create Account
-	getReq := test.BuildRequest("GET", "/", "")
+	// Create Account
+	getReq := test.BuildRequest("GET", "/", "", emailBasedAuthToken)
 	getResp, _ := s.app.Test(getReq)
 	getBody, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
@@ -110,92 +121,125 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_CreateAndDelete() {
 	}
 
 	s.Assert().Equal(userEmail, userResp.Email.Address)
+	s.Assert().True(userResp.Email.Confirmed)
 	s.Assert().Nil(userResp.Web3)
 
 	// Delete Account
-	s.identityService = test.NewIdentityService(false) // need to reset mock to return false
-	s.controller = s.RecreateAccountController()
-	deleteReq := test.BuildRequest("DELETE", "/", "")
-	deleteResp, _ := s.app.Test(deleteReq)
+	deleteReq := test.BuildRequest("DELETE", "/", "", emailBasedAuthToken)
+	deleteResp, err := s.app.Test(deleteReq)
+	s.Require().NoError(err)
 	_, err = io.ReadAll(deleteReq.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, deleteResp.StatusCode)
 
 }
 
-// func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
-// 	acct := models.Account{
-// 		ID:    ksuid.New().String(),
-// 		DexID: ksuid.New().String(),
-// 	}
+func (s *AccountControllerTestSuite) Test_EmailFirstAccount_UpdateAccount() {
+	acct := models.Account{
+		ID:    ksuid.New().String(),
+		DexID: dexIDEmail,
+	}
 
-// 	eml := models.Email{
-// 		AccountID:    acct.ID,
-// 		DexID:        acct.DexID,
-// 		EmailAddress: "test_email@gmail.com",
-// 		Confirmed:    true,
-// 	}
+	eml := models.Email{
+		AccountID:    acct.ID,
+		DexID:        dexIDEmail,
+		EmailAddress: userEmail,
+		Confirmed:    true,
+	}
 
-// 	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
-// 		s.T().Fatal(err)
-// 	}
+	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
 
-// 	if err := eml.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
-// 		s.T().Fatal(err)
-// 	}
+	if err := eml.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
 
-// 	wallet := "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
-// 	userAuth := test.EmailBasedAuthInjector(acct.DexID, eml.EmailAddress)
-// 	s.app.Get("/", userAuth, s.controller.GetOrCreateUserAccount)
-// 	s.app.Post("/link/wallet/token", userAuth, s.controller.LinkWalletToken)
+	updateBody := UserUpdateRequest{
+		CountryCode: "USA",
+	}
+	updateBodyBytes, _ := json.Marshal(updateBody)
 
-// 	// Link Wallet
-// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-// 		"provider_id":      "web3",
-// 		"sub":              acct.DexID,
-// 		"ethereum_address": wallet,
-// 	})
+	putReq := test.BuildRequest("PUT", "/", string(updateBodyBytes), emailBasedAuthToken)
+	putResp, _ := s.app.Test(putReq)
+	putBody, err := io.ReadAll(putResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(200, putResp.StatusCode)
 
-// 	tokenString, err := token.SignedString(secretKey)
-// 	s.Require().NoError(err)
+	var userResp UserResponse
+	if err := json.Unmarshal(putBody, &userResp); err != nil {
+		s.Require().NoError(err)
+	}
 
-// 	var tb TokenBody
-// 	tb.Token = tokenString
-// 	b, _ := json.Marshal(tb)
+	s.Assert().NotNil(userResp.Email)
+	s.Assert().Equal(userEmail, userResp.Email.Address)
+	s.Assert().Equal(updateBody.CountryCode, userResp.CountryCode)
+	test.DeleteAll(s.pdb.DBS().Writer)
 
-// 	putReq := test.BuildRequest("POST", "/link/wallet/token", string(b))
-// 	putResp, _ := s.app.Test(putReq)
-// 	_, err = io.ReadAll(putResp.Body)
-// 	s.Require().NoError(err)
-// 	s.Assert().Equal(204, putResp.StatusCode)
+}
 
-// 	check := test.BuildRequest("GET", "/", "")
-// 	checkResp, _ := s.app.Test(check)
-// 	body, err := io.ReadAll(checkResp.Body)
-// 	s.Require().NoError(err)
-// 	s.Assert().Equal(200, checkResp.StatusCode)
+func (s *AccountControllerTestSuite) Test_EmailFirstAccount_AgreeTOS() {
+	acct := models.Account{
+		ID:    ksuid.New().String(),
+		DexID: dexIDEmail,
+	}
 
-// 	var resp UserResponse
-// 	if err := json.Unmarshal(body, &check); err != nil {
-// 		s.Require().NoError(err)
-// 	}
+	eml := models.Email{
+		AccountID:    acct.ID,
+		DexID:        dexIDEmail,
+		EmailAddress: userEmail,
+		Confirmed:    true,
+	}
 
-// 	s.Assert().Equal(eml.EmailAddress, resp.Email.Address)
-// 	s.Assert().NotNil(resp.Web3)
-// 	s.Assert().Equal(resp.Web3.Address.Hex(), wallet)
-// }
+	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
 
-func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
-	userWallet := "test_email@gmail.com"
-	userEmail := "0x71C7656EC7ab88b098defB751B7401B5f6d8976F"
-	dexID := ksuid.New().String()
-	userAuth := test.WalletBasedAuthInjector(dexID, common.HexToAddress(userWallet))
-	s.app.Get("/", userAuth, s.controller.GetOrCreateUserAccount)
-	s.app.Post("/link/email/token", userAuth, s.controller.LinkWalletToken)
-	s.app.Delete("/", userAuth, s.controller.DeleteUser)
+	if err := eml.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
 
-	// Get Request Create Account
-	getReq := test.BuildRequest("GET", "/", "")
+	putReq := test.BuildRequest("POST", "/agree-tos", "", emailBasedAuthToken)
+	putResp, _ := s.app.Test(putReq)
+	_, err := io.ReadAll(putResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, putResp.StatusCode)
+	test.DeleteAll(s.pdb.DBS().Writer)
+}
+
+func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
+	acct := models.Account{
+		ID:    ksuid.New().String(),
+		DexID: dexIDEmail,
+	}
+
+	eml := models.Email{
+		AccountID:    acct.ID,
+		DexID:        dexIDEmail,
+		EmailAddress: userEmail,
+		Confirmed:    true,
+	}
+
+	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	if err := eml.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	linkWalletBody := TokenBody{
+		Token: walletBasedAuthToken,
+	}
+	linkWalletBodyBytes, _ := json.Marshal(linkWalletBody)
+
+	putReq := test.BuildRequest("POST", "/link/wallet/token", string(linkWalletBodyBytes), emailBasedAuthToken)
+	putResp, _ := s.app.Test(putReq)
+	_, err := io.ReadAll(putResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, putResp.StatusCode)
+
+	getReq := test.BuildRequest("GET", "/", "", emailBasedAuthToken)
 	getResp, _ := s.app.Test(getReq)
 	getBody, err := io.ReadAll(getResp.Body)
 	s.Require().NoError(err)
@@ -206,18 +250,167 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 		s.Require().NoError(err)
 	}
 
+	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(userEmail, userResp.Email.Address)
-	s.Assert().Nil(userResp.Web3)
+	s.Assert().NotNil(userResp.Web3)
+	s.Assert().Equal(userResp.Web3.Address.Hex(), userWallet)
+	test.DeleteAll(s.pdb.DBS().Writer)
+}
+
+func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
+	// Create Account
+	getReq := test.BuildRequest("GET", "/", "", walletBasedAuthToken)
+	getResp, _ := s.app.Test(getReq)
+	getBody, err := io.ReadAll(getResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(200, getResp.StatusCode)
+
+	var userResp UserResponse
+	if err := json.Unmarshal(getBody, &userResp); err != nil {
+		s.Require().NoError(err)
+	}
+
+	s.Assert().Nil(userResp.Email)
+	s.Assert().Equal(userWallet, userResp.Web3.Address.Hex())
+	s.Assert().True(userResp.Web3.Confirmed)
+
+	// Set identity svc to be consistent with eligible deletion state
+	test.IdentityServiceResponse = false
 
 	// Delete Account
-	s.identityService = test.NewIdentityService(false) // need to reset mock to return false
-	s.controller = s.RecreateAccountController()
-	deleteReq := test.BuildRequest("DELETE", "/", "")
-	deleteResp, _ := s.app.Test(deleteReq)
+	deleteReq := test.BuildRequest("DELETE", "/", "", walletBasedAuthToken)
+	deleteResp, err := s.app.Test(deleteReq)
+	s.Require().NoError(err)
 	_, err = io.ReadAll(deleteReq.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, deleteResp.StatusCode)
+	test.DeleteAll(s.pdb.DBS().Writer)
 
+}
+
+func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
+	acct := models.Account{
+		ID:    ksuid.New().String(),
+		DexID: dexIDWallet,
+	}
+
+	wallet := models.Wallet{
+		AccountID:       acct.ID,
+		DexID:           acct.DexID,
+		EthereumAddress: common.Hex2Bytes(strings.Replace(userWallet, "0x", "", 1)),
+		Confirmed:       true,
+	}
+
+	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	if err := wallet.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	linkEmailBody := TokenBody{
+		Token: emailBasedAuthToken,
+	}
+	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
+
+	putReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), walletBasedAuthToken)
+	putResp, _ := s.app.Test(putReq)
+	_, err := io.ReadAll(putResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, putResp.StatusCode)
+
+	getReq := test.BuildRequest("GET", "/", "", walletBasedAuthToken)
+	getResp, _ := s.app.Test(getReq)
+	getBody, err := io.ReadAll(getResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(200, getResp.StatusCode)
+
+	var userResp UserResponse
+	if err := json.Unmarshal(getBody, &userResp); err != nil {
+		s.Require().NoError(err)
+	}
+
+	s.Assert().NotNil(userResp.Email)
+	s.Assert().Equal(userEmail, userResp.Email.Address)
+	s.Assert().NotNil(userResp.Web3)
+	s.Assert().Equal(userResp.Web3.Address.Hex(), userWallet)
+	test.DeleteAll(s.pdb.DBS().Writer)
+}
+
+func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() {
+	acct := models.Account{
+		ID:    ksuid.New().String(),
+		DexID: dexIDWallet,
+	}
+
+	wallet := models.Wallet{
+		AccountID:       acct.ID,
+		DexID:           acct.DexID,
+		EthereumAddress: common.Hex2Bytes(strings.Replace(userWallet, "0x", "", 1)),
+		Confirmed:       true,
+	}
+
+	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	if err := wallet.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	putReq := test.BuildRequest("POST", "/link/email", "", walletBasedAuthToken)
+	putResp, _ := s.app.Test(putReq)
+	_, err := io.ReadAll(putResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, putResp.StatusCode)
+
+	confirmReq := test.BuildRequest("POST", "/link/email/confirm", "", walletBasedAuthToken)
+	confirmResp, _ := s.app.Test(confirmReq)
+	_, err = io.ReadAll(confirmResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(204, putResp.StatusCode)
+	test.DeleteAll(s.pdb.DBS().Writer)
+}
+
+func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
+	refAcct, err := test.NewAccount(s.pdb.DBS().Writer) // Create Referrer Account
+	s.Require().NoError(err)
+
+	acct := models.Account{
+		ID:    ksuid.New().String(),
+		DexID: dexIDWallet,
+	}
+
+	wallet := models.Wallet{
+		AccountID:       acct.ID,
+		DexID:           acct.DexID,
+		EthereumAddress: common.Hex2Bytes(strings.Replace(userWallet, "0x", "", 1)),
+		Confirmed:       true,
+	}
+
+	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	if err := wallet.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
+		s.T().Fatal(err)
+	}
+
+	referralCodeBody := SubmitReferralCodeRequest{
+		ReferralCode: refAcct.ReferralCode.String,
+	}
+	referralCodeBodyBytes, _ := json.Marshal(referralCodeBody)
+
+	// Set identity svc to be consistent with referral eligibility
+	test.IdentityServiceResponse = false
+
+	postReq := test.BuildRequest("POST", "/referral/submit", string(referralCodeBodyBytes), walletBasedAuthToken)
+	postResp, _ := s.app.Test(postReq)
+	_, err = io.ReadAll(postResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(200, postResp.StatusCode)
+	test.DeleteAll(s.pdb.DBS().Writer)
 }
 
 func (s *AccountControllerTestSuite) Test_GenerateReferralCode() {
@@ -233,7 +426,7 @@ func (s *AccountControllerTestSuite) Test_GenerateReferralCode() {
 }
 
 func (s *AccountControllerTestSuite) Test_JWTDecode() {
-	bodyToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJtb2NrIiwic3ViIjoiQ2cwd0xUTTROUzB5T0RBNE9TMHdFZ1J0YjJOciIsImF1ZCI6ImV4YW1wbGUtYXBwIiwiZXhwIjoxOTMzNjg1NzA4LCJpYXQiOjE3MTc2ODU3MDgsImF0X2hhc2giOiJHY2dORHBuWlU2SDdDNWJGcF9ISDdRIiwiZW1haWwiOiJraWxnb3JlQGtpbGdvcmUudHJvdXQiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwibmFtZSI6IktpbGdvcmUgVHJvdXQifQ.h2L6p0NPNIVKn7cB1armV2BCO3h7VjcJMKKRZO4-87l5XrTr5g2zHmdviWNubVM-0wkhmT9ZEHukv_ThcBcGAHHGThmihtLLqyWgCuzkGFA34ZHpA6cPMPvRz6gxxOnYq8Gmh4LzNY5VxGjjbQ6KIUFwN5r09IQlrt1SzC7vzgZET6GiSt7N-7VTCGvtfkQ4V6bxkC0dB4FdRGteUZltuht7QCnJLLGict7LS0sTNx3AXVU_uFHaoHgP7EpcG3GK_U89xo-0qLGw1xjvVm8uNx5-6oQ5Wg6vY-O9WYaEfYz7GAfp5qQrxiTeYxznVXz4XOleBktL2wlY6qQr2_oqDw"
+	bodyToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJnb29nbGUiLCJzdWIiOiJDZzB3TFRNNE5TMHlPREE0T1Mwd0VnWm5iMjluYkdVIiwiYXVkIjoiZXhhbXBsZS1hcHAiLCJleHAiOjE5MzM2ODgxMjEsImlhdCI6MTcxNzY4ODEyMSwiYXRfaGFzaCI6Ild5RjhCcm8zNWxKUnIzSjdTTHJoa3ciLCJlbWFpbCI6ImtpbGdvcmVAa2lsZ29yZS50cm91dCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiS2lsZ29yZSBUcm91dCJ9.Vie9vL3o8duL2XSv4q9kBISuFD2N-MGrKDGpHObD47JpEFzaT5RI2dv9EY6ckOHIbggqFIOfpBuK30J0bgBOnZXJFg_nxekZGKkBaBHg6_y6cKDX4Mw9zzTU_zu3Wc-NgEJ1JZJWR2r7AHv_FxvyRDj6BuC3akfUli4ApA_lSdl4VL-2z4yocKNxHWxdEJBp4LOSOix-lfQKseHaHqmA4b3SAgwL_LcoW3-4wkK0dtW5Uzk_Bo64DTMAiQ239vMa_JMclt9R1X4s-0NOOcIhXPmYxDDS9l8J0u1_p_DRuAhkn3nFdXtQ0MhYFhQWBb9hVPINBEZsupIEyM-dpe-iOA"
 	jwkResource, err := keyfunc.NewDefaultCtx(context.Background(), []string{s.settings.JWTKeySetURL})
 	s.Require().NoError(err)
 
@@ -243,8 +436,8 @@ func (s *AccountControllerTestSuite) Test_JWTDecode() {
 
 	claims := getUserAccountInfos(tbClaims)
 
-	s.Require().Equal(claims.DexID, "Cg0wLTM4NS0yODA4OS0wEgRtb2Nr")
-	s.Require().Equal(claims.EmailAddress, "kilgore@kilgore.trout")
-	s.Require().Equal(claims.ProviderID, "mock")
+	s.Require().Equal(claims.DexID, dexIDEmail)
+	s.Require().Equal(claims.EmailAddress, userEmail)
+	s.Require().Equal(claims.ProviderID, emailProvider)
 
 }

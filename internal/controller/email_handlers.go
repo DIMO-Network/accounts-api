@@ -161,7 +161,6 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	// TODO AE: unless we want to allow more than one email to be associated with an account...?
 	if acct.R.Email != nil {
 		return fmt.Errorf("account already has linked email")
-
 	}
 
 	var tb TokenBody
@@ -178,7 +177,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	infos := getUserAccountInfos(tbClaims)
 	email := models.Email{
 		AccountID:    acct.ID,
-		DexID:        infos.DexID,
+		DexID:        acct.DexID,
 		Confirmed:    true,
 		EmailAddress: infos.EmailAddress,
 	}

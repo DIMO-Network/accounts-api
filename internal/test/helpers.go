@@ -16,6 +16,7 @@ import (
 
 	"accounts-api/internal/config"
 	"accounts-api/internal/services"
+	"accounts-api/models"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/docker/go-connections/nat"
@@ -29,6 +30,9 @@ import (
 	"github.com/segmentio/ksuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 const testDbName = "accounts_api"
@@ -223,29 +227,23 @@ func SetupAppFiber(logger zerolog.Logger) *fiber.App {
 	return app
 }
 
-func BuildRequest(method, url, body string) *http.Request {
+func BuildRequest(method, url, body, header string) *http.Request {
 	req, _ := http.NewRequest(
 		method,
 		url,
 		strings.NewReader(body),
 	)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+header)
 
 	return req
 }
 
 // AuthInjectorTestHandler injects fake jwt with sub
 func EmailBasedAuthInjector(dexID, email string) fiber.Handler {
-	// provider, err := oidc.NewProvider(context.Background(), "http://127.0.0.1:5556/dex/keys")
-	// provider.
 	return func(c *fiber.Ctx) error {
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"provider_id": "google",
-			"sub":         dexID,
-			"email":       email,
-		})
-
-		c.Locals("user", token)
+		emailToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJnb29nbGUiLCJzdWIiOiJDZzB3TFRNNE5TMHlPREE0T1Mwd0VnWm5iMjluYkdVIiwiYXVkIjoiZXhhbXBsZS1hcHAiLCJleHAiOjE5MzM2ODgxMjEsImlhdCI6MTcxNzY4ODEyMSwiYXRfaGFzaCI6Ild5RjhCcm8zNWxKUnIzSjdTTHJoa3ciLCJlbWFpbCI6ImtpbGdvcmVAa2lsZ29yZS50cm91dCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiS2lsZ29yZSBUcm91dCJ9.Vie9vL3o8duL2XSv4q9kBISuFD2N-MGrKDGpHObD47JpEFzaT5RI2dv9EY6ckOHIbggqFIOfpBuK30J0bgBOnZXJFg_nxekZGKkBaBHg6_y6cKDX4Mw9zzTU_zu3Wc-NgEJ1JZJWR2r7AHv_FxvyRDj6BuC3akfUli4ApA_lSdl4VL-2z4yocKNxHWxdEJBp4LOSOix-lfQKseHaHqmA4b3SAgwL_LcoW3-4wkK0dtW5Uzk_Bo64DTMAiQ239vMa_JMclt9R1X4s-0NOOcIhXPmYxDDS9l8J0u1_p_DRuAhkn3nFdXtQ0MhYFhQWBb9hVPINBEZsupIEyM-dpe-iOA"
+		c.Locals("user", emailToken)
 		return c.Next()
 	}
 }
@@ -304,19 +302,20 @@ func NewEventService() services.EventService {
 }
 
 type identityService struct {
-	Pass bool
 }
 
+var IdentityServiceResponse bool = true
+
 func (i *identityService) VehiclesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	return i.Pass, nil
+	return IdentityServiceResponse, nil
 }
 
 func (i *identityService) AftermarketDevicesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	return i.Pass, nil
+	return IdentityServiceResponse, nil
 }
 
 func NewIdentityService(pass bool) services.IdentityService {
-	return &identityService{Pass: pass}
+	return &identityService{}
 }
 
 type emailService struct {
@@ -328,4 +327,49 @@ func NewEmailService() services.EmailService {
 
 func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate *template.Template, userEmail, confCode string) error {
 	return nil
+}
+
+func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
+	acct := models.Account{
+		ID:           ksuid.New().String(),
+		DexID:        ksuid.New().String(),
+		ReferralCode: null.StringFrom("ABCDEFGHIJKL"),
+	}
+
+	eml := models.Email{
+		AccountID:    acct.ID,
+		DexID:        acct.DexID,
+		EmailAddress: "testemail@gmail.com",
+		Confirmed:    true,
+	}
+
+	wallet := models.Wallet{
+		AccountID:       acct.ID,
+		DexID:           acct.DexID,
+		EthereumAddress: common.HexToAddress("0x1234567890123456789012345678901234567890").Bytes(),
+		Confirmed:       true,
+	}
+
+	if err := acct.Insert(context.Background(), exec, boil.Infer()); err != nil {
+		return nil, err
+	}
+
+	if err := eml.Insert(context.Background(), exec, boil.Infer()); err != nil {
+		return nil, err
+	}
+
+	if err := wallet.Insert(context.Background(), exec, boil.Infer()); err != nil {
+		return nil, err
+	}
+
+	return models.Accounts(
+		models.AccountWhere.ID.EQ(acct.ID),
+		qm.Load(models.AccountRels.Wallet),
+		qm.Load(models.AccountRels.Email),
+	).One(context.Background(), exec)
+}
+
+func DeleteAll(exec boil.ContextExecutor) error {
+	_, err := exec.Exec(`TRUNCATE TABLE accounts_api.accounts CASCADE;`)
+	return err
 }

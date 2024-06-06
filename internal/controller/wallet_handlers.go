@@ -7,7 +7,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
@@ -58,10 +57,9 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
-		DexID:           infos.DexID,
+		DexID:           userAccount.DexID,
 		Confirmed:       true,
-		// TODO AE: what's supposed to be here?
-		Provider: null.StringFrom("Turnkey"), // where does this come from?
+		// TODO AE: What should the provider be? In-App? Web3?
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {

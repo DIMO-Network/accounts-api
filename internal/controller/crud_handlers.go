@@ -51,13 +51,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() //nolint
-
-	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
 	if err != nil {
 		d.log.Err(err).Msg("failed to get user account")
 		return err
@@ -68,37 +62,17 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	if body.CountryCode.Defined {
-		if body.CountryCode.Value.Valid && !inSorted(d.countryCodes, body.CountryCode.Value.String) {
-			return errors.New("invalid country code")
-		}
-		acct.CountryCode = body.CountryCode.Value
+	if body.CountryCode != "" {
+		acct.CountryCode = null.StringFrom(body.CountryCode)
 	}
 
-	// TODO AE: are we still allowing this type of update or will the user have to go through the Link endpoint?
-	// assuming we are no longer allowing someone to link an eth addr through this endpoint
-	if body.Email.Address.Defined {
-		var email models.Email
-		if acct.R.Email == nil {
-			email.AccountID = acct.ID
-			email.Confirmed = false
-		}
-
-		if !emailPattern.MatchString(body.Email.Address.Value.String) {
-			return err
-		}
-
-		email.EmailAddress = body.Email.Address.Value.String
-
-		if _, err := email.Update(c.Context(), tx, boil.Infer()); err != nil {
-			return err
-		}
+	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
+		return err
 	}
 
 	userResp, err := d.formatUserAcctResponse(c.Context(), acct)
 	if err != nil {
 		return err
-
 	}
 
 	return c.JSON(userResp)
@@ -143,7 +117,6 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	if _, err := acct.Delete(c.Context(), tx); err != nil {
-		fmt.Println("Error: ", err)
 		return err
 	}
 
@@ -167,24 +140,14 @@ func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
 		return err
 	}
 
-	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback() //nolint
-
-	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
 	if err != nil {
 		return err
 	}
 
 	acct.AgreedTosAt = null.TimeFrom(time.Now())
 
-	if _, err := acct.Update(c.Context(), tx, boil.Infer()); err != nil {
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
+	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
 		return err
 	}
 

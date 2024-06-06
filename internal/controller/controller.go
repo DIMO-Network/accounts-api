@@ -73,6 +73,7 @@ func NewAccountController(ctx context.Context, dbs db.Store, eventService servic
 		allowedLateness: settings.AllowableEmailConfirmationLateness * time.Minute,
 		countryCodes:    countryCodes,
 		eventService:    eventService,
+		emailService:    emlSvc,
 		identityService: idSvc,
 		jwkResource:     jwkResource,
 		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),
@@ -151,12 +152,12 @@ func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, erro
 	return acct, nil
 }
 
-func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, tx *sql.Tx) (*models.Account, error) {
+func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, exec boil.ContextExecutor) (*models.Account, error) {
 	return models.Accounts(
 		models.AccountWhere.DexID.EQ(userAccount.DexID),
 		qm.Load(models.AccountRels.Wallet),
 		qm.Load(models.AccountRels.Email),
-	).One(ctx, tx)
+	).One(ctx, exec)
 }
 
 func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *sql.Tx) error {
@@ -228,7 +229,14 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 
 func (d *Controller) formatUserAcctResponse(ctx context.Context, userAccount *models.Account) (*UserResponse, error) {
 	userResp := &UserResponse{
-		ID: userAccount.ID,
+		ID:           userAccount.ID,
+		CreatedAt:    userAccount.CreatedAt,
+		ReferralCode: userAccount.ReferralCode.String,
+		ReferredBy:   userAccount.ReferredBy.String,
+		ReferredAt:   userAccount.ReferredAt.Time,
+		AgreedTOSAt:  userAccount.AgreedTosAt.Time,
+		CountryCode:  userAccount.CountryCode.String,
+		// UpdatedAt:    userAccount.UpdatedAt, add this!!
 	}
 
 	if userAccount.ReferredBy.Valid {
