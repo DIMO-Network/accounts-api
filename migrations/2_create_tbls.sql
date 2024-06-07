@@ -6,7 +6,8 @@ SET search_path TO accounts_api, public;
 CREATE TABLE accounts(
     id CHAR(27),
     dex_id TEXT UNIQUE NOT NULL,
-    created_at timestamptz NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT NOW(),
+    updated_at timestamptz NOT NULL DEFAULT NOW(),
     country_code CHAR(3),
     customer_io_id TEXT,
     agreed_tos_at timestamptz DEFAULT NOW(),
@@ -29,8 +30,7 @@ CREATE TABLE emails(
 );
 
 CREATE TYPE wallet_provider AS ENUM(
-    'WalletConnect',
-    'Turnkey',
+    'In-App',
     'Other'
     );
 

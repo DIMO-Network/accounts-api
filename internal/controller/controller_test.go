@@ -419,6 +419,22 @@ func (s *AccountControllerTestSuite) Test_GenerateReferralCode() {
 	s.Assert().Equal(numUniqueCodes, len(uniqueCodes))
 }
 
+func (s *AccountControllerTestSuite) Test_ConflictingEmail() {
+	// TODO: user attempts to add an email that is already associated with an account
+}
+
+func (s *AccountControllerTestSuite) Test_ConflictingWallet() {
+	// TODO: user attempts to add a wallet that is already associated with an account
+}
+
+func (s *AccountControllerTestSuite) Test_EmailFirst_AlternativeSignIn() {
+	// TODO: user creates email first account and then attempts to sign in with wallet
+}
+
+func (s *AccountControllerTestSuite) Test_WalletFirst_AlternativeSignIn() {
+	// TODO: user creates wallet first account and then attempts to sign in with email (after validating email addr)
+}
+
 func (s *AccountControllerTestSuite) Test_JWTDecode() {
 	bodyToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJnb29nbGUiLCJzdWIiOiJDZzB3TFRNNE5TMHlPREE0T1Mwd0VnWm5iMjluYkdVIiwiYXVkIjoiZXhhbXBsZS1hcHAiLCJleHAiOjE5MzM2ODgxMjEsImlhdCI6MTcxNzY4ODEyMSwiYXRfaGFzaCI6Ild5RjhCcm8zNWxKUnIzSjdTTHJoa3ciLCJlbWFpbCI6ImtpbGdvcmVAa2lsZ29yZS50cm91dCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiS2lsZ29yZSBUcm91dCJ9.Vie9vL3o8duL2XSv4q9kBISuFD2N-MGrKDGpHObD47JpEFzaT5RI2dv9EY6ckOHIbggqFIOfpBuK30J0bgBOnZXJFg_nxekZGKkBaBHg6_y6cKDX4Mw9zzTU_zu3Wc-NgEJ1JZJWR2r7AHv_FxvyRDj6BuC3akfUli4ApA_lSdl4VL-2z4yocKNxHWxdEJBp4LOSOix-lfQKseHaHqmA4b3SAgwL_LcoW3-4wkK0dtW5Uzk_Bo64DTMAiQ239vMa_JMclt9R1X4s-0NOOcIhXPmYxDDS9l8J0u1_p_DRuAhkn3nFdXtQ0MhYFhQWBb9hVPINBEZsupIEyM-dpe-iOA"
 	jwkResource, err := keyfunc.NewDefaultCtx(context.Background(), []string{s.settings.JWTKeySetURL})

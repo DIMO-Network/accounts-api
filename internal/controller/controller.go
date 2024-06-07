@@ -191,7 +191,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 			DexID:           userAccount.DexID,
 			EthereumAddress: mixAddr.Address().Bytes(),
 			Confirmed:       true,
-			Provider:        null.StringFrom("Turnkey"), // where are we getting this from? what are valid options?
+			// TODO AE: where are we getting the provider from? how is this passed?
 		}
 
 		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -236,7 +236,7 @@ func (d *Controller) formatUserAcctResponse(ctx context.Context, acct *models.Ac
 		ReferredAt:   acct.ReferredAt.Time,
 		AgreedTOSAt:  acct.AgreedTosAt.Time,
 		CountryCode:  acct.CountryCode.String,
-		// UpdatedAt:    userAccount.UpdatedAt, add this!!
+		UpdatedAt:    acct.UpdatedAt,
 	}
 
 	if acct.ReferredBy.Valid {

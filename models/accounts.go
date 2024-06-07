@@ -27,6 +27,7 @@ type Account struct {
 	ID           string      `boil:"id" json:"id" toml:"id" yaml:"id"`
 	DexID        string      `boil:"dex_id" json:"dex_id" toml:"dex_id" yaml:"dex_id"`
 	CreatedAt    time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt    time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	CountryCode  null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
 	CustomerIoID null.String `boil:"customer_io_id" json:"customer_io_id,omitempty" toml:"customer_io_id" yaml:"customer_io_id,omitempty"`
 	AgreedTosAt  null.Time   `boil:"agreed_tos_at" json:"agreed_tos_at,omitempty" toml:"agreed_tos_at" yaml:"agreed_tos_at,omitempty"`
@@ -42,6 +43,7 @@ var AccountColumns = struct {
 	ID           string
 	DexID        string
 	CreatedAt    string
+	UpdatedAt    string
 	CountryCode  string
 	CustomerIoID string
 	AgreedTosAt  string
@@ -52,6 +54,7 @@ var AccountColumns = struct {
 	ID:           "id",
 	DexID:        "dex_id",
 	CreatedAt:    "created_at",
+	UpdatedAt:    "updated_at",
 	CountryCode:  "country_code",
 	CustomerIoID: "customer_io_id",
 	AgreedTosAt:  "agreed_tos_at",
@@ -64,6 +67,7 @@ var AccountTableColumns = struct {
 	ID           string
 	DexID        string
 	CreatedAt    string
+	UpdatedAt    string
 	CountryCode  string
 	CustomerIoID string
 	AgreedTosAt  string
@@ -74,6 +78,7 @@ var AccountTableColumns = struct {
 	ID:           "accounts.id",
 	DexID:        "accounts.dex_id",
 	CreatedAt:    "accounts.created_at",
+	UpdatedAt:    "accounts.updated_at",
 	CountryCode:  "accounts.country_code",
 	CustomerIoID: "accounts.customer_io_id",
 	AgreedTosAt:  "accounts.agreed_tos_at",
@@ -210,6 +215,7 @@ var AccountWhere = struct {
 	ID           whereHelperstring
 	DexID        whereHelperstring
 	CreatedAt    whereHelpertime_Time
+	UpdatedAt    whereHelpertime_Time
 	CountryCode  whereHelpernull_String
 	CustomerIoID whereHelpernull_String
 	AgreedTosAt  whereHelpernull_Time
@@ -220,6 +226,7 @@ var AccountWhere = struct {
 	ID:           whereHelperstring{field: "\"accounts_api\".\"accounts\".\"id\""},
 	DexID:        whereHelperstring{field: "\"accounts_api\".\"accounts\".\"dex_id\""},
 	CreatedAt:    whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
+	UpdatedAt:    whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
 	CountryCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
 	CustomerIoID: whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"customer_io_id\""},
 	AgreedTosAt:  whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"agreed_tos_at\""},
@@ -286,9 +293,9 @@ func (r *accountR) GetDexWallet() *Wallet {
 type accountL struct{}
 
 var (
-	accountAllColumns            = []string{"id", "dex_id", "created_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
-	accountColumnsWithoutDefault = []string{"id", "dex_id", "created_at"}
-	accountColumnsWithDefault    = []string{"country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountAllColumns            = []string{"id", "dex_id", "created_at", "updated_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountColumnsWithoutDefault = []string{"id", "dex_id"}
+	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
 )
@@ -1365,6 +1372,9 @@ func (o *Account) Insert(ctx context.Context, exec boil.ContextExecutor, columns
 		if o.CreatedAt.IsZero() {
 			o.CreatedAt = currTime
 		}
+		if o.UpdatedAt.IsZero() {
+			o.UpdatedAt = currTime
+		}
 	}
 
 	if err := o.doBeforeInsertHooks(ctx, exec); err != nil {
@@ -1441,6 +1451,12 @@ func (o *Account) Insert(ctx context.Context, exec boil.ContextExecutor, columns
 // See boil.Columns.UpdateColumnSet documentation to understand column list inference for updates.
 // Update does not automatically update the record in case of default values. Use .Reload() to refresh the records.
 func (o *Account) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		o.UpdatedAt = currTime
+	}
+
 	var err error
 	if err = o.doBeforeUpdateHooks(ctx, exec); err != nil {
 		return 0, err
@@ -1577,6 +1593,7 @@ func (o *Account) Upsert(ctx context.Context, exec boil.ContextExecutor, updateO
 		if o.CreatedAt.IsZero() {
 			o.CreatedAt = currTime
 		}
+		o.UpdatedAt = currTime
 	}
 
 	if err := o.doBeforeUpsertHooks(ctx, exec); err != nil {

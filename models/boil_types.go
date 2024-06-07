@@ -53,15 +53,13 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 
 // Enum values for WalletProvider
 const (
-	WalletProviderWalletConnect string = "WalletConnect"
-	WalletProviderTurnkey       string = "Turnkey"
-	WalletProviderOther         string = "Other"
+	WalletProviderINAPP string = "In-App"
+	WalletProviderOther string = "Other"
 )
 
 func AllWalletProvider() []string {
 	return []string{
-		WalletProviderWalletConnect,
-		WalletProviderTurnkey,
+		WalletProviderINAPP,
 		WalletProviderOther,
 	}
 }

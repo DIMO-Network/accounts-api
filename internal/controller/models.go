@@ -56,6 +56,8 @@ type UserResponse struct {
 	Web3 *UserResponseWeb3 `json:"web3",omitempty`
 	// CreatedAt is when the user first logged in.
 	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z",omitempty`
+	// UpdatedAt reflects the time of the most recent account changes.
+	UpdatedAt time.Time `json:"updatedAt" swaggertype:"string" example:"2021-12-01T09:00:00Z",omitempty`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode string `json:"countryCode" swaggertype:"string" example:"USA",omitempty`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
