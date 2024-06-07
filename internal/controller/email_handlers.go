@@ -41,9 +41,18 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		}
 	}
 
-	// TODO AE: do we want to allow multiple email addresses to be associated with an account
 	if acct.R.Email != nil && acct.R.Email.Confirmed {
 		return fmt.Errorf("email address already associated with account")
+	}
+
+	if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(userAccount.EmailAddress)).One(c.Context(), tx); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+		if emlAssociated != nil && emlAssociated.Confirmed {
+			// TODO AE: note that this does allow someone to link a non-confirmed email to their account
+			return fmt.Errorf("email address already associated with another account")
+		}
 	}
 
 	confKey := generateConfirmationKey()
@@ -158,7 +167,6 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fmt.Errorf("no wallet associated with user account")
 	}
 
-	// TODO AE: unless we want to allow more than one email to be associated with an account...?
 	if acct.R.Email != nil {
 		return fmt.Errorf("account already has linked email")
 	}

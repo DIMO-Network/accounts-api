@@ -227,36 +227,36 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 	return nil
 }
 
-func (d *Controller) formatUserAcctResponse(ctx context.Context, userAccount *models.Account) (*UserResponse, error) {
+func (d *Controller) formatUserAcctResponse(ctx context.Context, acct *models.Account, wallet *models.Wallet, email *models.Email) (*UserResponse, error) {
 	userResp := &UserResponse{
-		ID:           userAccount.ID,
-		CreatedAt:    userAccount.CreatedAt,
-		ReferralCode: userAccount.ReferralCode.String,
-		ReferredBy:   userAccount.ReferredBy.String,
-		ReferredAt:   userAccount.ReferredAt.Time,
-		AgreedTOSAt:  userAccount.AgreedTosAt.Time,
-		CountryCode:  userAccount.CountryCode.String,
+		ID:           acct.ID,
+		CreatedAt:    acct.CreatedAt,
+		ReferralCode: acct.ReferralCode.String,
+		ReferredBy:   acct.ReferredBy.String,
+		ReferredAt:   acct.ReferredAt.Time,
+		AgreedTOSAt:  acct.AgreedTosAt.Time,
+		CountryCode:  acct.CountryCode.String,
 		// UpdatedAt:    userAccount.UpdatedAt, add this!!
 	}
 
-	if userAccount.ReferredBy.Valid {
-		userResp.ReferredBy = userAccount.ReferredBy.String
-		userResp.ReferredAt = userAccount.ReferredAt.Time
+	if acct.ReferredBy.Valid {
+		userResp.ReferredBy = acct.ReferredBy.String
+		userResp.ReferredAt = acct.ReferredAt.Time
 	}
 
-	if userAccount.R.Email != nil {
+	if email != nil {
 		userResp.Email = &UserResponseEmail{
-			Address:            userAccount.R.Email.EmailAddress,
-			Confirmed:          userAccount.R.Email.Confirmed,
-			ConfirmationSentAt: userAccount.R.Email.ConfirmationSent.Time,
+			Address:            email.EmailAddress,
+			Confirmed:          email.Confirmed,
+			ConfirmationSentAt: email.ConfirmationSent.Time,
 		}
 	}
 
-	if userAccount.R.Wallet != nil {
+	if wallet != nil {
 		userResp.Web3 = &UserResponseWeb3{
-			Address:   common.BytesToAddress(userAccount.R.Wallet.EthereumAddress),
-			Confirmed: userAccount.R.Wallet.Confirmed,
-			Provider:  userAccount.R.Wallet.Provider.String,
+			Address:   common.BytesToAddress(wallet.EthereumAddress),
+			Confirmed: wallet.Confirmed,
+			Provider:  wallet.Provider.String,
 		}
 
 		if web3Used, err := d.identityService.VehiclesOwned(ctx, userResp.Web3.Address); err != nil {

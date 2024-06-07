@@ -27,7 +27,7 @@ func (d *Controller) GetOrCreateUserAccount(c *fiber.Ctx) error {
 		return err
 	}
 
-	userResp, err := d.formatUserAcctResponse(c.Context(), acct)
+	userResp, err := d.formatUserAcctResponse(c.Context(), acct, acct.R.Wallet, acct.R.Email)
 	if err != nil {
 		return err
 	}
@@ -70,7 +70,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	userResp, err := d.formatUserAcctResponse(c.Context(), acct)
+	userResp, err := d.formatUserAcctResponse(c.Context(), acct, acct.R.Wallet, acct.R.Email)
 	if err != nil {
 		return err
 	}

@@ -70,5 +70,10 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	userResp, err := d.formatUserAcctResponse(c.Context(), acct, &wallet, acct.R.Email)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(userResp)
 }

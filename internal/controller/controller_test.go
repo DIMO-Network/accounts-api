@@ -233,20 +233,14 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 	}
 	linkWalletBodyBytes, _ := json.Marshal(linkWalletBody)
 
-	putReq := test.BuildRequest("POST", "/link/wallet/token", string(linkWalletBodyBytes), emailBasedAuthToken)
-	putResp, _ := s.app.Test(putReq)
-	_, err := io.ReadAll(putResp.Body)
+	req := test.BuildRequest("POST", "/link/wallet/token", string(linkWalletBodyBytes), emailBasedAuthToken)
+	resp, _ := s.app.Test(req)
+	body, err := io.ReadAll(resp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(204, putResp.StatusCode)
-
-	getReq := test.BuildRequest("GET", "/", "", emailBasedAuthToken)
-	getResp, _ := s.app.Test(getReq)
-	getBody, err := io.ReadAll(getResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	s.Assert().Equal(200, resp.StatusCode)
 
 	var userResp UserResponse
-	if err := json.Unmarshal(getBody, &userResp); err != nil {
+	if err := json.Unmarshal(body, &userResp); err != nil {
 		s.Require().NoError(err)
 	}
 
@@ -439,5 +433,15 @@ func (s *AccountControllerTestSuite) Test_JWTDecode() {
 	s.Require().Equal(claims.DexID, dexIDEmail)
 	s.Require().Equal(claims.EmailAddress, userEmail)
 	s.Require().Equal(claims.ProviderID, emailProvider)
+
+}
+
+func (s *AccountControllerTestSuite) Test_AlternateAccounts() {
+	// TODO: what if someone links an email and then tries to sign in that way? should allow for this
+	// userID := "CioweDA3RDBBQTdlOTQ0MUFmZmFBRDQ4MTM5Qzk1Q0NmRGFlZGIyZTMzQ2ESBHdlYjM="
+	// data, err := base64.StdEncoding.DecodeString(userID)
+	// if err != nil {
+	// 	log.Fatal("error:", err)
+	// }
 
 }
