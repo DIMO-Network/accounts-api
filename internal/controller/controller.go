@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"sort"
 	"time"
 
 	"accounts-api/internal/config"
@@ -275,9 +274,4 @@ func (d *Controller) formatUserAcctResponse(ctx context.Context, acct *models.Ac
 	}
 
 	return userResp, nil
-}
-
-func inSorted(v []string, x string) bool {
-	i := sort.SearchStrings(v, x)
-	return i < len(v) && v[i] == x
 }

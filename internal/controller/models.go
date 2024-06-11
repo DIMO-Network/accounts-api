@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/volatiletech/null/v8"
 )
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{12}$`)
@@ -26,47 +25,47 @@ type TokenBody struct {
 
 type UserResponseEmail struct {
 	// Address is the email address for the user.
-	Address string `json:"address" swaggertype:"string" example:"koblitz@dimo.zone",omitempty`
+	Address string `json:"address,omitempty" swaggertype:"string" example:"koblitz@dimo.zone"`
 	// Confirmed indicates whether the user has confirmed the address by entering a code.
-	Confirmed bool `example:"false" json:"confirmed",omitempty`
+	Confirmed bool `example:"false" json:"confirmed"`
 	// ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
 	// be present if we've sent an email but the code has not been sent back to us.
-	ConfirmationSentAt time.Time `json:"confirmationSentAt" swaggertype:"string" example:"2021-12-01T09:01:12Z",omitempty`
+	ConfirmationSentAt time.Time `json:"confirmationSentAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
 }
 
 type UserResponseWeb3 struct {
 	// Address is the Ethereum address associated with the user.
-	Address common.Address `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d",omitempty`
+	Address common.Address `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 	// Confirmed indicates whether the user has confirmed the address by signing a challenge
 	// message.
-	Confirmed bool `json:"confirmed" example:"false",omitempty`
+	Confirmed bool `json:"confirmed" example:"false"`
 	// Used indicates whether the user has used this address to perform any on-chain
 	// actions like minting, claiming, or pairing.
-	Used bool `json:"used" example:"false",omitempty`
+	Used bool `json:"used" example:"false"`
 	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
-	Provider string `json:"inApp" example:"false",omitempty`
+	Provider string `json:"inApp" example:"false"`
 }
 
 type UserResponse struct {
 	// ID is the user's DIMO-internal ID.
 	ID string `json:"id" example:"ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"`
 	// Email describes the user's email and the state of its confirmation.
-	Email *UserResponseEmail `json:"email",omitempty`
+	Email *UserResponseEmail `json:"email"`
 	// Web3 describes the user's blockchain account.
-	Web3 *UserResponseWeb3 `json:"web3",omitempty`
+	Web3 *UserResponseWeb3 `json:"web3"`
 	// CreatedAt is when the user first logged in.
-	CreatedAt time.Time `json:"createdAt" swaggertype:"string" example:"2021-12-01T09:00:00Z",omitempty`
+	CreatedAt time.Time `json:"createdAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// UpdatedAt reflects the time of the most recent account changes.
-	UpdatedAt time.Time `json:"updatedAt" swaggertype:"string" example:"2021-12-01T09:00:00Z",omitempty`
+	UpdatedAt time.Time `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
-	CountryCode string `json:"countryCode" swaggertype:"string" example:"USA",omitempty`
+	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
-	AgreedTOSAt time.Time `json:"agreedTosAt" swaggertype:"string" example:"2021-12-01T09:00:41Z",omitempty`
+	AgreedTOSAt time.Time `json:"agreedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
-	ReferralCode string    `json:"referralCode" swaggertype:"string" example:"ANB95N",omitempty`
-	ReferredBy   string    `json:"referredBy" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366",omitempty`
-	ReferredAt   time.Time `json:"referredAt" swaggertype:"string" example:"2021-12-01T09:00:41Z",omitempty`
+	ReferralCode string    `json:"referralCode,omitempty" swaggertype:"string" example:"ANB95N"`
+	ReferredBy   string    `json:"referredBy,omitempty" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
+	ReferredAt   time.Time `json:"referredAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 type SubmitReferralCodeRequest struct {
@@ -84,17 +83,12 @@ type UserCreationEventData struct {
 	Method    string    `json:"method"`
 }
 
-type optionalString struct {
-	Defined bool
-	Value   null.String
-}
-
 // UserUpdateRequest describes a user's request to modify or delete certain fields
 // Currently contains only CountryCode as dedicated endpoints exist for other types
 // of updates a user might make
 type UserUpdateRequest struct {
 	// CountryCode should be a valid ISO 3166-1 alpha-3 country code
-	CountryCode string `json:"countryCode" swaggertype:"string" example:"USA"`
+	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
 }
 
 type ChallengeResponse struct {

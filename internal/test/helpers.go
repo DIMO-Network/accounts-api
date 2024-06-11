@@ -114,6 +114,9 @@ $$ LANGUAGE plpgsql;
 func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Container {
 	dexPort := "5556"
 	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
 	basepath := strings.Replace(wd, "/controller", "", 1)
 	dexCr := testcontainers.ContainerRequest{
 		Image:        "dexidp/dex",

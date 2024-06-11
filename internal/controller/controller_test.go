@@ -26,7 +26,6 @@ import (
 )
 
 var (
-	secretKey            = []byte("secret-key")
 	migrationsDirRelPath = "../../migrations"
 	dexIDEmail           = "Cg0wLTM4NS0yODA4OS0wEgZnb29nbGU"
 	dexIDWallet          = "CioweGYzOUZkNmU1MWFhZDg4RjZGNGNlNmFCODgyNzI3OWNmZkZiOTIyNjYSBHdlYjM"
@@ -72,6 +71,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	}))
 
 	acctCont, err := NewAccountController(s.ctx, s.pdb, s.eventService, s.identityService, s.emailService, s.settings, test.Logger())
+	s.Assert().NoError(err)
 	s.controller = acctCont
 	s.app.Get("/", s.controller.GetOrCreateUserAccount)
 	s.app.Put("/", s.controller.UpdateUser)
@@ -100,7 +100,9 @@ func (s *AccountControllerTestSuite) TearDownSuite() {
 		s.T().Fatal(err)
 	}
 
-	s.app.Shutdown()
+	if err := s.app.Shutdown(); err != nil {
+		s.T().Fatal(err)
+	}
 }
 
 func TestDevicesControllerTestSuite(t *testing.T) {
@@ -174,7 +176,9 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_UpdateAccount() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(userEmail, userResp.Email.Address)
 	s.Assert().Equal(updateBody.CountryCode, userResp.CountryCode)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 
 }
 
@@ -204,7 +208,9 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_AgreeTOS() {
 	_, err := io.ReadAll(putResp.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, putResp.StatusCode)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 }
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
@@ -248,7 +254,9 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 	s.Assert().Equal(userEmail, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Web3)
 	s.Assert().Equal(userResp.Web3.Address.Hex(), userWallet)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 }
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
@@ -278,7 +286,9 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 	_, err = io.ReadAll(deleteReq.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, deleteResp.StatusCode)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 
 }
 
@@ -329,7 +339,9 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 	s.Assert().Equal(userEmail, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Web3)
 	s.Assert().Equal(userResp.Web3.Address.Hex(), userWallet)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 }
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() {
@@ -364,7 +376,9 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 	_, err = io.ReadAll(confirmResp.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, putResp.StatusCode)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 }
 
 func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
@@ -404,7 +418,9 @@ func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
 	_, err = io.ReadAll(postResp.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(200, postResp.StatusCode)
-	test.DeleteAll(s.pdb.DBS().Writer)
+	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
+		s.T().Fatal(err)
+	}
 }
 
 func (s *AccountControllerTestSuite) Test_GenerateReferralCode() {
