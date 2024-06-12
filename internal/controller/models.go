@@ -13,11 +13,6 @@ var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z
 var UserCreationEventType = "com.dimo.zone.user.create"
 var digits = []rune("0123456789")
 
-type ConfirmEmailRequest struct {
-	// Key is the 6-digit number from the confirmation email
-	Key string `json:"key" example:"010990"`
-}
-
 // TODO AE: find out what body will be
 type TokenBody struct {
 	Token string `json:"token"`
@@ -69,8 +64,7 @@ type UserResponse struct {
 }
 
 type SubmitReferralCodeRequest struct {
-	// ReferralCode is the 6-digit, alphanumeric referral code from another user.
-	ReferralCode string `json:"referralCode" example:"ANB95N"`
+	ReferralCode string `json:"referralCode" example:"ANB95NBQA1N5"`
 }
 
 type SubmitReferralCodeResponse struct {
@@ -91,18 +85,28 @@ type UserUpdateRequest struct {
 	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
 }
 
-type ChallengeResponse struct {
-	// Challenge is the message to be signed.
-	Challenge string `json:"challenge"`
-	// ExpiresAt is the time at which the signed challenge will no longer be accepted.
-	ExpiresAt time.Time `json:"expiresAt"`
+// RequestEmailValidation request body used for adding an email that cannot be authenticated via federated sign in to account
+type RequestEmailValidation struct {
+	EmailAddress string `json:"email,omitempty" swaggertype:"string" example:"kilgore@kilgore.trout"`
 }
 
-type ConfirmEthereumRequest struct {
-	// Signature is the result of signing the provided challenge message using the address in
-	// question.
-	Signature string `json:"signature"`
+type CompleteEmailValidation struct {
+	// Key is the 6-digit number from the confirmation email
+	Key string `json:"key" example:"010990"`
 }
+
+// type ChallengeResponse struct {
+// 	// Challenge is the message to be signed.
+// 	Challenge string `json:"challenge"`
+// 	// ExpiresAt is the time at which the signed challenge will no longer be accepted.
+// 	ExpiresAt time.Time `json:"expiresAt"`
+// }
+
+// type ConfirmEthereumRequest struct {
+// 	// Signature is the result of signing the provided challenge message using the address in
+// 	// question.
+// 	Signature string `json:"signature"`
+// }
 
 type AltAccount struct {
 	// Type is the authentication provider, one of "web3", "apple", "google".

@@ -85,18 +85,12 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %q.", body.ReferralCode)
-
 	referralCode := strings.ToUpper(strings.TrimSpace(body.ReferralCode))
-
 	if !referralCodeRegex.MatchString(referralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
 	}
 
-	if acct.ReferralCode.Valid && acct.ReferralCode.String == referralCode {
-		return fiber.NewError(fiber.StatusBadRequest, "Cannot refer self.")
-	}
-
-	referrer, err := models.Accounts(
+	refAcct, err := models.Accounts(
 		models.AccountWhere.ReferralCode.EQ(null.StringFrom(referralCode)),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), tx)
@@ -107,26 +101,26 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return err
 	}
 
-	refWallet := referrer.R.Wallet
-	if refWallet == nil {
-		return fmt.Errorf("referring user %s has no wallet", referrer.ID)
+	referrer := refAcct.R.Wallet
+	if referrer == nil {
+		return fmt.Errorf("referring user %s has no wallet", refAcct.ID)
 	}
 
-	wallet := acct.R.Wallet
-	if wallet == nil {
+	referree := acct.R.Wallet
+	if referree == nil {
 		return fmt.Errorf("referred user %s has no wallet", acct.ID)
 	}
 
-	if common.BytesToAddress(wallet.EthereumAddress) == common.BytesToAddress(refWallet.EthereumAddress) {
+	if common.BytesToAddress(referree.EthereumAddress) == common.BytesToAddress(referrer.EthereumAddress) {
 		return fiber.NewError(fiber.StatusBadRequest, "User and referrer have the same Ethereum address.")
 	}
 
 	// No circular referrals.
-	if referrer.ReferredBy.Valid && referrer.ReferredBy.String == acct.ReferralCode.String {
+	if refAcct.ReferredBy.Valid && refAcct.ReferredBy.String == acct.ReferralCode.String {
 		return fiber.NewError(fiber.StatusBadRequest, "Referrer was referred by this user.")
 	}
 
-	acct.ReferredBy = null.StringFrom(referrer.ReferralCode.String)
+	acct.ReferredBy = null.StringFrom(refAcct.ReferralCode.String)
 	acct.ReferredAt = null.TimeFrom(time.Now())
 	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.ReferredBy, models.AccountColumns.ReferredAt)); err != nil {
 		return err

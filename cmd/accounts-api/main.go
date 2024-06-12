@@ -83,9 +83,12 @@ func main() {
 
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	v1 := app.Group("/v1/account", jwtware.New(jwtware.Config{
-		JWKSetURLs: []string{settings.JWTKeySetURL},
-	}))
+	v1 := app.Group("/v1/account", jwtware.New(
+		jwtware.Config{
+			JWKSetURLs: []string{settings.JWTKeySetURL},
+		},
+		// TODO AE: custom claims
+	))
 
 	idSvc := services.NewIdentityService(&settings)
 	eventSvc := services.NewEventService(&logger, &settings)

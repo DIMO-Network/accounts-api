@@ -28,6 +28,11 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
+	var body RequestEmailValidation
+	if err := c.BodyParser(&body); err != nil {
+		return err
+	}
+
 	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
 	if err != nil {
 		return err
@@ -42,15 +47,17 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	}
 
 	if acct.R.Email != nil && acct.R.Email.Confirmed {
+		// TODO AE: do we want to allow users to update the account
 		return fmt.Errorf("email address already associated with account")
 	}
 
-	if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(userAccount.EmailAddress)).One(c.Context(), tx); err != nil {
+	if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(body.EmailAddress)).One(c.Context(), tx); err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
 		if emlAssociated != nil && emlAssociated.Confirmed {
-			// TODO AE: note that this does allow someone to link a non-confirmed email to their account
+			// TODO AE: note that this does imply someone can link a non-confirmed email to their account
+			// for example, by not completing this step
 			return fmt.Errorf("email address already associated with another account")
 		}
 	}
@@ -58,18 +65,21 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	confKey := generateConfirmationKey()
 	userEmail := &models.Email{
 		AccountID:        acct.ID,
-		DexID:            userAccount.DexID,
-		EmailAddress:     userAccount.EmailAddress,
+		EmailAddress:     body.EmailAddress,
 		Confirmed:        false,
 		Code:             null.StringFrom(confKey),
 		ConfirmationSent: null.TimeFrom(time.Now()),
 	}
 
-	if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, userAccount.EmailAddress, confKey); err != nil {
+	if err := userEmail.Insert(c.Context(), tx, boil.Infer()); err != nil {
 		return err
 	}
 
-	if _, err := userEmail.Update(c.Context(), tx, boil.Infer()); err != nil {
+	if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, body.EmailAddress, confKey); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -108,7 +118,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("no email address associated with user account")
 	}
 
-	// can we be linking multtiple email addrs to the same account?
+	// can we be linking muttiple email addrs to the same account?
 	if acct.R.Email.Confirmed {
 		return fmt.Errorf("email already confirmed")
 	}
@@ -121,7 +131,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("email confirmation message expired")
 	}
 
-	confirmationBody := new(ConfirmEmailRequest)
+	confirmationBody := new(CompleteEmailValidation)
 	if err := c.BodyParser(confirmationBody); err != nil {
 		return err
 	}
@@ -185,9 +195,8 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	infos := getUserAccountInfos(tbClaims)
 	email := models.Email{
 		AccountID:    acct.ID,
-		DexID:        acct.DexID,
 		Confirmed:    true,
-		EmailAddress: infos.EmailAddress,
+		EmailAddress: *infos.EmailAddress,
 	}
 
 	if err := email.Insert(c.Context(), tx, boil.Infer()); err != nil {

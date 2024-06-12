@@ -5,7 +5,6 @@ SET search_path TO accounts_api, public;
 
 CREATE TABLE accounts(
     id CHAR(27),
-    dex_id TEXT UNIQUE NOT NULL,
     created_at timestamptz NOT NULL DEFAULT NOW(),
     updated_at timestamptz NOT NULL DEFAULT NOW(),
     country_code CHAR(3),
@@ -22,8 +21,6 @@ CREATE TABLE emails(
     email_address TEXT PRIMARY KEY,
     account_id TEXT UNIQUE NOT NULL
         CONSTRAINT emails_account_id_fkey REFERENCES accounts(id) ON DELETE CASCADE,
-    dex_id TEXT UNIQUE NOT NULL
-        CONSTRAINT emails_dex_id_fkey REFERENCES accounts(dex_id),
     confirmed BOOLEAN NOT NULL,
     confirmation_sent timestamptz,
     code TEXT
@@ -39,8 +36,6 @@ CREATE TABLE wallets(
     account_id TEXT UNIQUE NOT NULL
         CONSTRAINT wallets_account_id_fkey REFERENCES accounts(id) ON DELETE CASCADE,
         CONSTRAINT wallets_ethereum_address_check CHECK (length(ethereum_address) = 20),
-    dex_id TEXT UNIQUE NOT NULL
-        CONSTRAINT wallets_dex_id_fkey REFERENCES accounts(dex_id),
     confirmed BOOLEAN NOT NULL,
     "provider" wallet_provider DEFAULT 'Other',
     confirmation_sent timestamptz,

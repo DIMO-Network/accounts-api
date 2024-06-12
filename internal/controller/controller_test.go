@@ -64,7 +64,8 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	s.settings = &config.Settings{
-		JWTKeySetURL: fmt.Sprintf("%s/dex/keys", addr),
+		JWTKeySetURL:                       fmt.Sprintf("%s/dex/keys", addr),
+		AllowableEmailConfirmationLateness: time.Minute * 1,
 	}
 	s.app.Use(jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{s.settings.JWTKeySetURL},
@@ -138,13 +139,11 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_CreateAndDelete() {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_UpdateAccount() {
 	acct := models.Account{
-		ID:    ksuid.New().String(),
-		DexID: dexIDEmail,
+		ID: ksuid.New().String(),
 	}
 
 	eml := models.Email{
 		AccountID:    acct.ID,
-		DexID:        dexIDEmail,
 		EmailAddress: userEmail,
 		Confirmed:    true,
 	}
@@ -184,13 +183,11 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_UpdateAccount() {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_AgreeTOS() {
 	acct := models.Account{
-		ID:    ksuid.New().String(),
-		DexID: dexIDEmail,
+		ID: ksuid.New().String(),
 	}
 
 	eml := models.Email{
 		AccountID:    acct.ID,
-		DexID:        dexIDEmail,
 		EmailAddress: userEmail,
 		Confirmed:    true,
 	}
@@ -215,13 +212,11 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_AgreeTOS() {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 	acct := models.Account{
-		ID:    ksuid.New().String(),
-		DexID: dexIDEmail,
+		ID: ksuid.New().String(),
 	}
 
 	eml := models.Email{
 		AccountID:    acct.ID,
-		DexID:        dexIDEmail,
 		EmailAddress: userEmail,
 		Confirmed:    true,
 	}
@@ -273,6 +268,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 	}
 
 	s.Assert().Nil(userResp.Email)
+	s.Require().NotNil(userResp.Web3)
 	s.Assert().Equal(userWallet, userResp.Web3.Address.Hex())
 	s.Assert().True(userResp.Web3.Confirmed)
 
@@ -294,13 +290,11 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 	acct := models.Account{
-		ID:    ksuid.New().String(),
-		DexID: dexIDWallet,
+		ID: ksuid.New().String(),
 	}
 
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
-		DexID:           acct.DexID,
 		EthereumAddress: common.Hex2Bytes(strings.Replace(userWallet, "0x", "", 1)),
 		Confirmed:       true,
 	}
@@ -346,13 +340,11 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() {
 	acct := models.Account{
-		ID:    ksuid.New().String(),
-		DexID: dexIDWallet,
+		ID: ksuid.New().String(),
 	}
 
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
-		DexID:           acct.DexID,
 		EthereumAddress: common.Hex2Bytes(strings.Replace(userWallet, "0x", "", 1)),
 		Confirmed:       true,
 	}
@@ -365,45 +357,43 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 		s.T().Fatal(err)
 	}
 
-	putReq := test.BuildRequest("POST", "/link/email", "", walletBasedAuthToken)
-	putResp, _ := s.app.Test(putReq)
-	_, err := io.ReadAll(putResp.Body)
+	linkEmailBody := RequestEmailValidation{
+		EmailAddress: userEmail,
+	}
+	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
+	postReq := test.BuildRequest("POST", "/link/email", string(linkEmailBodyBytes), walletBasedAuthToken)
+	postResp, _ := s.app.Test(postReq)
+	_, err := io.ReadAll(postResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(204, putResp.StatusCode)
+	s.Assert().Equal(204, postResp.StatusCode)
 
-	confirmReq := test.BuildRequest("POST", "/link/email/confirm", "", walletBasedAuthToken)
+	eml, err := models.Emails(models.EmailWhere.EmailAddress.EQ(userEmail)).One(s.ctx, s.pdb.DBS().Reader)
+	s.Require().NoError(err)
+
+	confirmEmailBody := CompleteEmailValidation{
+		Key: eml.Code.String,
+	}
+	confirmEmailBytes, _ := json.Marshal(confirmEmailBody)
+	confirmReq := test.BuildRequest("POST", "/link/email/confirm", string(confirmEmailBytes), walletBasedAuthToken)
 	confirmResp, _ := s.app.Test(confirmReq)
 	_, err = io.ReadAll(confirmResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(204, putResp.StatusCode)
+	s.Assert().Equal(204, confirmResp.StatusCode)
 	if err := test.DeleteAll(s.pdb.DBS().Writer); err != nil {
 		s.T().Fatal(err)
 	}
 }
 
 func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
+	// Create Account
+	getReq := test.BuildRequest("GET", "/", "", walletBasedAuthToken)
+	getResp, _ := s.app.Test(getReq)
+	_, err := io.ReadAll(getResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(200, getResp.StatusCode)
+
 	refAcct, err := test.NewAccount(s.pdb.DBS().Writer) // Create Referrer Account
 	s.Require().NoError(err)
-
-	acct := models.Account{
-		ID:    ksuid.New().String(),
-		DexID: dexIDWallet,
-	}
-
-	wallet := models.Wallet{
-		AccountID:       acct.ID,
-		DexID:           acct.DexID,
-		EthereumAddress: common.Hex2Bytes(strings.Replace(userWallet, "0x", "", 1)),
-		Confirmed:       true,
-	}
-
-	if err := acct.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
-		s.T().Fatal(err)
-	}
-
-	if err := wallet.Insert(s.ctx, s.pdb.DBS().Writer, boil.Infer()); err != nil {
-		s.T().Fatal(err)
-	}
 
 	referralCodeBody := SubmitReferralCodeRequest{
 		ReferralCode: refAcct.ReferralCode.String,
@@ -412,7 +402,6 @@ func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
 
 	// Set identity svc to be consistent with referral eligibility
 	test.IdentityServiceResponse = false
-
 	postReq := test.BuildRequest("POST", "/referral/submit", string(referralCodeBodyBytes), walletBasedAuthToken)
 	postResp, _ := s.app.Test(postReq)
 	_, err = io.ReadAll(postResp.Body)
@@ -452,28 +441,16 @@ func (s *AccountControllerTestSuite) Test_WalletFirst_AlternativeSignIn() {
 }
 
 func (s *AccountControllerTestSuite) Test_JWTDecode() {
-	bodyToken := "eyJhbGciOiJSUzI1NiIsImtpZCI6ImI0OTU1Y2FjMDA3Mjc5ODQzMGM3OTliNTE3ZDA1NzhhYjQ3NTBjNTMifQ.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjU1NTYvZGV4IiwicHJvdmlkZXJfaWQiOiJnb29nbGUiLCJzdWIiOiJDZzB3TFRNNE5TMHlPREE0T1Mwd0VnWm5iMjluYkdVIiwiYXVkIjoiZXhhbXBsZS1hcHAiLCJleHAiOjE5MzM2ODgxMjEsImlhdCI6MTcxNzY4ODEyMSwiYXRfaGFzaCI6Ild5RjhCcm8zNWxKUnIzSjdTTHJoa3ciLCJlbWFpbCI6ImtpbGdvcmVAa2lsZ29yZS50cm91dCIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJuYW1lIjoiS2lsZ29yZSBUcm91dCJ9.Vie9vL3o8duL2XSv4q9kBISuFD2N-MGrKDGpHObD47JpEFzaT5RI2dv9EY6ckOHIbggqFIOfpBuK30J0bgBOnZXJFg_nxekZGKkBaBHg6_y6cKDX4Mw9zzTU_zu3Wc-NgEJ1JZJWR2r7AHv_FxvyRDj6BuC3akfUli4ApA_lSdl4VL-2z4yocKNxHWxdEJBp4LOSOix-lfQKseHaHqmA4b3SAgwL_LcoW3-4wkK0dtW5Uzk_Bo64DTMAiQ239vMa_JMclt9R1X4s-0NOOcIhXPmYxDDS9l8J0u1_p_DRuAhkn3nFdXtQ0MhYFhQWBb9hVPINBEZsupIEyM-dpe-iOA"
 	jwkResource, err := keyfunc.NewDefaultCtx(context.Background(), []string{s.settings.JWTKeySetURL})
 	s.Require().NoError(err)
 
 	tbClaims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(bodyToken, &tbClaims, jwkResource.Keyfunc)
+	_, err = jwt.ParseWithClaims(emailBasedAuthToken, &tbClaims, jwkResource.Keyfunc)
 	s.Require().NoError(err)
 
-	claims := getUserAccountInfos(tbClaims)
+	claims := *getUserAccountInfos(tbClaims)
 
-	s.Require().Equal(claims.DexID, dexIDEmail)
-	s.Require().Equal(claims.EmailAddress, userEmail)
-	s.Require().Equal(claims.ProviderID, emailProvider)
-
-}
-
-func (s *AccountControllerTestSuite) Test_AlternateAccounts() {
-	// TODO: what if someone links an email and then tries to sign in that way? should allow for this
-	// userID := "CioweDA3RDBBQTdlOTQ0MUFmZmFBRDQ4MTM5Qzk1Q0NmRGFlZGIyZTMzQ2ESBHdlYjM="
-	// data, err := base64.StdEncoding.DecodeString(userID)
-	// if err != nil {
-	// 	log.Fatal("error:", err)
-	// }
+	s.Require().Equal(*claims.EmailAddress, userEmail)
+	s.Require().Equal(*claims.ProviderID, emailProvider)
 
 }

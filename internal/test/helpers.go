@@ -312,21 +312,18 @@ func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate 
 func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
 	acct := models.Account{
 		ID:           ksuid.New().String(),
-		DexID:        ksuid.New().String(),
-		ReferralCode: null.StringFrom("ABCDEFGHIJKL"),
+		ReferralCode: null.StringFrom("GBI5QV1BAM6X"),
 	}
 
 	eml := models.Email{
 		AccountID:    acct.ID,
-		DexID:        acct.DexID,
 		EmailAddress: "testemail@gmail.com",
 		Confirmed:    true,
 	}
 
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
-		DexID:           acct.DexID,
-		EthereumAddress: common.HexToAddress("0x1234567890123456789012345678901234567890").Bytes(),
+		EthereumAddress: common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 		Confirmed:       true,
 	}
 

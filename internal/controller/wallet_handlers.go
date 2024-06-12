@@ -57,7 +57,6 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
-		DexID:           userAccount.DexID,
 		Confirmed:       true,
 		// TODO AE: What should the provider be? In-App? Web3?
 	}

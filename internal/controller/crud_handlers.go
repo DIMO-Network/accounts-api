@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"accounts-api/models"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -11,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
-	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 // GetOrCreateUserAccount godoc
@@ -98,9 +96,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback() //nolint
 
-	acct, err := models.Accounts(
-		models.AccountWhere.DexID.EQ(userAccount.DexID),
-		qm.Load(models.AccountRels.Wallet)).One(c.Context(), tx)
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return err
