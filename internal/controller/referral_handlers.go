@@ -40,10 +40,10 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 
 // SubmitReferralCode godoc
 // @Summary Takes the referral code, validates and stores it
-// @Param submitReferralCodeRequest body controllers.SubmitReferralCodeRequest true "ReferralCode is the 6-digit, alphanumeric referral code from another user."
-// @Success 200 {object} controllers.SubmitReferralCodeResponse
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 500 {object} controllers.ErrorResponse
+// @Param submitReferralCodeRequest body controller.SubmitReferralCodeRequest true "ReferralCode is the 6-digit, alphanumeric referral code from another user."
+// @Success 200 {object} controller.SubmitReferralCodeResponse
+// @Failure 400 {object} controller.ErrorRes
+// @Failure 500 {object} controller.ErrorRes
 // @Router /v1/user/submit-referral-code [post]
 func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)

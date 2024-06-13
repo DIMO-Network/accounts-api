@@ -207,7 +207,7 @@ func getTestDbSettings() config.Settings {
 func SetupAppFiber(logger zerolog.Logger) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			// copied from controllers.helpers.ErrorHandler - but temporarily in here to see if resolved circular deps issue
+			// copied from controller.helpers.ErrorHandler - but temporarily in here to see if resolved circular deps issue
 			code := fiber.StatusInternalServerError // Default 500 statuscode
 
 			e, fiberTypeErr := err.(*fiber.Error)

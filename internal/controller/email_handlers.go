@@ -17,9 +17,10 @@ import (
 // LinkEmail godoc
 // @Summary Send a confirmation email to the authenticated user
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 403 {object} controllers.ErrorResponse
-// @Failure 500 {object} controllers.ErrorResponse
+// @Param confirmEmailRequest body controller.RequestEmailValidation true "Specifies the email to be linked"
+// @Failure 400 {object} controller.ErrorRes
+// @Failure 403 {object} controller.ErrorRes
+// @Failure 500 {object} controller.ErrorRes
 // @Router /v1/link/email [post]
 func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
@@ -88,10 +89,10 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // ConfirmEmail godoc
 // @Summary Submit an email confirmation key
 // @Accept json
-// @Param confirmEmailRequest body controllers.ConfirmEmailRequest true "Specifies the key from the email"
+// @Param confirmEmailRequest body controller.CompleteEmailValidation true "Specifies the key from the email"
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 403 {object} controllers.ErrorResponse
+// @Failure 400 {object} controller.ErrorRes
+// @Failure 403 {object} controller.ErrorRes
 // @Router /v1/user/confirm-email [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
@@ -152,7 +153,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 // LinkEmailToken godoc
 // @Summary Link an email to existing wallet account; require a signed JWT from auth server
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 400 {object} controller.ErrorRes
 // @Router /v1/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)

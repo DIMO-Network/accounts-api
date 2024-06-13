@@ -13,7 +13,7 @@ import (
 // LinkWalletToken godoc
 // @Summary Link a wallet to existing email account; require a signed JWT from auth server
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 400 {object} controller.ErrorRes
 // @Router /v1/link/wallet/token [post]
 func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
