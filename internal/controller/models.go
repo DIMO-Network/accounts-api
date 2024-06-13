@@ -13,7 +13,6 @@ var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z
 var UserCreationEventType = "com.dimo.zone.user.create"
 var digits = []rune("0123456789")
 
-// TODO AE: find out what body will be
 type TokenBody struct {
 	Token string `json:"token"`
 }

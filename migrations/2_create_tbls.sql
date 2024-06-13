@@ -4,7 +4,7 @@ SELECT 'up SQL query';
 SET search_path TO accounts_api, public;
 
 CREATE TABLE accounts(
-    id CHAR(27),
+    id CHAR(27) PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT NOW(),
     updated_at timestamptz NOT NULL DEFAULT NOW(),
     country_code CHAR(3),
@@ -12,9 +12,7 @@ CREATE TABLE accounts(
     agreed_tos_at timestamptz DEFAULT NOW(),
     referral_code CHAR(12),
     referred_by CHAR(12),
-    referred_at timestamptz,
-
-    PRIMARY KEY (id)
+    referred_at timestamptz
 );
 
 CREATE TABLE emails(

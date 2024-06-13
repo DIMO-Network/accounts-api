@@ -157,25 +157,28 @@ func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, erro
 }
 
 func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, exec boil.ContextExecutor) (*models.Account, error) {
+	queryMods := []qm.QueryMod{}
+
 	if userAccount.EmailAddress != nil {
-		return models.Accounts(
+		queryMods = append(queryMods,
+			qm.InnerJoin("accounts_api.emails e on e.account_id = accounts.id"),
+			qm.Where("e.email_address = ?", *userAccount.EmailAddress),
+			qm.Load(models.AccountRels.Email),
 			qm.Load(models.AccountRels.Wallet),
-			qm.Load(
-				models.AccountRels.Email,
-				models.EmailWhere.EmailAddress.EQ(*userAccount.EmailAddress),
-			)).One(ctx, exec)
+		)
 	}
 
 	if userAccount.EthereumAddress != nil {
-		return models.Accounts(
+		queryMods = append(queryMods,
+			qm.InnerJoin("accounts_api.wallets w on w.account_id = accounts.id"),
+			qm.Where("w.ethereum_address = ?", userAccount.EthereumAddress.Bytes()),
 			qm.Load(models.AccountRels.Email),
-			qm.Load(
-				models.AccountRels.Wallet,
-				models.WalletWhere.EthereumAddress.EQ(userAccount.EthereumAddress.Bytes()),
-			)).One(ctx, exec)
+			qm.Load(models.AccountRels.Wallet),
+		)
 	}
 
-	return nil, errors.New("valid user account info not provided")
+	return models.Accounts(queryMods...,
+	).One(ctx, exec)
 }
 
 func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *sql.Tx) error {

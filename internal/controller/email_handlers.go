@@ -48,18 +48,17 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 
 	if acct.R.Email != nil && acct.R.Email.Confirmed {
 		// TODO AE: do we want to allow users to update the account
-		return fmt.Errorf("email address already associated with account")
+		return fmt.Errorf("email address already linked with account")
 	}
 
 	if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(body.EmailAddress)).One(c.Context(), tx); err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
-		if emlAssociated != nil && emlAssociated.Confirmed {
-			// TODO AE: note that this does imply someone can link a non-confirmed email to their account
-			// for example, by not completing this step
-			return fmt.Errorf("email address already associated with another account")
-		}
+	} else if emlAssociated != nil && emlAssociated.Confirmed {
+		// TODO AE: note that this does imply someone can link a non-confirmed email to their account
+		// for example, by not completing this step
+		return fmt.Errorf("email address linked to another account")
 	}
 
 	confKey := generateConfirmationKey()
