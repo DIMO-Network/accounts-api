@@ -17,14 +17,20 @@ import (
 // LinkEmail godoc
 // @Summary Send a confirmation email to the authenticated user
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 403 {object} controllers.ErrorResponse
-// @Failure 500 {object} controllers.ErrorResponse
+// @Param confirmEmailRequest body controller.RequestEmailValidation true "Specifies the email to be linked"
+// @Failure 400 {object} controller.ErrorRes
+// @Failure 403 {object} controller.ErrorRes
+// @Failure 500 {object} controller.ErrorRes
 // @Router /v1/link/email [post]
 func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
+
+	var body RequestEmailValidation
+	if err := c.BodyParser(&body); err != nil {
 		return err
 	}
 
@@ -41,26 +47,39 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		}
 	}
 
-	// TODO AE: do we want to allow multiple email addresses to be associated with an account
 	if acct.R.Email != nil && acct.R.Email.Confirmed {
-		return fmt.Errorf("email address already associated with account")
+		// TODO AE: do we want to allow users to update the account
+		return fmt.Errorf("email address already linked with account")
+	}
+
+	if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(body.EmailAddress)).One(c.Context(), tx); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	} else if emlAssociated != nil && emlAssociated.Confirmed {
+		// TODO AE: note that this does imply someone can link a non-confirmed email to their account
+		// for example, by not completing this step
+		return fmt.Errorf("email address linked to another account")
 	}
 
 	confKey := generateConfirmationKey()
 	userEmail := &models.Email{
 		AccountID:        acct.ID,
-		DexID:            userAccount.DexID,
-		EmailAddress:     userAccount.EmailAddress,
+		EmailAddress:     body.EmailAddress,
 		Confirmed:        false,
 		Code:             null.StringFrom(confKey),
 		ConfirmationSent: null.TimeFrom(time.Now()),
 	}
 
-	if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, userAccount.EmailAddress, confKey); err != nil {
+	if err := userEmail.Insert(c.Context(), tx, boil.Infer()); err != nil {
 		return err
 	}
 
-	if _, err := userEmail.Update(c.Context(), tx, boil.Infer()); err != nil {
+	if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, body.EmailAddress, confKey); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 
@@ -70,10 +89,10 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // ConfirmEmail godoc
 // @Summary Submit an email confirmation key
 // @Accept json
-// @Param confirmEmailRequest body controllers.ConfirmEmailRequest true "Specifies the key from the email"
+// @Param confirmEmailRequest body controller.CompleteEmailValidation true "Specifies the key from the email"
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
-// @Failure 403 {object} controllers.ErrorResponse
+// @Failure 400 {object} controller.ErrorRes
+// @Failure 403 {object} controller.ErrorRes
 // @Router /v1/user/confirm-email [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
@@ -99,7 +118,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("no email address associated with user account")
 	}
 
-	// can we be linking multtiple email addrs to the same account?
+	// can we be linking muttiple email addrs to the same account?
 	if acct.R.Email.Confirmed {
 		return fmt.Errorf("email already confirmed")
 	}
@@ -112,7 +131,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("email confirmation message expired")
 	}
 
-	confirmationBody := new(ConfirmEmailRequest)
+	confirmationBody := new(CompleteEmailValidation)
 	if err := c.BodyParser(confirmationBody); err != nil {
 		return err
 	}
@@ -134,7 +153,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 // LinkEmailToken godoc
 // @Summary Link an email to existing wallet account; require a signed JWT from auth server
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 400 {object} controller.ErrorRes
 // @Router /v1/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
@@ -158,10 +177,8 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fmt.Errorf("no wallet associated with user account")
 	}
 
-	// TODO AE: unless we want to allow more than one email to be associated with an account...?
 	if acct.R.Email != nil {
 		return fmt.Errorf("account already has linked email")
-
 	}
 
 	var tb TokenBody
@@ -178,9 +195,8 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	infos := getUserAccountInfos(tbClaims)
 	email := models.Email{
 		AccountID:    acct.ID,
-		DexID:        infos.DexID,
 		Confirmed:    true,
-		EmailAddress: infos.EmailAddress,
+		EmailAddress: *infos.EmailAddress,
 	}
 
 	if err := email.Insert(c.Context(), tx, boil.Infer()); err != nil {

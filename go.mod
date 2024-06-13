@@ -11,7 +11,7 @@ require (
 	github.com/friendsofgo/errors v0.9.2
 	github.com/goccy/go-json v0.10.3
 	github.com/gofiber/contrib/jwt v1.0.8
-	github.com/gofiber/fiber/v2 v2.52.1
+	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/swagger v1.0.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
 	github.com/pkg/errors v0.9.1
@@ -19,13 +19,12 @@ require (
 	github.com/prometheus/client_golang v1.18.0
 	github.com/rs/zerolog v1.33.0
 	github.com/segmentio/ksuid v1.0.4
+	github.com/stretchr/testify v1.9.0
 	github.com/swaggo/swag v1.16.3
 	github.com/testcontainers/testcontainers-go v0.27.0
-	github.com/tj/assert v0.0.3
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.16.2
 	github.com/volatiletech/strmangle v0.0.6
-	gopkg.in/square/go-jose.v2 v2.5.1
 )
 
 require (
@@ -110,7 +109,6 @@ require (
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spf13/cast v1.6.0 // indirect
-	github.com/stretchr/testify v1.9.0 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect

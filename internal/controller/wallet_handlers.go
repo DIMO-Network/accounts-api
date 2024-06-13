@@ -7,14 +7,13 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 // LinkWalletToken godoc
 // @Summary Link a wallet to existing email account; require a signed JWT from auth server
 // @Success 204
-// @Failure 400 {object} controllers.ErrorResponse
+// @Failure 400 {object} controller.ErrorRes
 // @Router /v1/link/wallet/token [post]
 func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
@@ -58,10 +57,8 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
-		DexID:           infos.DexID,
 		Confirmed:       true,
-		// TODO AE: what's supposed to be here?
-		Provider: null.StringFrom("Turnkey"), // where does this come from?
+		// TODO AE: What should the provider be? In-App? Web3?
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {
@@ -72,5 +69,10 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	userResp, err := d.formatUserAcctResponse(c.Context(), acct, &wallet, acct.R.Email)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(userResp)
 }

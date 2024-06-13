@@ -21,7 +21,7 @@ This runs Postgres on port 5432; and [Mailhog](https://github.com/mailhog/MailHo
 With a fresh database you'll want to run the migrations:
 
 ```sh
-go run ./cmd/users-api migrate
+go run ./cmd/accounts-api migrate
 ```
 
 Finally, running the app is simple:
@@ -41,5 +41,13 @@ golangci-lint run
 Update OpenAPI documentation with
 
 ```
-swag init --generalInfo cmd/users-api/main.go --generatedTime true
+swag init --generalInfo cmd/accounts-api/main.go --generatedTime true
 ```
+
+Questions:
+
+- clean up swagger
+- address TODO comments
+- Do we want gRPC service in here?
+- Confirm that update user endpoint can now only add country code (since we have dedicated endpoints for linking a wallet or email)
+- Confirm and update cols/ pk's in tables

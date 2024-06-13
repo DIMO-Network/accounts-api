@@ -19,19 +19,72 @@ const docTemplate = `{
         "/v1/link/email": {
             "post": {
                 "summary": "Send a confirmation email to the authenticated user",
-                "responses": {}
+                "parameters": [
+                    {
+                        "description": "Specifies the email to be linked",
+                        "name": "confirmEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.RequestEmailValidation"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/link/email/token": {
             "post": {
                 "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
-                "responses": {}
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/link/wallet/token": {
             "post": {
                 "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
-                "responses": {}
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/user": {
@@ -45,16 +98,84 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "summary": "Get attributes for the authenticated user.",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.UserResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             },
             "put": {
-                "responses": {}
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Modify attributes for the authenticated user",
+                "parameters": [
+                    {
+                        "description": "New field values",
+                        "name": "userUpdateRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.UserUpdateRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.UserResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             },
             "delete": {
                 "summary": "Delete the authenticated user. Fails if the user has any devices.",
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "409": {
+                        "description": "Returned if the user still has devices.",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
                     }
                 }
             }
@@ -62,7 +183,17 @@ const docTemplate = `{
         "/v1/user/agree-tos": {
             "post": {
                 "summary": "Agree to the current terms of service",
-                "responses": {}
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/user/confirm-email": {
@@ -71,25 +202,397 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "summary": "Submit an email confirmation key",
-                "responses": {}
+                "parameters": [
+                    {
+                        "description": "Specifies the key from the email",
+                        "name": "confirmEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.CompleteEmailValidation"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             }
         },
         "/v1/user/submit-referral-code": {
             "post": {
                 "summary": "Takes the referral code, validates and stores it",
-                "responses": {}
+                "parameters": [
+                    {
+                        "description": "ReferralCode is the 6-digit, alphanumeric referral code from another user.",
+                        "name": "submitReferralCodeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
             }
+        }
+    },
+    "definitions": {
+        "accounts-api_internal_controller.CompleteEmailValidation": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "Key is the 6-digit number from the confirmation email",
+                    "type": "string",
+                    "example": "010990"
+                }
+            }
+        },
+        "accounts-api_internal_controller.ErrorRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts-api_internal_controller.RequestEmailValidation": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "kilgore@kilgore.trout"
+                }
+            }
+        },
+        "accounts-api_internal_controller.SubmitReferralCodeRequest": {
+            "type": "object",
+            "properties": {
+                "referralCode": {
+                    "type": "string",
+                    "example": "ANB95NBQA1N5"
+                }
+            }
+        },
+        "accounts-api_internal_controller.SubmitReferralCodeResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "accounts-api_internal_controller.UserResponse": {
+            "type": "object",
+            "properties": {
+                "agreedTosAt": {
+                    "description": "AgreedTosAt is the time at which the user last agreed to the terms of service.",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:41Z"
+                },
+                "countryCode": {
+                    "description": "CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.",
+                    "type": "string",
+                    "example": "USA"
+                },
+                "createdAt": {
+                    "description": "CreatedAt is when the user first logged in.",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:00Z"
+                },
+                "email": {
+                    "description": "Email describes the user's email and the state of its confirmation.",
+                    "$ref": "#/definitions/accounts-api_internal_controller.UserResponseEmail"
+                },
+                "id": {
+                    "description": "ID is the user's DIMO-internal ID.",
+                    "type": "string",
+                    "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
+                },
+                "referralCode": {
+                    "description": "ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,\nonly present if the account has a confirmed Ethereum address.",
+                    "type": "string",
+                    "example": "ANB95N"
+                },
+                "referredAt": {
+                    "type": "string",
+                    "example": "2021-12-01T09:00:41Z"
+                },
+                "referredBy": {
+                    "type": "string",
+                    "example": "0x3497B704a954789BC39999262510DE9B09Ff1366"
+                },
+                "updatedAt": {
+                    "description": "UpdatedAt reflects the time of the most recent account changes.",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:00Z"
+                },
+                "web3": {
+                    "description": "Web3 describes the user's blockchain account.",
+                    "$ref": "#/definitions/accounts-api_internal_controller.UserResponseWeb3"
+                }
+            }
+        },
+        "accounts-api_internal_controller.UserResponseEmail": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the email address for the user.",
+                    "type": "string",
+                    "example": "koblitz@dimo.zone"
+                },
+                "confirmationSentAt": {
+                    "description": "ConfirmationSentAt is the time at which we last sent a confirmation email. This will only\nbe present if we've sent an email but the code has not been sent back to us.",
+                    "type": "string",
+                    "example": "2021-12-01T09:01:12Z"
+                },
+                "confirmed": {
+                    "description": "Confirmed indicates whether the user has confirmed the address by entering a code.",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "accounts-api_internal_controller.UserResponseWeb3": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the Ethereum address associated with the user.",
+                    "type": "string",
+                    "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
+                },
+                "confirmed": {
+                    "description": "Confirmed indicates whether the user has confirmed the address by signing a challenge\nmessage.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "inApp": {
+                    "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
+                    "type": "string",
+                    "example": "false"
+                },
+                "used": {
+                    "description": "Used indicates whether the user has used this address to perform any on-chain\nactions like minting, claiming, or pairing.",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "accounts-api_internal_controller.UserUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "countryCode": {
+                    "description": "CountryCode should be a valid ISO 3166-1 alpha-3 country code",
+                    "type": "string",
+                    "example": "USA"
+                }
+            }
+        },
+        "internal_controller.CompleteEmailValidation": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "Key is the 6-digit number from the confirmation email",
+                    "type": "string",
+                    "example": "010990"
+                }
+            }
+        },
+        "internal_controller.ErrorRes": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "integer"
+                },
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller.RequestEmailValidation": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "example": "kilgore@kilgore.trout"
+                }
+            }
+        },
+        "internal_controller.SubmitReferralCodeRequest": {
+            "type": "object",
+            "properties": {
+                "referralCode": {
+                    "type": "string",
+                    "example": "ANB95NBQA1N5"
+                }
+            }
+        },
+        "internal_controller.SubmitReferralCodeResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller.UserResponse": {
+            "type": "object",
+            "properties": {
+                "agreedTosAt": {
+                    "description": "AgreedTosAt is the time at which the user last agreed to the terms of service.",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:41Z"
+                },
+                "countryCode": {
+                    "description": "CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.",
+                    "type": "string",
+                    "example": "USA"
+                },
+                "createdAt": {
+                    "description": "CreatedAt is when the user first logged in.",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:00Z"
+                },
+                "email": {
+                    "description": "Email describes the user's email and the state of its confirmation.",
+                    "$ref": "#/definitions/internal_controller.UserResponseEmail"
+                },
+                "id": {
+                    "description": "ID is the user's DIMO-internal ID.",
+                    "type": "string",
+                    "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
+                },
+                "referralCode": {
+                    "description": "ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,\nonly present if the account has a confirmed Ethereum address.",
+                    "type": "string",
+                    "example": "ANB95N"
+                },
+                "referredAt": {
+                    "type": "string",
+                    "example": "2021-12-01T09:00:41Z"
+                },
+                "referredBy": {
+                    "type": "string",
+                    "example": "0x3497B704a954789BC39999262510DE9B09Ff1366"
+                },
+                "updatedAt": {
+                    "description": "UpdatedAt reflects the time of the most recent account changes.",
+                    "type": "string",
+                    "example": "2021-12-01T09:00:00Z"
+                },
+                "web3": {
+                    "description": "Web3 describes the user's blockchain account.",
+                    "$ref": "#/definitions/internal_controller.UserResponseWeb3"
+                }
+            }
+        },
+        "internal_controller.UserResponseEmail": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the email address for the user.",
+                    "type": "string",
+                    "example": "koblitz@dimo.zone"
+                },
+                "confirmationSentAt": {
+                    "description": "ConfirmationSentAt is the time at which we last sent a confirmation email. This will only\nbe present if we've sent an email but the code has not been sent back to us.",
+                    "type": "string",
+                    "example": "2021-12-01T09:01:12Z"
+                },
+                "confirmed": {
+                    "description": "Confirmed indicates whether the user has confirmed the address by entering a code.",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "internal_controller.UserResponseWeb3": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "description": "Address is the Ethereum address associated with the user.",
+                    "type": "string",
+                    "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
+                },
+                "confirmed": {
+                    "description": "Confirmed indicates whether the user has confirmed the address by signing a challenge\nmessage.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "inApp": {
+                    "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
+                    "type": "string",
+                    "example": "false"
+                },
+                "used": {
+                    "description": "Used indicates whether the user has used this address to perform any on-chain\nactions like minting, claiming, or pairing.",
+                    "type": "boolean",
+                    "example": false
+                }
+            }
+        },
+        "internal_controller.UserUpdateRequest": {
+            "type": "object",
+            "properties": {
+                "countryCode": {
+                    "description": "CountryCode should be a valid ISO 3166-1 alpha-3 country code",
+                    "type": "string",
+                    "example": "USA"
+                }
+            }
+        }
+    },
+    "securityDefinitions": {
+        "BearerAuth": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header"
         }
     }
 }`
 
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
-	Version:          "",
+	Version:          "1.0",
 	Host:             "",
 	BasePath:         "",
 	Schemes:          []string{},
-	Title:            "",
+	Title:            "DIMO Accounts API",
 	Description:      "",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,

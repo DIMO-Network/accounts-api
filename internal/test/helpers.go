@@ -8,6 +8,7 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -15,19 +16,22 @@ import (
 
 	"accounts-api/internal/config"
 	"accounts-api/internal/services"
+	"accounts-api/models"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/docker/go-connections/nat"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/volatiletech/null/v8"
+	"github.com/volatiletech/sqlboiler/v4/boil"
+	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 const testDbName = "accounts_api"
@@ -39,6 +43,7 @@ func StartContainerDatabase(ctx context.Context, t *testing.T, migrationsDirRelP
 	dbURL := func(_ string, port nat.Port) string {
 		return fmt.Sprintf("postgres://%s:%s@localhost:%s/%s?sslmode=disable", settings.DB.User, settings.DB.Password, port.Port(), settings.DB.Name)
 	}
+
 	cr := testcontainers.ContainerRequest{
 		Image:        "postgres:12.9-alpine",
 		Env:          map[string]string{"POSTGRES_USER": settings.DB.User, "POSTGRES_PASSWORD": settings.DB.Password, "POSTGRES_DB": settings.DB.Name},
@@ -108,22 +113,25 @@ $$ LANGUAGE plpgsql;
 // StartContainerDex starts postgres container with default test settings. Caller must terminate container.
 func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Container {
 	dexPort := "5556"
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	basepath := strings.Replace(wd, "/controller", "", 1)
 	dexCr := testcontainers.ContainerRequest{
 		Image:        "dexidp/dex",
 		Cmd:          []string{"dex", "serve", "/config.docker.yaml"},
-		ExposedPorts: []string{fmt.Sprintf("%s:%s/tcp", dexPort, dexPort)},
-		Mounts: testcontainers.ContainerMounts{
+		ExposedPorts: []string{fmt.Sprintf("%s/tcp", dexPort)},
+		Files: []testcontainers.ContainerFile{
 			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: "./config.docker.yaml",
-				},
-				Target: "/config.docker.yaml",
+				HostFilePath:      filepath.Join(basepath, "/test/config.docker.yaml"),
+				ContainerFilePath: "/config.docker.yaml",
+				FileMode:          0o755,
 			},
 			{
-				Source: testcontainers.GenericVolumeMountSource{
-					Name: "./dex.db",
-				},
-				Target: "/dex.db",
+				HostFilePath:      filepath.Join(basepath, "/test/dex.db"),
+				ContainerFilePath: "/dex.db",
+				FileMode:          0o755,
 			},
 		},
 	}
@@ -150,6 +158,20 @@ func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Contain
 	fmt.Printf("dex container session %s ready and running at port: %s \n", dexContainer.SessionID(), mappedPort)
 
 	return dexContainer
+}
+
+func GetContainerAddress(tc testcontainers.Container) (string, error) {
+	mappedPort, err := tc.MappedPort(context.Background(), nat.Port("5556/tcp"))
+	if err != nil {
+		return "", err
+	}
+
+	host, err := tc.Host(context.Background())
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("http://%s:%s", host, mappedPort.Port()), nil
 }
 
 func handleContainerStartErr(ctx context.Context, err error, container testcontainers.Container, t *testing.T) (db.Store, testcontainers.Container) {
@@ -185,7 +207,7 @@ func getTestDbSettings() config.Settings {
 func SetupAppFiber(logger zerolog.Logger) *fiber.App {
 	app := fiber.New(fiber.Config{
 		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			// copied from controllers.helpers.ErrorHandler - but temporarily in here to see if resolved circular deps issue
+			// copied from controller.helpers.ErrorHandler - but temporarily in here to see if resolved circular deps issue
 			code := fiber.StatusInternalServerError // Default 500 statuscode
 
 			e, fiberTypeErr := err.(*fiber.Error)
@@ -207,44 +229,16 @@ func SetupAppFiber(logger zerolog.Logger) *fiber.App {
 	return app
 }
 
-func BuildRequest(method, url, body string) *http.Request {
+func BuildRequest(method, url, body, header string) *http.Request {
 	req, _ := http.NewRequest(
 		method,
 		url,
 		strings.NewReader(body),
 	)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+header)
 
 	return req
-}
-
-// AuthInjectorTestHandler injects fake jwt with sub
-func EmailBasedAuthInjector(dexID, email string) fiber.Handler {
-	// provider, err := oidc.NewProvider(context.Background(), "http://127.0.0.1:5556/dex/keys")
-	// provider.
-	return func(c *fiber.Ctx) error {
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"provider_id": "google",
-			"sub":         dexID,
-			"email":       email,
-		})
-
-		c.Locals("user", token)
-		return c.Next()
-	}
-}
-
-func WalletBasedAuthInjector(dexID string, ethAddr common.Address) fiber.Handler {
-	return func(c *fiber.Ctx) error {
-		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-			"provider_id":      "web3",
-			"sub":              ksuid.New().String(),
-			"ethereum_address": ethAddr.Hex(),
-		})
-
-		c.Locals("user", token)
-		return c.Next()
-	}
 }
 
 // TruncateTables truncates tables for the test db, useful to run as teardown at end of each DB dependent test.
@@ -288,19 +282,20 @@ func NewEventService() services.EventService {
 }
 
 type identityService struct {
-	Pass bool
 }
 
+var IdentityServiceResponse bool = true
+
 func (i *identityService) VehiclesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	return i.Pass, nil
+	return IdentityServiceResponse, nil
 }
 
 func (i *identityService) AftermarketDevicesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	return i.Pass, nil
+	return IdentityServiceResponse, nil
 }
 
 func NewIdentityService(pass bool) services.IdentityService {
-	return &identityService{Pass: pass}
+	return &identityService{}
 }
 
 type emailService struct {
@@ -312,4 +307,46 @@ func NewEmailService() services.EmailService {
 
 func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate *template.Template, userEmail, confCode string) error {
 	return nil
+}
+
+func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
+	acct := models.Account{
+		ID:           ksuid.New().String(),
+		ReferralCode: null.StringFrom("GBI5QV1BAM6X"),
+	}
+
+	eml := models.Email{
+		AccountID:    acct.ID,
+		EmailAddress: "testemail@gmail.com",
+		Confirmed:    true,
+	}
+
+	wallet := models.Wallet{
+		AccountID:       acct.ID,
+		EthereumAddress: common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
+		Confirmed:       true,
+	}
+
+	if err := acct.Insert(context.Background(), exec, boil.Infer()); err != nil {
+		return nil, err
+	}
+
+	if err := eml.Insert(context.Background(), exec, boil.Infer()); err != nil {
+		return nil, err
+	}
+
+	if err := wallet.Insert(context.Background(), exec, boil.Infer()); err != nil {
+		return nil, err
+	}
+
+	return models.Accounts(
+		models.AccountWhere.ID.EQ(acct.ID),
+		qm.Load(models.AccountRels.Wallet),
+		qm.Load(models.AccountRels.Email),
+	).One(context.Background(), exec)
+}
+
+func DeleteAll(exec boil.ContextExecutor) error {
+	_, err := exec.Exec(`TRUNCATE TABLE accounts_api.accounts CASCADE;`)
+	return err
 }

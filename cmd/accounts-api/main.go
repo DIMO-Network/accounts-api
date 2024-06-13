@@ -23,6 +23,11 @@ import (
 	"github.com/rs/zerolog"
 )
 
+// @title DIMO Accounts API
+// @version 1.0
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	gitSha1 := os.Getenv("GIT_SHA1")
 	ctx := context.Background()
@@ -83,9 +88,12 @@ func main() {
 
 	app.Get("/v1/swagger/*", swagger.HandlerDefault)
 
-	v1 := app.Group("/v1/account", jwtware.New(jwtware.Config{
-		JWKSetURLs: []string{settings.JWTKeySetURL},
-	}))
+	v1 := app.Group("/v1/account", jwtware.New(
+		jwtware.Config{
+			JWKSetURLs: []string{settings.JWTKeySetURL},
+		},
+		// TODO AE: custom claims
+	))
 
 	idSvc := services.NewIdentityService(&settings)
 	eventSvc := services.NewEventService(&logger, &settings)
