@@ -44,7 +44,7 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 // @Success 200 {object} controller.SubmitReferralCodeResponse
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 500 {object} controller.ErrorRes
-// @Router /v1/user/submit-referral-code [post]
+// @Router /v1/accounts/submit-referral-code [post]
 func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {

@@ -93,7 +93,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
-// @Router /v1/user/confirm-email [post]
+// @Router /v1/accounts/confirm-email [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	userAccount, err := getuserAccountInfosToken(c)
 	if err != nil {
