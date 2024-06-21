@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"runtime/debug"
 
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
@@ -29,13 +30,17 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	gitSha1 := os.Getenv("GIT_SHA1")
 	ctx := context.Background()
-	logger := zerolog.New(os.Stdout).With().
-		Timestamp().
-		Str("app", "accounts-api").
-		Str("git-sha1", gitSha1).
-		Logger()
+	logger := zerolog.New(os.Stdout).With().Timestamp().Str("app", "accounts-api").Logger()
+
+	if info, ok := debug.ReadBuildInfo(); ok {
+		for _, s := range info.Settings {
+			if s.Key == "vcs.revision" && len(s.Value) == 40 {
+				logger = logger.With().Str("commit", s.Value[:7]).Logger()
+				break
+			}
+		}
+	}
 
 	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
 	if err != nil {
