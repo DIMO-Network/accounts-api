@@ -108,12 +108,6 @@ definitions:
           the DIMO app.
         example: "false"
         type: string
-      used:
-        description: |-
-          Used indicates whether the user has used this address to perform any on-chain
-          actions like minting, claiming, or pairing.
-        example: false
-        type: boolean
     type: object
   controller.UserUpdateRequest:
     properties:

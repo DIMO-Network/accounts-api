@@ -33,9 +33,6 @@ type UserResponseWeb3 struct {
 	// Confirmed indicates whether the user has confirmed the address by signing a challenge
 	// message.
 	Confirmed bool `json:"confirmed" example:"false"`
-	// Used indicates whether the user has used this address to perform any on-chain
-	// actions like minting, claiming, or pairing.
-	Used bool `json:"used" example:"false"`
 	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
 	Provider string `json:"inApp" example:"false"`
 }

@@ -245,7 +245,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 	return nil
 }
 
-func (d *Controller) formatUserAcctResponse(ctx context.Context, acct *models.Account, wallet *models.Wallet, email *models.Email) (*UserResponse, error) {
+func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models.Wallet, email *models.Email) (*UserResponse, error) {
 	userResp := &UserResponse{
 		ID:           acct.ID,
 		CreatedAt:    acct.CreatedAt,
@@ -275,20 +275,6 @@ func (d *Controller) formatUserAcctResponse(ctx context.Context, acct *models.Ac
 			Address:   common.BytesToAddress(wallet.EthereumAddress),
 			Confirmed: wallet.Confirmed,
 			Provider:  wallet.Provider.String,
-		}
-
-		if web3Used, err := d.identityService.VehiclesOwned(ctx, userResp.Web3.Address); err != nil {
-			return nil, fmt.Errorf("couldn't retrieve user vehicles: %w", err)
-		} else if web3Used {
-			userResp.Web3.Used = true
-		}
-
-		if !userResp.Web3.Used {
-			if web3Used, err := d.identityService.AftermarketDevicesOwned(ctx, userResp.Web3.Address); err != nil {
-				return nil, fmt.Errorf("couldn't retrieve user aftermarket devices: %w", err)
-			} else if web3Used {
-				userResp.Web3.Used = true
-			}
 		}
 	}
 
