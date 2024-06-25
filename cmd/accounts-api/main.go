@@ -5,7 +5,6 @@ import (
 	"accounts-api/internal/services"
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"os"
 	"runtime/debug"
@@ -15,6 +14,7 @@ import (
 
 	"accounts-api/internal/controller"
 
+	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/adaptor"
