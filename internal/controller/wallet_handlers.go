@@ -57,8 +57,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
-		Confirmed:       true,
-		// TODO AE: What should the provider be? In-App? Web3?
+		//TODO: where do will in provider from? Do we know this now or do we fill it in later?
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {

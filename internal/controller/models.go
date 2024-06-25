@@ -30,9 +30,6 @@ type UserResponseEmail struct {
 type UserResponseWeb3 struct {
 	// Address is the Ethereum address associated with the user.
 	Address common.Address `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
-	// Confirmed indicates whether the user has confirmed the address by signing a challenge
-	// message.
-	Confirmed bool `json:"confirmed" example:"false"`
 	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
 	Provider string `json:"inApp" example:"false"`
 }

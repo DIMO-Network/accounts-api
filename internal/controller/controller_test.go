@@ -253,7 +253,6 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 	s.Assert().Nil(userResp.Email)
 	s.Require().NotNil(userResp.Web3)
 	s.Assert().Equal(dexWalletUsers[1].Wallet, userResp.Web3.Address.Hex())
-	s.Assert().True(userResp.Web3.Confirmed)
 
 	// Set identity svc to be consistent with eligible deletion state
 	test.IdentityServiceResponse = false
@@ -326,7 +325,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 	s.Require().NoError(err)
 
 	confirmEmailBody := CompleteEmailValidation{
-		Key: eml.Code.String,
+		Key: eml.ConfirmationCode.String,
 	}
 	confirmEmailBytes, _ := json.Marshal(confirmEmailBody)
 	confirmReq := test.BuildRequest("POST", "/link/email/confirm", string(confirmEmailBytes), dexWalletUsers[0].AuthToken)

@@ -163,7 +163,6 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 		wallet := &models.Wallet{
 			AccountID:       acct.ID,
 			EthereumAddress: mixAddr.Address().Bytes(),
-			Confirmed:       true,
 			// TODO AE: where are we getting the provider from? how is this passed?
 		}
 
@@ -192,7 +191,7 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 		ReferralCode: acct.ReferralCode.String,
 		ReferredBy:   acct.ReferredBy.String,
 		ReferredAt:   acct.ReferredAt.Time,
-		AgreedTOSAt:  acct.AgreedTosAt.Time,
+		AgreedTOSAt:  acct.AcceptedTosAt.Time,
 		CountryCode:  acct.CountryCode.String,
 		UpdatedAt:    acct.UpdatedAt,
 	}
@@ -206,15 +205,14 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 		userResp.Email = &UserResponseEmail{
 			Address:            email.EmailAddress,
 			Confirmed:          email.Confirmed,
-			ConfirmationSentAt: email.ConfirmationSent.Time,
+			ConfirmationSentAt: email.ConfirmationSentAt.Time,
 		}
 	}
 
 	if wallet != nil {
 		userResp.Web3 = &UserResponseWeb3{
-			Address:   common.BytesToAddress(wallet.EthereumAddress),
-			Confirmed: wallet.Confirmed,
-			Provider:  wallet.Provider.String,
+			Address:  common.BytesToAddress(wallet.EthereumAddress),
+			Provider: wallet.Provider.String,
 		}
 	}
 

@@ -24,62 +24,62 @@ import (
 
 // Account is an object representing the database table.
 type Account struct {
-	ID           string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	CreatedAt    time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt    time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
-	CountryCode  null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
-	CustomerIoID null.String `boil:"customer_io_id" json:"customer_io_id,omitempty" toml:"customer_io_id" yaml:"customer_io_id,omitempty"`
-	AgreedTosAt  null.Time   `boil:"agreed_tos_at" json:"agreed_tos_at,omitempty" toml:"agreed_tos_at" yaml:"agreed_tos_at,omitempty"`
-	ReferralCode null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
-	ReferredBy   null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
-	ReferredAt   null.Time   `boil:"referred_at" json:"referred_at,omitempty" toml:"referred_at" yaml:"referred_at,omitempty"`
+	ID            string      `boil:"id" json:"id" toml:"id" yaml:"id"`
+	CreatedAt     time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt     time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
+	CountryCode   null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
+	CustomerIoID  null.String `boil:"customer_io_id" json:"customer_io_id,omitempty" toml:"customer_io_id" yaml:"customer_io_id,omitempty"`
+	AcceptedTosAt null.Time   `boil:"accepted_tos_at" json:"accepted_tos_at,omitempty" toml:"accepted_tos_at" yaml:"accepted_tos_at,omitempty"`
+	ReferralCode  null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
+	ReferredBy    null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
+	ReferredAt    null.Time   `boil:"referred_at" json:"referred_at,omitempty" toml:"referred_at" yaml:"referred_at,omitempty"`
 
 	R *accountR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L accountL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var AccountColumns = struct {
-	ID           string
-	CreatedAt    string
-	UpdatedAt    string
-	CountryCode  string
-	CustomerIoID string
-	AgreedTosAt  string
-	ReferralCode string
-	ReferredBy   string
-	ReferredAt   string
+	ID            string
+	CreatedAt     string
+	UpdatedAt     string
+	CountryCode   string
+	CustomerIoID  string
+	AcceptedTosAt string
+	ReferralCode  string
+	ReferredBy    string
+	ReferredAt    string
 }{
-	ID:           "id",
-	CreatedAt:    "created_at",
-	UpdatedAt:    "updated_at",
-	CountryCode:  "country_code",
-	CustomerIoID: "customer_io_id",
-	AgreedTosAt:  "agreed_tos_at",
-	ReferralCode: "referral_code",
-	ReferredBy:   "referred_by",
-	ReferredAt:   "referred_at",
+	ID:            "id",
+	CreatedAt:     "created_at",
+	UpdatedAt:     "updated_at",
+	CountryCode:   "country_code",
+	CustomerIoID:  "customer_io_id",
+	AcceptedTosAt: "accepted_tos_at",
+	ReferralCode:  "referral_code",
+	ReferredBy:    "referred_by",
+	ReferredAt:    "referred_at",
 }
 
 var AccountTableColumns = struct {
-	ID           string
-	CreatedAt    string
-	UpdatedAt    string
-	CountryCode  string
-	CustomerIoID string
-	AgreedTosAt  string
-	ReferralCode string
-	ReferredBy   string
-	ReferredAt   string
+	ID            string
+	CreatedAt     string
+	UpdatedAt     string
+	CountryCode   string
+	CustomerIoID  string
+	AcceptedTosAt string
+	ReferralCode  string
+	ReferredBy    string
+	ReferredAt    string
 }{
-	ID:           "accounts.id",
-	CreatedAt:    "accounts.created_at",
-	UpdatedAt:    "accounts.updated_at",
-	CountryCode:  "accounts.country_code",
-	CustomerIoID: "accounts.customer_io_id",
-	AgreedTosAt:  "accounts.agreed_tos_at",
-	ReferralCode: "accounts.referral_code",
-	ReferredBy:   "accounts.referred_by",
-	ReferredAt:   "accounts.referred_at",
+	ID:            "accounts.id",
+	CreatedAt:     "accounts.created_at",
+	UpdatedAt:     "accounts.updated_at",
+	CountryCode:   "accounts.country_code",
+	CustomerIoID:  "accounts.customer_io_id",
+	AcceptedTosAt: "accounts.accepted_tos_at",
+	ReferralCode:  "accounts.referral_code",
+	ReferredBy:    "accounts.referred_by",
+	ReferredAt:    "accounts.referred_at",
 }
 
 // Generated where
@@ -207,25 +207,25 @@ func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsN
 func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
 var AccountWhere = struct {
-	ID           whereHelperstring
-	CreatedAt    whereHelpertime_Time
-	UpdatedAt    whereHelpertime_Time
-	CountryCode  whereHelpernull_String
-	CustomerIoID whereHelpernull_String
-	AgreedTosAt  whereHelpernull_Time
-	ReferralCode whereHelpernull_String
-	ReferredBy   whereHelpernull_String
-	ReferredAt   whereHelpernull_Time
+	ID            whereHelperstring
+	CreatedAt     whereHelpertime_Time
+	UpdatedAt     whereHelpertime_Time
+	CountryCode   whereHelpernull_String
+	CustomerIoID  whereHelpernull_String
+	AcceptedTosAt whereHelpernull_Time
+	ReferralCode  whereHelpernull_String
+	ReferredBy    whereHelpernull_String
+	ReferredAt    whereHelpernull_Time
 }{
-	ID:           whereHelperstring{field: "\"accounts_api\".\"accounts\".\"id\""},
-	CreatedAt:    whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
-	UpdatedAt:    whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
-	CountryCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
-	CustomerIoID: whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"customer_io_id\""},
-	AgreedTosAt:  whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"agreed_tos_at\""},
-	ReferralCode: whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
-	ReferredBy:   whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referred_by\""},
-	ReferredAt:   whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"referred_at\""},
+	ID:            whereHelperstring{field: "\"accounts_api\".\"accounts\".\"id\""},
+	CreatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
+	UpdatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
+	CountryCode:   whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
+	CustomerIoID:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"customer_io_id\""},
+	AcceptedTosAt: whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"accepted_tos_at\""},
+	ReferralCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
+	ReferredBy:    whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referred_by\""},
+	ReferredAt:    whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"referred_at\""},
 }
 
 // AccountRels is where relationship names are stored.
@@ -266,9 +266,9 @@ func (r *accountR) GetWallet() *Wallet {
 type accountL struct{}
 
 var (
-	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "customer_io_id", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountColumnsWithoutDefault = []string{"id"}
-	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "customer_io_id", "agreed_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "customer_io_id", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
 )

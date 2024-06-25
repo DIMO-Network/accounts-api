@@ -189,7 +189,7 @@ func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct.AgreedTosAt = null.TimeFrom(time.Now())
+	acct.AcceptedTosAt = null.TimeFrom(time.Now())
 
 	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
 		return err

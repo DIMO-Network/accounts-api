@@ -64,11 +64,11 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 
 	confKey := generateConfirmationKey()
 	userEmail := &models.Email{
-		AccountID:        acct.ID,
-		EmailAddress:     body.EmailAddress,
-		Confirmed:        false,
-		Code:             null.StringFrom(confKey),
-		ConfirmationSent: null.TimeFrom(time.Now()),
+		AccountID:          acct.ID,
+		EmailAddress:       body.EmailAddress,
+		Confirmed:          false,
+		ConfirmationCode:   null.StringFrom(confKey),
+		ConfirmationSentAt: null.TimeFrom(time.Now()),
 	}
 
 	if err := userEmail.Insert(c.Context(), tx, boil.Infer()); err != nil {
@@ -123,11 +123,11 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("email already confirmed")
 	}
 
-	if !acct.R.Email.ConfirmationSent.Valid || !acct.R.Email.Code.Valid {
+	if !acct.R.Email.ConfirmationSentAt.Valid || !acct.R.Email.ConfirmationCode.Valid {
 		return fmt.Errorf("email confirmation never sent")
 	}
 
-	if time.Since(acct.R.Email.ConfirmationSent.Time) > d.allowedLateness {
+	if time.Since(acct.R.Email.ConfirmationSentAt.Time) > d.allowedLateness {
 		return fmt.Errorf("email confirmation message expired")
 	}
 
@@ -136,13 +136,13 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	if confirmationBody.Key != acct.R.Email.Code.String {
+	if confirmationBody.Key != acct.R.Email.ConfirmationCode.String {
 		return fmt.Errorf("email confirmation code invalid")
 	}
 
 	acct.R.Email.Confirmed = true
-	acct.R.Email.Code = null.StringFromPtr(nil)
-	acct.R.Email.ConfirmationSent = null.TimeFromPtr(nil)
+	acct.R.Email.ConfirmationCode = null.StringFromPtr(nil)
+	acct.R.Email.ConfirmationSentAt = null.TimeFromPtr(nil)
 	if _, err := acct.R.Email.Update(c.Context(), tx, boil.Infer()); err != nil {
 		return err
 	}

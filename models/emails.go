@@ -24,42 +24,42 @@ import (
 
 // Email is an object representing the database table.
 type Email struct {
-	EmailAddress     string      `boil:"email_address" json:"email_address" toml:"email_address" yaml:"email_address"`
-	AccountID        string      `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
-	Confirmed        bool        `boil:"confirmed" json:"confirmed" toml:"confirmed" yaml:"confirmed"`
-	ConfirmationSent null.Time   `boil:"confirmation_sent" json:"confirmation_sent,omitempty" toml:"confirmation_sent" yaml:"confirmation_sent,omitempty"`
-	Code             null.String `boil:"code" json:"code,omitempty" toml:"code" yaml:"code,omitempty"`
+	EmailAddress       string      `boil:"email_address" json:"email_address" toml:"email_address" yaml:"email_address"`
+	AccountID          string      `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
+	Confirmed          bool        `boil:"confirmed" json:"confirmed" toml:"confirmed" yaml:"confirmed"`
+	ConfirmationSentAt null.Time   `boil:"confirmation_sent_at" json:"confirmation_sent_at,omitempty" toml:"confirmation_sent_at" yaml:"confirmation_sent_at,omitempty"`
+	ConfirmationCode   null.String `boil:"confirmation_code" json:"confirmation_code,omitempty" toml:"confirmation_code" yaml:"confirmation_code,omitempty"`
 
 	R *emailR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L emailL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var EmailColumns = struct {
-	EmailAddress     string
-	AccountID        string
-	Confirmed        string
-	ConfirmationSent string
-	Code             string
+	EmailAddress       string
+	AccountID          string
+	Confirmed          string
+	ConfirmationSentAt string
+	ConfirmationCode   string
 }{
-	EmailAddress:     "email_address",
-	AccountID:        "account_id",
-	Confirmed:        "confirmed",
-	ConfirmationSent: "confirmation_sent",
-	Code:             "code",
+	EmailAddress:       "email_address",
+	AccountID:          "account_id",
+	Confirmed:          "confirmed",
+	ConfirmationSentAt: "confirmation_sent_at",
+	ConfirmationCode:   "confirmation_code",
 }
 
 var EmailTableColumns = struct {
-	EmailAddress     string
-	AccountID        string
-	Confirmed        string
-	ConfirmationSent string
-	Code             string
+	EmailAddress       string
+	AccountID          string
+	Confirmed          string
+	ConfirmationSentAt string
+	ConfirmationCode   string
 }{
-	EmailAddress:     "emails.email_address",
-	AccountID:        "emails.account_id",
-	Confirmed:        "emails.confirmed",
-	ConfirmationSent: "emails.confirmation_sent",
-	Code:             "emails.code",
+	EmailAddress:       "emails.email_address",
+	AccountID:          "emails.account_id",
+	Confirmed:          "emails.confirmed",
+	ConfirmationSentAt: "emails.confirmation_sent_at",
+	ConfirmationCode:   "emails.confirmation_code",
 }
 
 // Generated where
@@ -74,17 +74,17 @@ func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field
 func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
 var EmailWhere = struct {
-	EmailAddress     whereHelperstring
-	AccountID        whereHelperstring
-	Confirmed        whereHelperbool
-	ConfirmationSent whereHelpernull_Time
-	Code             whereHelpernull_String
+	EmailAddress       whereHelperstring
+	AccountID          whereHelperstring
+	Confirmed          whereHelperbool
+	ConfirmationSentAt whereHelpernull_Time
+	ConfirmationCode   whereHelpernull_String
 }{
-	EmailAddress:     whereHelperstring{field: "\"accounts_api\".\"emails\".\"email_address\""},
-	AccountID:        whereHelperstring{field: "\"accounts_api\".\"emails\".\"account_id\""},
-	Confirmed:        whereHelperbool{field: "\"accounts_api\".\"emails\".\"confirmed\""},
-	ConfirmationSent: whereHelpernull_Time{field: "\"accounts_api\".\"emails\".\"confirmation_sent\""},
-	Code:             whereHelpernull_String{field: "\"accounts_api\".\"emails\".\"code\""},
+	EmailAddress:       whereHelperstring{field: "\"accounts_api\".\"emails\".\"email_address\""},
+	AccountID:          whereHelperstring{field: "\"accounts_api\".\"emails\".\"account_id\""},
+	Confirmed:          whereHelperbool{field: "\"accounts_api\".\"emails\".\"confirmed\""},
+	ConfirmationSentAt: whereHelpernull_Time{field: "\"accounts_api\".\"emails\".\"confirmation_sent_at\""},
+	ConfirmationCode:   whereHelpernull_String{field: "\"accounts_api\".\"emails\".\"confirmation_code\""},
 }
 
 // EmailRels is where relationship names are stored.
@@ -115,9 +115,9 @@ func (r *emailR) GetAccount() *Account {
 type emailL struct{}
 
 var (
-	emailAllColumns            = []string{"email_address", "account_id", "confirmed", "confirmation_sent", "code"}
+	emailAllColumns            = []string{"email_address", "account_id", "confirmed", "confirmation_sent_at", "confirmation_code"}
 	emailColumnsWithoutDefault = []string{"email_address", "account_id", "confirmed"}
-	emailColumnsWithDefault    = []string{"confirmation_sent", "code"}
+	emailColumnsWithDefault    = []string{"confirmation_sent_at", "confirmation_code"}
 	emailPrimaryKeyColumns     = []string{"email_address"}
 	emailGeneratedColumns      = []string{}
 )

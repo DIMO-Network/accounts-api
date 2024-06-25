@@ -24,47 +24,32 @@ import (
 
 // Wallet is an object representing the database table.
 type Wallet struct {
-	EthereumAddress  []byte      `boil:"ethereum_address" json:"ethereum_address" toml:"ethereum_address" yaml:"ethereum_address"`
-	AccountID        string      `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
-	Confirmed        bool        `boil:"confirmed" json:"confirmed" toml:"confirmed" yaml:"confirmed"`
-	Provider         null.String `boil:"provider" json:"provider,omitempty" toml:"provider" yaml:"provider,omitempty"`
-	ConfirmationSent null.Time   `boil:"confirmation_sent" json:"confirmation_sent,omitempty" toml:"confirmation_sent" yaml:"confirmation_sent,omitempty"`
-	Challenge        null.String `boil:"challenge" json:"challenge,omitempty" toml:"challenge" yaml:"challenge,omitempty"`
+	EthereumAddress []byte      `boil:"ethereum_address" json:"ethereum_address" toml:"ethereum_address" yaml:"ethereum_address"`
+	AccountID       string      `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
+	Provider        null.String `boil:"provider" json:"provider,omitempty" toml:"provider" yaml:"provider,omitempty"`
 
 	R *walletR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L walletL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var WalletColumns = struct {
-	EthereumAddress  string
-	AccountID        string
-	Confirmed        string
-	Provider         string
-	ConfirmationSent string
-	Challenge        string
+	EthereumAddress string
+	AccountID       string
+	Provider        string
 }{
-	EthereumAddress:  "ethereum_address",
-	AccountID:        "account_id",
-	Confirmed:        "confirmed",
-	Provider:         "provider",
-	ConfirmationSent: "confirmation_sent",
-	Challenge:        "challenge",
+	EthereumAddress: "ethereum_address",
+	AccountID:       "account_id",
+	Provider:        "provider",
 }
 
 var WalletTableColumns = struct {
-	EthereumAddress  string
-	AccountID        string
-	Confirmed        string
-	Provider         string
-	ConfirmationSent string
-	Challenge        string
+	EthereumAddress string
+	AccountID       string
+	Provider        string
 }{
-	EthereumAddress:  "wallets.ethereum_address",
-	AccountID:        "wallets.account_id",
-	Confirmed:        "wallets.confirmed",
-	Provider:         "wallets.provider",
-	ConfirmationSent: "wallets.confirmation_sent",
-	Challenge:        "wallets.challenge",
+	EthereumAddress: "wallets.ethereum_address",
+	AccountID:       "wallets.account_id",
+	Provider:        "wallets.provider",
 }
 
 // Generated where
@@ -79,19 +64,13 @@ func (w whereHelper__byte) GT(x []byte) qm.QueryMod  { return qmhelper.Where(w.f
 func (w whereHelper__byte) GTE(x []byte) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
 var WalletWhere = struct {
-	EthereumAddress  whereHelper__byte
-	AccountID        whereHelperstring
-	Confirmed        whereHelperbool
-	Provider         whereHelpernull_String
-	ConfirmationSent whereHelpernull_Time
-	Challenge        whereHelpernull_String
+	EthereumAddress whereHelper__byte
+	AccountID       whereHelperstring
+	Provider        whereHelpernull_String
 }{
-	EthereumAddress:  whereHelper__byte{field: "\"accounts_api\".\"wallets\".\"ethereum_address\""},
-	AccountID:        whereHelperstring{field: "\"accounts_api\".\"wallets\".\"account_id\""},
-	Confirmed:        whereHelperbool{field: "\"accounts_api\".\"wallets\".\"confirmed\""},
-	Provider:         whereHelpernull_String{field: "\"accounts_api\".\"wallets\".\"provider\""},
-	ConfirmationSent: whereHelpernull_Time{field: "\"accounts_api\".\"wallets\".\"confirmation_sent\""},
-	Challenge:        whereHelpernull_String{field: "\"accounts_api\".\"wallets\".\"challenge\""},
+	EthereumAddress: whereHelper__byte{field: "\"accounts_api\".\"wallets\".\"ethereum_address\""},
+	AccountID:       whereHelperstring{field: "\"accounts_api\".\"wallets\".\"account_id\""},
+	Provider:        whereHelpernull_String{field: "\"accounts_api\".\"wallets\".\"provider\""},
 }
 
 // WalletRels is where relationship names are stored.
@@ -122,9 +101,9 @@ func (r *walletR) GetAccount() *Account {
 type walletL struct{}
 
 var (
-	walletAllColumns            = []string{"ethereum_address", "account_id", "confirmed", "provider", "confirmation_sent", "challenge"}
-	walletColumnsWithoutDefault = []string{"ethereum_address", "account_id", "confirmed"}
-	walletColumnsWithDefault    = []string{"provider", "confirmation_sent", "challenge"}
+	walletAllColumns            = []string{"ethereum_address", "account_id", "provider"}
+	walletColumnsWithoutDefault = []string{"ethereum_address", "account_id"}
+	walletColumnsWithDefault    = []string{"provider"}
 	walletPrimaryKeyColumns     = []string{"ethereum_address"}
 	walletGeneratedColumns      = []string{}
 )

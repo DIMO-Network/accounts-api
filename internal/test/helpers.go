@@ -314,7 +314,6 @@ func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
-		Confirmed:       true,
 	}
 
 	if err := acct.Insert(context.Background(), exec, boil.Infer()); err != nil {
