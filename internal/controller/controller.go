@@ -41,7 +41,6 @@ type Controller struct {
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
-	eventService    services.EventService
 	identityService services.IdentityService
 	emailService    services.EmailService
 	jwkResource     keyfunc.Keyfunc
@@ -54,7 +53,7 @@ type Account struct {
 	ProviderID      *string
 }
 
-func NewAccountController(ctx context.Context, dbs db.Store, eventService services.EventService, idSvc services.IdentityService, emlSvc services.EmailService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
+func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		return nil, err
@@ -70,7 +69,6 @@ func NewAccountController(ctx context.Context, dbs db.Store, eventService servic
 		log:             logger,
 		allowedLateness: settings.AllowableEmailConfirmationLateness * time.Minute,
 		countryCodes:    countryCodes,
-		eventService:    eventService,
 		emailService:    emlSvc,
 		identityService: idSvc,
 		jwkResource:     jwkResource,
@@ -182,20 +180,6 @@ func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *s
 		if err := email.Insert(ctx, tx, boil.Infer()); err != nil {
 			return fmt.Errorf("failed to insert email: %w", err)
 		}
-	}
-
-	msg := UserCreationEventData{
-		Timestamp: time.Now(),
-		UserID:    acct.ID,
-		Method:    *userAccount.ProviderID,
-	}
-	if err := d.eventService.Emit(&services.Event{
-		Type:    UserCreationEventType,
-		Subject: acct.ID,
-		Source:  "accounts-api",
-		Data:    msg,
-	}); err != nil {
-		d.log.Err(err).Msg("Failed sending account creation event")
 	}
 
 	return nil

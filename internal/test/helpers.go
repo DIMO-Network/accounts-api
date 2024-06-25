@@ -271,16 +271,6 @@ func GenerateWallet() (*ecdsa.PrivateKey, *common.Address, error) {
 	return privateKey, &userAddr, nil
 }
 
-type eventService struct{}
-
-func (e *eventService) Emit(event *services.Event) error {
-	return nil
-}
-
-func NewEventService() services.EventService {
-	return &eventService{}
-}
-
 type identityService struct {
 }
 

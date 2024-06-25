@@ -74,7 +74,6 @@ type AccountControllerTestSuite struct {
 	dexContainer    testcontainers.Container
 	ctx             context.Context
 	controller      *Controller
-	eventService    services.EventService
 	identityService services.IdentityService
 	emailService    services.EmailService
 }
@@ -83,7 +82,6 @@ type AccountControllerTestSuite struct {
 func (s *AccountControllerTestSuite) SetupSuite() {
 	s.app = fiber.New()
 	s.ctx = context.Background()
-	s.eventService = test.NewEventService()
 	s.emailService = test.NewEmailService()
 	s.identityService = test.NewIdentityService(true)
 	s.pdb, s.pgContainer = test.StartContainerDatabase(s.ctx, s.T(), migrationsDirRelPath)
@@ -100,7 +98,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 		JWKSetURLs: []string{s.settings.JWTKeySetURL},
 	}))
 
-	acctCont, err := NewAccountController(s.ctx, s.pdb, s.eventService, s.identityService, s.emailService, s.settings, test.Logger())
+	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
 	s.app.Post("/", s.controller.CreateUserAccount)

@@ -101,9 +101,8 @@ func main() {
 	))
 
 	idSvc := services.NewIdentityService(&settings)
-	eventSvc := services.NewEventService(&logger, &settings)
 	emailSvc := services.NewEmailService(&settings)
-	accountController, err := controller.NewAccountController(ctx, dbs, eventSvc, idSvc, emailSvc, &settings, &logger)
+	accountController, err := controller.NewAccountController(ctx, dbs, idSvc, emailSvc, &settings, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("failed to start account controller")
 	}
