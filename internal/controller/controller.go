@@ -112,50 +112,6 @@ func getUserAccountInfos(claims jwt.MapClaims) *Account {
 	return &acct
 }
 
-func (d *Controller) getOrCreateUserAccount(c *fiber.Ctx) (*models.Account, error) {
-	userAccount, err := getuserAccountInfosToken(c)
-	if err != nil {
-		d.log.Err(err).Msg("failed to parse user")
-		return nil, err
-	}
-
-	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback() //nolint
-
-	if userAccount.EmailAddress != nil {
-		if exists, err := models.Emails(
-			models.EmailWhere.EmailAddress.EQ(*userAccount.EmailAddress),
-		).Exists(c.Context(), tx); err != nil {
-			return nil, err
-		} else if !exists {
-			if err := d.createUser(c.Context(), userAccount, tx); err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return nil, err
-			}
-		}
-	}
-
-	if userAccount.EthereumAddress != nil {
-		if exists, err := models.Wallets(
-			models.WalletWhere.EthereumAddress.EQ(userAccount.EthereumAddress.Bytes()),
-		).Exists(c.Context(), tx); err != nil {
-			return nil, err
-		} else if !exists {
-			if err := d.createUser(c.Context(), userAccount, tx); err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return nil, err
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("failed to commit get or create user account tx: %w", err)
-	}
-
-	return d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
-}
-
 func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, exec boil.ContextExecutor) (*models.Account, error) {
 	queryMods := []qm.QueryMod{}
 
