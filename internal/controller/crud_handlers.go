@@ -12,25 +12,73 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-// GetOrCreateUserAccount godoc
+// CreateUserAccount godoc
+// @Summary Create user account based on email or 0x address.
+// @Produce json
+// @Success 200 {object} controller.UserResponse
+// @Failure 403 {object} controller.ErrorRes
+// @Security BearerAuth
+// @Router /v1/accounts [get]
+func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
+	userAccount, err := getuserAccountInfosToken(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
+
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint
+
+	if err := d.createUser(c.Context(), userAccount, tx); err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		d.log.Err(err).Msg("failed to commit create user account tx")
+		return err
+	}
+
+	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
+	if err != nil {
+		return err
+	}
+
+	formattedAcct, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(formattedAcct)
+}
+
+// GetUserAccount godoc
 // @Summary Get attributes for the authenticated user.
 // @Produce json
 // @Success 200 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
 // @Router /v1/accounts [get]
-func (d *Controller) GetOrCreateUserAccount(c *fiber.Ctx) error {
-	acct, err := d.getOrCreateUserAccount(c)
+func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
+	userAccount, err := getuserAccountInfosToken(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
+
+	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
 	if err != nil {
 		return err
 	}
 
-	userResp, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)
+	formattedAcct, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(userResp)
+	return c.JSON(formattedAcct)
 }
 
 // UpdateUser godoc

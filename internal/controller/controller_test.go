@@ -103,9 +103,10 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	acctCont, err := NewAccountController(s.ctx, s.pdb, s.eventService, s.identityService, s.emailService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
-	s.app.Get("/", s.controller.GetOrCreateUserAccount)
-	s.app.Put("/", s.controller.UpdateUser)
+	s.app.Post("/", s.controller.CreateUserAccount)
+	s.app.Get("/", s.controller.GetUserAccount)
 	s.app.Delete("/", s.controller.DeleteUser)
+	s.app.Put("/update", s.controller.UpdateUser)
 
 	s.app.Post("/agree-tos", s.controller.AgreeTOS)
 	s.app.Post("/referral/submit", s.controller.SubmitReferralCode)
@@ -141,14 +142,14 @@ func TestDevicesControllerTestSuite(t *testing.T) {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_CreateAndDelete() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexEmailUsers[0].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	getBody, err := io.ReadAll(getResp.Body)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[0].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	createAcctBody, err := io.ReadAll(createAcctResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	var userResp UserResponse
-	if err := json.Unmarshal(getBody, &userResp); err != nil {
+	if err := json.Unmarshal(createAcctBody, &userResp); err != nil {
 		s.Require().NoError(err)
 	}
 
@@ -168,18 +169,16 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_CreateAndDelete() {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_UpdateAccount() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexEmailUsers[0].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	_, err := io.ReadAll(getResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[0].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	updateBody := UserUpdateRequest{
 		CountryCode: "USA",
 	}
 	updateBodyBytes, _ := json.Marshal(updateBody)
 
-	putReq := test.BuildRequest("PUT", "/", string(updateBodyBytes), dexEmailUsers[0].AuthToken)
+	putReq := test.BuildRequest("PUT", "/update", string(updateBodyBytes), dexEmailUsers[0].AuthToken)
 	putResp, _ := s.app.Test(putReq)
 	putBody, err := io.ReadAll(putResp.Body)
 	s.Require().NoError(err)
@@ -198,16 +197,14 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_UpdateAccount() {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_AgreeTOS() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexEmailUsers[0].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	_, err := io.ReadAll(getResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[0].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	// Account 1 Agree TOS
 	putReq := test.BuildRequest("POST", "/agree-tos", "", dexEmailUsers[0].AuthToken)
 	putResp, _ := s.app.Test(putReq)
-	_, err = io.ReadAll(putResp.Body)
+	_, err := io.ReadAll(putResp.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, putResp.StatusCode)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
@@ -215,11 +212,9 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_AgreeTOS() {
 
 func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexEmailUsers[0].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	_, err := io.ReadAll(getResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[0].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	// Link wallet via token
 	linkWalletBody := TokenBody{
@@ -246,14 +241,14 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexWalletUsers[1].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	getBody, err := io.ReadAll(getResp.Body)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[1].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	createAcctBody, err := io.ReadAll(createAcctResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	var userResp UserResponse
-	if err := json.Unmarshal(getBody, &userResp); err != nil {
+	if err := json.Unmarshal(createAcctBody, &userResp); err != nil {
 		s.Require().NoError(err)
 	}
 
@@ -278,10 +273,8 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 	// Create Account
-	createAcctReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[0].AuthToken)
 	createAcctResp, _ := s.app.Test(createAcctReq)
-	_, err := io.ReadAll(createAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	// Link email via token
@@ -292,7 +285,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 
 	putReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
 	putResp, _ := s.app.Test(putReq)
-	_, err = io.ReadAll(putResp.Body)
+	_, err := io.ReadAll(putResp.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, putResp.StatusCode)
 
@@ -316,11 +309,9 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 
 func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	_, err := io.ReadAll(getResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[0].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	// Link email via confirmation code
 	linkEmailBody := RequestEmailValidation{
@@ -329,7 +320,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
 	postReq := test.BuildRequest("POST", "/link/email", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
 	postResp, _ := s.app.Test(postReq)
-	_, err = io.ReadAll(postResp.Body)
+	_, err := io.ReadAll(postResp.Body)
 	s.Require().NoError(err)
 	s.Assert().Equal(204, postResp.StatusCode)
 
@@ -350,11 +341,9 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 
 func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
 	// Create Account
-	getReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	_, err := io.ReadAll(getResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[0].AuthToken)
+	createAcctResp, _ := s.app.Test(createAcctReq)
+	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	refAcct, err := test.NewAccount(s.pdb.DBS().Writer) // Create Referrer Account
 	s.Require().NoError(err)
@@ -386,21 +375,21 @@ func (s *AccountControllerTestSuite) Test_GenerateReferralCode() {
 	}
 
 	s.Assert().Equal(numUniqueCodes, len(uniqueCodes))
+	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
 func (s *AccountControllerTestSuite) Test_ConflictingEmail_Token() {
 	// Create Account 1
-	createEmailAcctReq := test.BuildRequest("GET", "/", "", dexEmailUsers[2].AuthToken)
+	createEmailAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[2].AuthToken)
 	createEmailAcctResp, _ := s.app.Test(createEmailAcctReq)
-	_, err := io.ReadAll(createEmailAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createEmailAcctResp.StatusCode)
 
 	// Create Account 2
-	createWalletAcctReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
+	createWalletAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[1].AuthToken)
 	createWalletAcctResp, _ := s.app.Test(createWalletAcctReq)
-	_, err = io.ReadAll(createWalletAcctResp.Body)
+	createWalletAcctBody, err := io.ReadAll(createWalletAcctResp.Body)
 	s.Require().NoError(err)
+	fmt.Println("Body: ", string(createWalletAcctBody))
 	s.Assert().Equal(200, createWalletAcctResp.StatusCode)
 
 	// Account 2 attempts to link email of account 1 via token
@@ -409,27 +398,24 @@ func (s *AccountControllerTestSuite) Test_ConflictingEmail_Token() {
 	}
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
 
-	putReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
-	putResp, _ := s.app.Test(putReq)
-	resp, err := io.ReadAll(putResp.Body)
+	linkEmailReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), dexWalletUsers[1].AuthToken)
+	linkEmailResp, _ := s.app.Test(linkEmailReq)
+	resp, err := io.ReadAll(linkEmailResp.Body)
+	s.Require().NoError(err)
 	s.Assert().Equal(string(resp), `models: unable to insert into emails: pq: duplicate key value violates unique constraint "emails_pkey"`)
-	s.Assert().Equal(500, putResp.StatusCode)
+	s.Assert().Equal(500, linkEmailResp.StatusCode)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
 func (s *AccountControllerTestSuite) Test_ConflictingEmail_Challenge() {
 	// Create Account 1
-	createEmailAcctReq := test.BuildRequest("GET", "/", "", dexEmailUsers[0].AuthToken)
+	createEmailAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[0].AuthToken)
 	createEmailAcctResp, _ := s.app.Test(createEmailAcctReq)
-	_, err := io.ReadAll(createEmailAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createEmailAcctResp.StatusCode)
 
 	// Create Account 2
-	createWalletAcctReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
+	createWalletAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[0].AuthToken)
 	createWalletAcctResp, _ := s.app.Test(createWalletAcctReq)
-	_, err = io.ReadAll(createWalletAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createWalletAcctResp.StatusCode)
 
 	linkEmailBody := RequestEmailValidation{
@@ -440,23 +426,21 @@ func (s *AccountControllerTestSuite) Test_ConflictingEmail_Challenge() {
 	postReq := test.BuildRequest("POST", "/link/email", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
 	postResp, _ := s.app.Test(postReq)
 	resp, err := io.ReadAll(postResp.Body)
+	s.Require().NoError(err)
 	s.Require().Equal(string(resp), `email address linked to another account`)
 	s.Assert().Equal(500, postResp.StatusCode)
+	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
 func (s *AccountControllerTestSuite) Test_ConflictingWallet() {
 	// Create Account 1
-	createEmailAcctReq := test.BuildRequest("GET", "/", "", dexEmailUsers[2].AuthToken)
+	createEmailAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[2].AuthToken)
 	createEmailAcctResp, _ := s.app.Test(createEmailAcctReq)
-	_, err := io.ReadAll(createEmailAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createEmailAcctResp.StatusCode)
 
 	// Create Account 2
-	createWalletAcctReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
+	createWalletAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[0].AuthToken)
 	createWalletAcctResp, _ := s.app.Test(createWalletAcctReq)
-	_, err = io.ReadAll(createWalletAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createWalletAcctResp.StatusCode)
 
 	// Account 1 attempts to link wallet of account 2 via token
@@ -465,20 +449,20 @@ func (s *AccountControllerTestSuite) Test_ConflictingWallet() {
 	}
 	linkWalletTokenBytes, _ := json.Marshal(linkWalletToken)
 
-	putReq := test.BuildRequest("POST", "/link/wallet/token", string(linkWalletTokenBytes), dexEmailUsers[2].AuthToken)
-	putResp, _ := s.app.Test(putReq)
-	resp, err := io.ReadAll(putResp.Body)
-	s.Assert().Equal(string(resp), `models: unable to insert into wallets: pq: duplicate key value violates unique constraint "wallets_pkey"`)
-	s.Assert().Equal(500, putResp.StatusCode)
+	linkWalletReq := test.BuildRequest("POST", "/link/wallet/token", string(linkWalletTokenBytes), dexEmailUsers[2].AuthToken)
+	linkWalletResp, _ := s.app.Test(linkWalletReq)
+	linkWalletBody, err := io.ReadAll(linkWalletResp.Body)
+	s.Require().NoError(err)
+	s.Assert().Equal(string(linkWalletBody), `models: unable to insert into wallets: pq: duplicate key value violates unique constraint "wallets_pkey"`)
+	s.Assert().Equal(500, linkWalletResp.StatusCode)
+	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
 func (s *AccountControllerTestSuite) Test_EmailFirst_AlternativeSignIn_Token() {
 	// Create Account
-	createAcctReq := test.BuildRequest("GET", "/", "", dexEmailUsers[0].AuthToken)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexEmailUsers[0].AuthToken)
 	createAcctResp, _ := s.app.Test(createAcctReq)
-	_, err := io.ReadAll(createAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	linkEmailBody := TokenBody{
@@ -486,20 +470,18 @@ func (s *AccountControllerTestSuite) Test_EmailFirst_AlternativeSignIn_Token() {
 	}
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
 
-	putReq := test.BuildRequest("POST", "/link/wallet/token", string(linkEmailBodyBytes), dexEmailUsers[0].AuthToken)
-	putResp, _ := s.app.Test(putReq)
-	_, err = io.ReadAll(putResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(200, putResp.StatusCode)
+	linkWalletReq := test.BuildRequest("POST", "/link/wallet/token", string(linkEmailBodyBytes), dexEmailUsers[0].AuthToken)
+	linkWalletResp, _ := s.app.Test(linkWalletReq)
+	s.Assert().Equal(200, linkWalletResp.StatusCode)
 
-	getReq := test.BuildRequest("GET", "/", "", dexWalletUsers[2].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	getBody, err := io.ReadAll(getResp.Body)
+	getAcctReq := test.BuildRequest("GET", "/", "", dexWalletUsers[2].AuthToken)
+	getAcctResp, _ := s.app.Test(getAcctReq)
+	getAcctBody, err := io.ReadAll(getAcctResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	s.Assert().Equal(200, getAcctResp.StatusCode)
 
 	var userResp UserResponse
-	if err := json.Unmarshal(getBody, &userResp); err != nil {
+	if err := json.Unmarshal(getAcctBody, &userResp); err != nil {
 		s.Require().NoError(err)
 	}
 
@@ -512,10 +494,8 @@ func (s *AccountControllerTestSuite) Test_EmailFirst_AlternativeSignIn_Token() {
 
 func (s *AccountControllerTestSuite) Test_WalletFirst_AlternativeSignIn_Token() {
 	// Create Account
-	createAcctReq := test.BuildRequest("GET", "/", "", dexWalletUsers[0].AuthToken)
+	createAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[0].AuthToken)
 	createAcctResp, _ := s.app.Test(createAcctReq)
-	_, err := io.ReadAll(createAcctResp.Body)
-	s.Require().NoError(err)
 	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	linkEmailBody := TokenBody{
@@ -523,20 +503,18 @@ func (s *AccountControllerTestSuite) Test_WalletFirst_AlternativeSignIn_Token() 
 	}
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
 
-	putReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
-	putResp, _ := s.app.Test(putReq)
-	_, err = io.ReadAll(putResp.Body)
-	s.Require().NoError(err)
-	s.Assert().Equal(204, putResp.StatusCode)
+	linkEmailReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
+	linkEmailResp, _ := s.app.Test(linkEmailReq)
+	s.Assert().Equal(204, linkEmailResp.StatusCode)
 
-	getReq := test.BuildRequest("GET", "/", "", dexEmailUsers[2].AuthToken)
-	getResp, _ := s.app.Test(getReq)
-	getBody, err := io.ReadAll(getResp.Body)
+	getAcctReq := test.BuildRequest("GET", "/", "", dexEmailUsers[2].AuthToken)
+	getAcctResp, _ := s.app.Test(getAcctReq)
+	getAcctBody, err := io.ReadAll(getAcctResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(200, getResp.StatusCode)
+	s.Assert().Equal(200, getAcctResp.StatusCode)
 
 	var userResp UserResponse
-	if err := json.Unmarshal(getBody, &userResp); err != nil {
+	if err := json.Unmarshal(getAcctBody, &userResp); err != nil {
 		s.Require().NoError(err)
 	}
 

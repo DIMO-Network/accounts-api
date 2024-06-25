@@ -108,12 +108,15 @@ func main() {
 		logger.Fatal().Err(err).Msg("failed to start account controller")
 	}
 
-	//create account based on whether the 0x or email links to an existing account
+	//create account based on 0x or email
+	v1.Post("/", accountController.CreateUserAccount)
+
+	//fetch account information based on whether the 0x or email links to an existing account
 	//search is performed through wallets or emails table, whichever way you came in
-	v1.Get("/", accountController.GetOrCreateUserAccount)
+	v1.Get("/", accountController.GetUserAccount)
 
 	//update account other data(region,etc)
-	v1.Put("/", accountController.UpdateUser)
+	v1.Put("/update", accountController.UpdateUser)
 
 	//delete account and all associated links, cascade
 	v1.Delete("/", accountController.DeleteUser)
