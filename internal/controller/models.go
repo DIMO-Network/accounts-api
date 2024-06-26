@@ -10,7 +10,6 @@ import (
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-var UserCreationEventType = "com.dimo.zone.user.create"
 var digits = []rune("0123456789")
 
 type TokenBody struct {
@@ -64,12 +63,6 @@ type SubmitReferralCodeResponse struct {
 	Message string `json:"message"`
 }
 
-type UserCreationEventData struct {
-	Timestamp time.Time `json:"timestamp"`
-	UserID    string    `json:"userId"`
-	Method    string    `json:"method"`
-}
-
 // UserUpdateRequest describes a user's request to modify or delete certain fields
 // Currently contains only CountryCode as dedicated endpoints exist for other types
 // of updates a user might make
@@ -86,33 +79,6 @@ type RequestEmailValidation struct {
 type CompleteEmailValidation struct {
 	// Key is the 6-digit number from the confirmation email
 	Key string `json:"key" example:"010990"`
-}
-
-// type ChallengeResponse struct {
-// 	// Challenge is the message to be signed.
-// 	Challenge string `json:"challenge"`
-// 	// ExpiresAt is the time at which the signed challenge will no longer be accepted.
-// 	ExpiresAt time.Time `json:"expiresAt"`
-// }
-
-// type ConfirmEthereumRequest struct {
-// 	// Signature is the result of signing the provided challenge message using the address in
-// 	// question.
-// 	Signature string `json:"signature"`
-// }
-
-type AltAccount struct {
-	// Type is the authentication provider, one of "web3", "apple", "google".
-	Type string `json:"type"`
-	// Login is the login username for the provider, either an email address
-	// or an EIP-55-compliant ethereum address.
-	Login string `json:"login"`
-}
-
-type AlternateAccountsResponse struct {
-	// OtherAccounts is a list of any other accounts that share email or
-	// ethereum address with the provided token.
-	OtherAccounts []*AltAccount `json:"otherAccounts"`
 }
 
 type ErrorRes struct {
