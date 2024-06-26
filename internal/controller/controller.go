@@ -144,7 +144,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		wallet := &models.Wallet{
 			AccountID:       acct.ID,
 			EthereumAddress: mixAddr.Address().Bytes(),
-			// TODO AE: where are we getting the provider from? how is this passed?
+			Provider:        null.StringFrom(*userAccount.ProviderID),
 		}
 
 		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {

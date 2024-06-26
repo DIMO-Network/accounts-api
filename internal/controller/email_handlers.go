@@ -52,7 +52,6 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	}
 
 	if acct.R.Email != nil && acct.R.Email.Confirmed {
-		// TODO AE: do we want to allow users to update the account
 		return fmt.Errorf("email address already linked with account")
 	}
 

@@ -57,7 +57,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return errors.New("failed to parse ethereum address from token")
 	}
 
-	wallet := models.Wallet{
+	wallet := &models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
 		Provider:        null.StringFrom(*infos.ProviderID),
@@ -71,7 +71,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	userResp, err := d.formatUserAcctResponse(acct, &wallet, acct.R.Email)
+	userResp, err := d.formatUserAcctResponse(acct, wallet, acct.R.Email)
 	if err != nil {
 		return err
 	}

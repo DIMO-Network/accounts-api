@@ -48,6 +48,4 @@ Questions:
 
 - clean up swagger
 - address TODO comments
-- Do we want gRPC service in here?
 - Confirm that update user endpoint can now only add country code (since we have dedicated endpoints for linking a wallet or email)
-- Confirm and update cols/ pk's in tables
