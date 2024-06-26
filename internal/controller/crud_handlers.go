@@ -20,7 +20,7 @@ import (
 // @Security BearerAuth
 // @Router /v1/accounts [get]
 func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -62,7 +62,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 // @Security BearerAuth
 // @Router /v1/accounts [get]
 func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -91,7 +91,7 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Failure 403 {object} controller.ErrorRes
 // @Router /v1/accounts [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -132,7 +132,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 // @Failure 409 {object} controller.ErrorRes "Returned if the user still has devices."
 // @Router /v1/accounts [delete]
 func (d *Controller) DeleteUser(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -178,7 +178,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 // @Failure 400 {object} controller.ErrorRes
 // @Router /v1/accounts/agree-tos [post]
 func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err

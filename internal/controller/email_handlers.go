@@ -23,7 +23,7 @@ import (
 // @Failure 500 {object} controller.ErrorRes
 // @Router /v1/link/email [post]
 func (d *Controller) LinkEmail(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -45,6 +45,10 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
+	}
+
+	if acct.R.Wallet == nil {
+		return fmt.Errorf("email-first accounts must associate wallet before updating email")
 	}
 
 	if acct.R.Email != nil && acct.R.Email.Confirmed {
@@ -95,7 +99,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // @Failure 403 {object} controller.ErrorRes
 // @Router /v1/accounts/confirm-email [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -156,7 +160,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 // @Failure 400 {object} controller.ErrorRes
 // @Router /v1/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -186,13 +190,15 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	tbClaims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(tb.Token, &tbClaims, d.jwkResource.Keyfunc)
-	if err != nil {
+	infos := AccountClaims{}
+	if _, err = jwt.ParseWithClaims(tb.Token, &infos, d.jwkResource.Keyfunc); err != nil {
 		return err
 	}
 
-	infos := getUserAccountInfos(tbClaims)
+	if infos.EmailAddress == nil || !emailPattern.MatchString(*infos.EmailAddress) {
+		return errors.New("failed to parse email address from token")
+	}
+
 	email := models.Email{
 		AccountID:    acct.ID,
 		Confirmed:    true,

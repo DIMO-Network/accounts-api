@@ -96,6 +96,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	}
 	s.app.Use(jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{s.settings.JWTKeySetURL},
+		Claims:     &AccountClaims{},
 	}))
 
 	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.settings, test.Logger())
@@ -384,9 +385,8 @@ func (s *AccountControllerTestSuite) Test_ConflictingEmail_Token() {
 	// Create Account 2
 	createWalletAcctReq := test.BuildRequest("POST", "/", "", dexWalletUsers[1].AuthToken)
 	createWalletAcctResp, _ := s.app.Test(createWalletAcctReq)
-	createWalletAcctBody, err := io.ReadAll(createWalletAcctResp.Body)
+	_, err := io.ReadAll(createWalletAcctResp.Body)
 	s.Require().NoError(err)
-	fmt.Println("Body: ", string(createWalletAcctBody))
 	s.Assert().Equal(200, createWalletAcctResp.StatusCode)
 
 	// Account 2 attempts to link email of account 1 via token
@@ -527,11 +527,10 @@ func (s *AccountControllerTestSuite) Test_JWTDecodeEmailAuthToken() {
 	s.Require().NoError(err)
 
 	for _, user := range dexEmailUsers {
-		tbClaims := jwt.MapClaims{}
+		tbClaims := AccountClaims{}
 		_, err := jwt.ParseWithClaims(user.AuthToken, &tbClaims, jwkResource.Keyfunc)
 		s.Require().NoError(err)
-		claims := *getUserAccountInfos(tbClaims)
-		s.Require().Equal(*claims.EmailAddress, user.Email)
+		s.Require().Equal(*tbClaims.EmailAddress, user.Email)
 	}
 }
 
@@ -540,10 +539,9 @@ func (s *AccountControllerTestSuite) Test_JWTDecodeWalletAuthToken() {
 	s.Require().NoError(err)
 
 	for _, user := range dexWalletUsers {
-		tbClaims := jwt.MapClaims{}
+		tbClaims := AccountClaims{}
 		_, err := jwt.ParseWithClaims(user.AuthToken, &tbClaims, jwkResource.Keyfunc)
 		s.Require().NoError(err)
-		claims := *getUserAccountInfos(tbClaims)
-		s.Require().Equal(claims.EthereumAddress.Hex(), user.Wallet)
+		s.Require().Equal(tbClaims.EthereumAddress.Hex(), user.Wallet)
 	}
 }

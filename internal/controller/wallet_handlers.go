@@ -7,6 +7,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
@@ -16,7 +17,7 @@ import (
 // @Failure 400 {object} controller.ErrorRes
 // @Router /v1/link/wallet/token [post]
 func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
@@ -47,17 +48,19 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "failed to parse request body.")
 	}
 
-	tbClaims := jwt.MapClaims{}
-	_, err = jwt.ParseWithClaims(tb.Token, &tbClaims, d.jwkResource.Keyfunc)
-	if err != nil {
+	infos := AccountClaims{}
+	if _, err = jwt.ParseWithClaims(tb.Token, &infos, d.jwkResource.Keyfunc); err != nil {
 		return err
 	}
 
-	infos := getUserAccountInfos(tbClaims)
+	if infos.EthereumAddress == nil {
+		return errors.New("failed to parse ethereum address from token")
+	}
+
 	wallet := models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
-		//TODO: where do will in provider from? Do we know this now or do we fill it in later?
+		Provider:        null.StringFrom(*infos.ProviderID),
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {

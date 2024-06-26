@@ -47,10 +47,11 @@ type Controller struct {
 	emailTemplate   *template.Template
 }
 
-type Account struct {
-	EthereumAddress *common.Address
-	EmailAddress    *string
-	ProviderID      *string
+type AccountClaims struct {
+	EthereumAddress *common.Address `json:"ethereum_address,omitempty"`
+	EmailAddress    *string         `json:"email,omitempty"`
+	ProviderID      *string         `json:"provider_id,omitempty"`
+	jwt.RegisteredClaims
 }
 
 func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
@@ -76,41 +77,21 @@ func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.Iden
 	}, nil
 }
 
-func getuserAccountInfosToken(c *fiber.Ctx) (*Account, error) {
+func getUserAccountClaims(c *fiber.Ctx) (*AccountClaims, error) {
 	token, ok := c.Locals("user").(*jwt.Token)
 	if !ok {
 		return nil, errors.New("failed to get user token")
 	}
 
-	infos := getUserAccountInfos(token.Claims.(jwt.MapClaims))
-	if infos.ProviderID == nil && infos.EthereumAddress == nil && infos.EmailAddress == nil {
-		return nil, errors.New("failed to parse user account infos")
+	infos := token.Claims.(*AccountClaims)
+	if infos.EthereumAddress == nil && (infos.EmailAddress == nil || !emailPattern.MatchString(*infos.EmailAddress)) {
+		return nil, errors.New("invalid user account infos")
 	}
 
 	return infos, nil
 }
 
-func getUserAccountInfos(claims jwt.MapClaims) *Account {
-	var acct Account
-	if provider, ok := claims["provider_id"].(string); ok {
-		acct.ProviderID = &provider
-	}
-
-	if addr, ok := claims["ethereum_address"].(string); ok {
-		ethaddr := common.HexToAddress(addr)
-		acct.EthereumAddress = &ethaddr
-	}
-
-	if eml, ok := claims["email"].(string); ok {
-		if emailPattern.MatchString(eml) {
-			acct.EmailAddress = &eml
-		}
-	}
-
-	return &acct
-}
-
-func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, exec boil.ContextExecutor) (*models.Account, error) {
+func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountClaims, exec boil.ContextExecutor) (*models.Account, error) {
 	queryMods := []qm.QueryMod{}
 
 	if userAccount.EmailAddress != nil {
@@ -135,7 +116,7 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *Account, e
 	).One(ctx, exec)
 }
 
-func (d *Controller) createUser(ctx context.Context, userAccount *Account, tx *sql.Tx) error {
+func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims, tx *sql.Tx) error {
 	referralCode, err := d.GenerateReferralCode(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to generate referral code: %w", err)

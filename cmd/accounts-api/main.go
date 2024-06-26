@@ -96,8 +96,8 @@ func main() {
 	v1 := app.Group("/v1/account", jwtware.New(
 		jwtware.Config{
 			JWKSetURLs: []string{settings.JWTKeySetURL},
+			Claims:     &controller.AccountClaims{},
 		},
-		// TODO AE: custom claims
 	))
 
 	idSvc := services.NewIdentityService(&settings)
