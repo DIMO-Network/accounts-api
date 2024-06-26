@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{12}$`)
+var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 var UserCreationEventType = "com.dimo.zone.user.create"
 var digits = []rune("0123456789")

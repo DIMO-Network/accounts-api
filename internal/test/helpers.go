@@ -302,7 +302,7 @@ func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate 
 func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
 	acct := models.Account{
 		ID:           ksuid.New().String(),
-		ReferralCode: null.StringFrom("GBI5QV1BAM6X"),
+		ReferralCode: null.StringFrom("GBI56X"),
 	}
 
 	eml := models.Email{

@@ -18,11 +18,11 @@ import (
 
 func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 	rand.New(rand.NewSource(time.Now().UnixNano()))
-	alphabet := []byte("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	alphabet := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 	for {
-		// Generate a random 12-character code
-		codeB := make([]byte, 12)
+		// Generate a random 6-character code
+		codeB := make([]byte, 6)
 		for i := range codeB {
 			codeB[i] = alphabet[rand.Intn(len(alphabet))]
 		}
@@ -46,7 +46,7 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 // @Failure 500 {object} controller.ErrorRes
 // @Router /v1/accounts/submit-referral-code [post]
 func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
-	userAccount, err := getuserAccountInfosToken(c)
+	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
