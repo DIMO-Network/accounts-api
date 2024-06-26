@@ -50,16 +50,3 @@ func makeCacheKey(cols boil.Columns, nzDefaults []string) string {
 	strmangle.PutBuffer(buf)
 	return str
 }
-
-// Enum values for WalletProvider
-const (
-	WalletProviderINAPP string = "In-App"
-	WalletProviderOther string = "Other"
-)
-
-func AllWalletProvider() []string {
-	return []string{
-		WalletProviderINAPP,
-		WalletProviderOther,
-	}
-}

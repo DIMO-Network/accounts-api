@@ -8,7 +8,7 @@ CREATE TABLE accounts(
     country_code TEXT CHECK(length(country_code)=3),
     customer_io_id TEXT,
     accepted_tos_at timestamptz,
-    referral_code TEXT UNIQUE CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z]+$'),
+    referral_code TEXT UNIQUE CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
     referred_by TEXT CHECK(length(referred_by)=6),
     referred_at timestamptz
 );
@@ -36,17 +36,12 @@ ALTER TABLE emails
         (confirmation_sent_at IS NOT NULL AND confirmation_code IS NOT NULL)
     );
 
-CREATE TYPE wallet_provider AS ENUM(
-    'In-App',
-    'Other'
-    );
-
 CREATE TABLE wallets(
     ethereum_address BYTEA PRIMARY KEY,
         CONSTRAINT wallets_ethereum_address_check CHECK (length(ethereum_address) = 20),
     account_id TEXT UNIQUE NOT NULL
         CONSTRAINT wallets_account_id_fkey REFERENCES accounts(id) ON DELETE CASCADE,
-    "provider" wallet_provider
+    "provider" TEXT
 );
 
 -- +goose StatementEnd
