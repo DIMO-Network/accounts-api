@@ -8,11 +8,8 @@ CREATE TABLE accounts(
     country_code TEXT CHECK(length(country_code)=3),
     customer_io_id TEXT,
     accepted_tos_at timestamptz,
-    referral_code TEXT UNIQUE,
-    --  CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
-    referred_by TEXT,
-    -- CHECK(length(referred_by)=6),
-        -- REFERENCES accounts(referral_code) ON DELETE SET NULL,
+    referral_code TEXT UNIQUE CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
+    referred_by TEXT CHECK(length(referred_by)=6),
     referred_at timestamptz
 );
 
@@ -22,6 +19,10 @@ ALTER TABLE accounts
         (referred_by IS NULL AND referred_at IS NULL) OR
         (referred_by IS NOT NULL AND referred_at IS NOT NULL)
     );
+
+ALTER TABLE accounts 
+    ADD CONSTRAINT fk_referred_by FOREIGN KEY (referred_by)
+    REFERENCES accounts(referral_code) ON DELETE SET NULL;
 
 CREATE TABLE emails(
     email_address TEXT PRIMARY KEY,
