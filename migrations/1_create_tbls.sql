@@ -8,8 +8,11 @@ CREATE TABLE accounts(
     country_code TEXT CHECK(length(country_code)=3),
     customer_io_id TEXT,
     accepted_tos_at timestamptz,
-    referral_code TEXT UNIQUE CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
-    referred_by TEXT CHECK(length(referred_by)=6),
+    referral_code TEXT UNIQUE,
+    --  CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
+    referred_by TEXT,
+    -- CHECK(length(referred_by)=6),
+        -- REFERENCES accounts(referral_code) ON DELETE SET NULL,
     referred_at timestamptz
 );
 
@@ -52,6 +55,4 @@ CREATE TABLE wallets(
 DROP TABLE wallets;
 DROP TABLE emails;
 DROP TABLE accounts;
-
-DROP TYPE wallet_provider;
 -- +goose StatementEnd
