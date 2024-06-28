@@ -9,9 +9,9 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"runtime/debug"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -100,21 +100,71 @@ func main() {
 			logger.Fatal().Err(err).Msg("Unable to parse file as CSV for " + filepath)
 		}
 
-		refCodeMap := map[string]string{}
-		timeFormat := "2006-01-0215:04:05+00"
-		for idx, user := range users {
-			refCodeMap[user.UserID] = user.ReferralCode
-			created, _ := time.Parse(timeFormat, strings.Replace(users[idx].CreatedAt, " ", "", -1))
-			users[idx].CreateAtTime = created
+		// logic from users api:
+		// many users have multiple entries for the same eth_addr, but we want to use the one with verified email
+		// get users by eth addr, if it exists, order by email_confirmed desc, if userId different, use the better user but just replace the user_id
+		bestUsers := map[string]User{}
+		for _, user := range users {
+			if user.EthereumConfirmed {
+				if _, ok := bestUsers[user.EthereumAddress]; !ok {
+					bestUsers[user.EthereumAddress] = *user
+					continue
+				} else {
+					if !bestUsers[user.EthereumAddress].EmailConfirmed {
+						if user.EmailConfirmed {
+							bestUsers[user.EthereumAddress] = *user
+						} else {
+							if user.CreateAtTime.After(bestUsers[user.EthereumAddress].CreateAtTime) {
+								// prioritize the one made most recently?
+								bestUsers[user.EthereumAddress] = *user
+							}
+						}
+					}
+				}
+			} else {
+				if user.EmailConfirmed {
+
+					for _, k := range bestUsers {
+						if k.Email == user.Email {
+							continue
+						}
+					}
+
+					if _, ok := bestUsers[user.Email]; !ok {
+						bestUsers[user.Email] = *user
+						continue
+					} else {
+						if !bestUsers[user.Email].EthereumConfirmed {
+							if user.EthereumConfirmed {
+								bestUsers[user.Email] = *user
+							} else {
+								if user.CreateAtTime.After(bestUsers[user.Email].CreateAtTime) {
+									// prioritize the one made most recently?
+									bestUsers[user.Email] = *user
+								}
+							}
+						}
+					}
+				} else {
+					fmt.Println("Neither email nor eth confirmed... this shouldn't happen", user.UserID)
+				}
+			}
 		}
 
-		sort.Slice(users, func(i, j int) bool {
-			return users[i].CreateAtTime.Before(users[j].CreateAtTime)
-		})
+		n := 0
+		refCodeMap := map[string]string{}
+		timeFormat := "2006-01-0215:04:05+00"
+		for _, user := range bestUsers {
+			n++
+			refCodeMap[user.UserID] = user.ReferralCode
+			created, _ := time.Parse(timeFormat, strings.Replace(user.CreatedAt, " ", "", -1))
+			user.CreateAtTime = created
+		}
 
-		for idx, user := range users {
-			if failures == idx+1 {
-				return
+		for _, user := range bestUsers {
+			if math.Mod(float64(successes), 1000) == 0 {
+				fmt.Println(fmt.Sprintf("Success rate: %d / %d", successes, n))
+				fmt.Println(fmt.Sprintf("Failures: %d / %d", failures, n))
 			}
 
 			createdAt, err := time.Parse(timeFormat, strings.Replace(user.CreatedAt, " ", "", -1))
@@ -125,7 +175,7 @@ func main() {
 			}
 
 			if user.EthereumAddress == "" && user.Email == "" {
-				uploadsFailed = append(uploadsFailed, *user)
+				uploadsFailed = append(uploadsFailed, user)
 				uploadsFailed[len(uploadsFailed)-1].ErrorReason = "No email or ethereum address"
 				failures++
 				continue
@@ -145,18 +195,6 @@ func main() {
 				acct.CountryCode = null.StringFrom(user.CountryCode)
 			}
 
-			if user.ReferredAt != "" && user.ReferringUserID != "" {
-				referredAt, err := time.Parse(timeFormat, strings.Replace(user.ReferredAt, " ", "", -1))
-				if err != nil {
-					logger.Error().Err(err).Str("referred_at", user.ReferredAt).Msg("Failed to parse referred_at")
-					failures++
-					continue
-				}
-
-				acct.ReferredAt = null.TimeFrom(referredAt)
-				acct.ReferredBy = null.StringFrom(refCodeMap[user.ReferringUserID])
-			}
-
 			if user.AgreedTOSAt != "" {
 				acceptedTOS, err := time.Parse(timeFormat, strings.Replace(user.AgreedTOSAt, " ", "", -1))
 				if err != nil {
@@ -169,7 +207,7 @@ func main() {
 			}
 
 			if err := acct.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-				uploadsFailed = append(uploadsFailed, *user)
+				uploadsFailed = append(uploadsFailed, user)
 				uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert account: %v", err.Error())
 				failures++
 				continue
@@ -185,7 +223,7 @@ func main() {
 				if user.EmailConfirmed && user.EmailConfirmationKey != "" {
 					confirmationSent, err := time.Parse(timeFormat, strings.Replace(user.EmailConfirmationSentAt, " ", "", -1))
 					if err != nil {
-						uploadsFailed = append(uploadsFailed, *user)
+						uploadsFailed = append(uploadsFailed, user)
 						uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to parse email confirmation sent time: %v", err.Error())
 						failures++
 						continue
@@ -196,7 +234,7 @@ func main() {
 				}
 
 				if err := email.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-					uploadsFailed = append(uploadsFailed, *user)
+					uploadsFailed = append(uploadsFailed, user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert email address for user: %v", err.Error())
 					failures++
 					continue
@@ -206,14 +244,14 @@ func main() {
 			if user.EthereumAddress != "" && user.EthereumConfirmed {
 				mixAddr, err := common.NewMixedcaseAddressFromString(common.HexToAddress(strings.Replace(user.EthereumAddress, `\x`, "0x", -1)).Hex())
 				if err != nil {
-					uploadsFailed = append(uploadsFailed, *user)
+					uploadsFailed = append(uploadsFailed, user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to parse eth addr for user: %v", err.Error())
 					failures++
 					continue
 				}
 
 				if !mixAddr.ValidChecksum() {
-					uploadsFailed = append(uploadsFailed, *user)
+					uploadsFailed = append(uploadsFailed, user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("valid checksum failed for addr")
 					failures++
 					continue
@@ -222,11 +260,11 @@ func main() {
 				wallet := &models.Wallet{
 					AccountID:       acct.ID,
 					EthereumAddress: mixAddr.Address().Bytes(),
-					Provider:        null.StringFrom("web3"),
+					Provider:        null.StringFrom(user.AuthProviderID),
 				}
 
 				if err := wallet.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-					uploadsFailed = append(uploadsFailed, *user)
+					uploadsFailed = append(uploadsFailed, user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert wallet for user: %v", err.Error())
 					failures++
 					continue
@@ -236,8 +274,34 @@ func main() {
 			successes++
 		}
 
+		for _, user := range bestUsers {
+			if user.ReferredAt != "" && user.ReferringUserID != "" {
+				if refCodeMap[user.ReferringUserID] == "" {
+					continue
+				}
+
+				referredAt, err := time.Parse(timeFormat, strings.Replace(user.ReferredAt, " ", "", -1))
+				if err != nil {
+					logger.Error().Err(err).Str("referred_at", user.ReferredAt).Msg("Failed to parse referred_at")
+					continue
+				}
+
+				acct, err := models.Accounts(models.AccountWhere.CustomerIoID.EQ(null.StringFrom(user.UserID))).One(ctx, dbs.DBS().Reader)
+				if err != nil {
+					continue
+				}
+
+				acct.ReferredAt = null.TimeFrom(referredAt)
+				acct.ReferredBy = null.StringFrom(refCodeMap[user.ReferringUserID])
+
+				if _, err = acct.Update(ctx, dbs.DBS().Writer, boil.Whitelist(models.AccountColumns.ReferredAt, models.AccountColumns.ReferredBy)); err != nil {
+					logger.Error().Err(err).Msgf("Failed to insert user referral information. Account: %s, Referrer: %s", acct.ID, refCodeMap[user.ReferringUserID])
+				}
+			}
+		}
+
 		fmt.Println(fmt.Sprintf("Failed to upload %d users", len(uploadsFailed)))
-		file2, err := os.Create("upload_failures.csv")
+		file2, err := os.Create("failed_user_uploads.csv")
 		if err != nil {
 			panic(err)
 		}
