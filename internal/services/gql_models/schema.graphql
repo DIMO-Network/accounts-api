@@ -1,0 +1,1008 @@
+"""
+The @defer directive may be specified on a fragment spread to imply de-prioritization, that causes the fragment to be omitted in the initial response, and delivered as a subsequent response afterward. A query with @defer directive will cause the request to potentially return multiple responses, where non-deferred data is delivered in the initial response and data deferred delivered in a subsequent response. @include and @skip take precedence over @defer.
+"""
+directive @defer(if: Boolean = true, label: String) on FRAGMENT_SPREAD | INLINE_FRAGMENT
+
+"""
+This directive on an input object indicates that a client must specify one of the
+fields of the object and no others. Typically used for lookups.
+"""
+directive @oneOf on INPUT_OBJECT
+
+"""
+A 20-byte Ethereum address, encoded as a checksummed hex string with 0x prefix.
+"""
+scalar Address
+
+type AftermarketDevice implements Node {
+  """
+  The Ethereum address for the device.
+  """
+  address: Address!
+
+  """
+  The beneficiary for this device, who receives any associated rewards. Defaults to the owner.
+  """
+  beneficiary: Address!
+
+  """
+  The block timestamp at which this device was claimed, if it has been claimed. Devices must be
+  claimed before pairing.
+  """
+  claimedAt: Time
+
+  """
+  Extended Unique Identifier (EUI) for LoRa devices.
+  """
+  devEUI: String
+
+  """
+  The earnings attached to the aftermarket device
+  """
+  earnings: AftermarketDeviceEarnings
+
+  """
+  An opaque global identifier for this aftermarket device.
+  """
+  id: ID!
+
+  """
+  The Image Url of the device
+  """
+  image: String!
+
+  """
+  The International Mobile Equipment Identity (IMEI) for the device.
+  """
+  imei: String
+
+  """
+  The manufacturer of this aftermarket device.
+  """
+  manufacturer: Manufacturer!
+
+  """
+  The block timestamp at which this device was minted.
+  """
+  mintedAt: Time!
+
+  """
+  Encoded name of the device
+  """
+  name: String!
+
+  """
+  The Ethereum address of the owner of the device.
+  """
+  owner: Address!
+
+  """
+  The serial number on the side of the device. For AutoPis this is a UUID; for Macarons it is
+  a long decimal number.
+  """
+  serial: String
+
+  """
+  The ERC-721 token id for the device.
+  """
+  tokenId: Int!
+
+  """
+  The vehicle, if any, with which the device is paired.
+  """
+  vehicle: Vehicle
+}
+
+"""
+The AftermarketDeviceBy input is used to specify a unique aftermarket device to query.
+"""
+input AftermarketDeviceBy {
+  address: Address
+  serial: String
+  tokenId: Int
+}
+
+"""
+The Connection type for AftermarketDevice.
+"""
+type AftermarketDeviceConnection {
+  edges: [AftermarketDeviceEdge!]!
+  nodes: [AftermarketDevice!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type AftermarketDeviceEarnings {
+  history(after: String, before: String, first: Int, last: Int): EarningsConnection!
+  totalTokens: BigDecimal!
+}
+
+"""
+An edge in a AftermarketDeviceConnection.
+"""
+type AftermarketDeviceEdge {
+  cursor: String!
+  node: AftermarketDevice!
+}
+
+"""
+The AftermarketDevicesFilter input is used to specify filtering criteria for querying aftermarket devices.
+Aftermarket devices must match all of the specified criteria.
+"""
+input AftermarketDevicesFilter {
+  beneficiary: Address
+  manufacturerId: Int
+
+  """
+  Filter for aftermarket devices owned by this address.
+  """
+  owner: Address
+}
+
+"""
+BigDecimal decimal floating-point number, per the General Decimal Arithmetic specification.
+"""
+scalar BigDecimal
+
+"""
+An integer of arbitrary precision, decimal-encoded. Typically a uint256.
+"""
+scalar BigInt
+
+"""
+An array of byte, encoded as a lowercase hex string with 0x prefix.
+"""
+scalar Bytes
+
+"""
+Represents a DIMO Canonical Name. This is a unique identifier for a vehicle.
+"""
+type DCN implements Node {
+  """
+  The block timestamp at which the domain will cease to be valid.
+  """
+  expiresAt: Time
+
+  """
+  An opaque global identifier for this DCN.
+  """
+  id: ID!
+
+  """
+  The block timestamp at which the domain was created.
+  """
+  mintedAt: Time!
+
+  """
+  Human readable name, if any, for the domain; for example, "reddy.dimo".
+  """
+  name: String
+
+  """
+  The namehash of the domain.
+  """
+  node: Bytes!
+
+  """
+  Ethereum address of domain owner.
+  """
+  owner: Address!
+
+  """
+  The token id for the domain. This is simply the node reinterpreted as a uint256.
+  """
+  tokenId: BigInt!
+
+  """
+  Vehicle, if any, to which the domain is attached.
+  """
+  vehicle: Vehicle
+}
+
+"""
+Input used to specify a unique DCN to query.
+"""
+input DCNBy {
+  name: String
+  node: Bytes
+}
+
+"""
+The Connection type for DCN.
+"""
+type DCNConnection {
+  """
+  A list of edges.
+  """
+  edges: [DCNEdge!]!
+
+  """
+  A list of nodes in the connection
+  """
+  nodes: [DCN!]!
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+
+  """
+  The total count of DCNs in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a DCNConnection.
+"""
+type DCNEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: DCN!
+}
+
+"""
+Filter for DCN.
+"""
+input DCNFilter {
+  """
+  Filter for DCN owned by this address.
+  """
+  owner: Address
+}
+
+type Definition {
+  id: String
+  make: String
+  model: String
+  year: Int
+}
+
+"""
+Represents a Device Definition.
+"""
+type DeviceDefinition {
+  """
+  Device attributes for this device definition.
+  """
+  attributes: [DeviceDefinitionAttribute!]!
+
+  """
+  Device definition id for this device definition.
+  """
+  deviceDefinitionId: String!
+
+  """
+  Device type for this device definition.
+  """
+  deviceType: String
+
+  """
+  Image URI for this device definition.
+  """
+  imageURI: String
+
+  """
+  Legacy id for this device definition. Newer device definitions may not have one.
+  """
+  legacyId: String
+
+  """
+  Model for this device definition.
+  """
+  model: String!
+
+  """
+  Year for this device definition.
+  """
+  year: Int!
+}
+
+type DeviceDefinitionAttribute {
+  """
+  Name for this device definition.
+  """
+  name: String!
+
+  """
+  Value for this device definition.
+  """
+  value: String!
+}
+
+"""
+Input used to specify a unique Device Definition to query.
+"""
+input DeviceDefinitionBy {
+  """
+  The id for the device definition.
+  """
+  id: String!
+}
+
+"""
+Represents a Device Definition.
+"""
+type DeviceDefinitionConnection {
+  """
+  A list of edges.
+  """
+  edges: [DeviceDefinitionEdge!]!
+
+  """
+  A list of nodes in the connection
+  """
+  nodes: [DeviceDefinition!]!
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+
+  """
+  The total count of Device Definitions in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a Device Definition Connection.
+"""
+type DeviceDefinitionEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: DeviceDefinition!
+}
+
+"""
+Filter for Device Definition.
+"""
+input DeviceDefinitionFilter {
+  """
+  Model filters for device definition that are of the given model.
+  """
+  model: String
+
+  """
+  Year filters for device definition that are of the given year.
+  """
+  year: Int
+}
+
+type Earning {
+  """
+  AftermarketDevice connected to vehicle
+  """
+  aftermarketDevice: AftermarketDevice
+
+  """
+  Tokens earned by aftermarketDevice
+  """
+  aftermarketDeviceTokens: BigDecimal!
+
+  """
+  Address of Beneficiary that received reward
+  """
+  beneficiary: Address!
+
+  """
+  Consecutive period of which vehicle was connected
+  """
+  connectionStreak: Int
+
+  """
+  When the token was earned
+  """
+  sentAt: Time!
+
+  """
+  Tokens earned for connection period
+  """
+  streakTokens: BigDecimal!
+
+  """
+  SyntheticDevice connected to vehicle
+  """
+  syntheticDevice: SyntheticDevice
+
+  """
+  Tokens earned by SyntheticDevice
+  """
+  syntheticDeviceTokens: BigDecimal!
+
+  """
+  Vehicle reward is assigned to
+  """
+  vehicle: Vehicle
+
+  """
+  Week reward was issued
+  """
+  week: Int!
+}
+
+type EarningsConnection {
+  edges: [EarningsEdge!]!
+  nodes: [Earning!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type EarningsEdge {
+  cursor: String!
+  node: Earning!
+}
+
+type Manufacturer implements Node {
+  """
+  A Relay-style connection listing any aftermarket devices associated with manufacturer.
+  """
+  aftermarketDevices(
+    after: String
+    before: String
+    filterBy: AftermarketDevicesFilter
+    first: Int
+    last: Int
+  ): AftermarketDeviceConnection!
+
+  """
+  List device definitions under this manufacturer.
+  """
+  deviceDefinitions(
+    """
+    A cursor for pagination. Retrieve device definitions after this cursor.
+    """
+    after: String
+
+    """
+    A cursor for pagination. Retrieve device definitions before this cursor.
+    """
+    before: String
+
+    """
+    Filter the device definitions based on specific criteria.
+    """
+    filterBy: DeviceDefinitionFilter
+
+    """
+    The number of device definition to retrieve.
+    Mutually exclusive with `last`.
+    """
+    first: Int
+
+    """
+    The number of device definitions to retrieve from the end of the list.
+    Mutually exclusive with `first`.
+    """
+    last: Int
+  ): DeviceDefinitionConnection!
+
+  """
+  An opaque global identifier for this manufacturer.
+  """
+  id: ID!
+
+  """
+  The block timestamp at which this manufacturer was minted.
+  """
+  mintedAt: Time!
+
+  """
+  The name of the manufacturer.
+  """
+  name: String!
+
+  """
+  The Ethereum address of the owner of this manufacturer.
+  """
+  owner: Address!
+
+  """
+  Id of the Tableland table holding the manufacturer's device definitions.
+  """
+  tableId: Int
+
+  """
+  The ERC-721 token id for the manufacturer.
+  """
+  tokenId: Int!
+}
+
+input ManufacturerBy {
+  name: String
+  tokenId: Int
+}
+
+interface Node {
+  id: ID!
+}
+
+type PageInfo {
+  endCursor: String
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+  startCursor: String
+}
+
+type Privilege {
+  """
+  The block timestamp at which the privilege expires.
+  """
+  expiresAt: Time!
+
+  """
+  The id of the privilege.
+  """
+  id: Int!
+
+  """
+  The block timestamp at which this privilege was last set.
+  """
+  setAt: Time!
+
+  """
+  The user holding the privilege.
+  """
+  user: Address!
+}
+
+type PrivilegeEdge {
+  cursor: String!
+  node: Privilege!
+}
+
+input PrivilegeFilterBy {
+  privilegeId: Int
+  user: Address
+}
+
+"""
+The Connection type for Privileges.
+"""
+type PrivilegesConnection {
+  edges: [PrivilegeEdge!]!
+  nodes: [Privilege!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+"""
+The root query type for the GraphQL schema.
+"""
+type Query {
+  """
+  View a particular aftermarket device.
+  """
+  aftermarketDevice(by: AftermarketDeviceBy!): AftermarketDevice!
+
+  """
+  List aftermarket devices.
+  Ordered by token id, descending.
+  """
+  aftermarketDevices(
+    after: String
+    before: String
+    filterBy: AftermarketDevicesFilter
+    first: Int
+    last: Int
+  ): AftermarketDeviceConnection!
+
+  """
+  View a particular DIMO Canonical Name.
+  """
+  dcn(by: DCNBy!): DCN!
+
+  """
+  List DIMO Canonical Names.
+  """
+  dcns(
+    """
+    A cursor for pagination. Retrieve DCNs after this cursor.
+    """
+    after: String
+
+    """
+    A cursor for pagination. Retrieve DCNs before this cursor.
+    """
+    before: String
+
+    """
+    Filters the DCNs based on the specified criteria.
+    """
+    filterBy: DCNFilter
+
+    """
+    Returns the first n elements from the list.
+    Mutually exclusive with `last`.
+    """
+    first: Int
+
+    """
+    Returns the last n elements from the list.
+    """
+    last: Int
+  ): DCNConnection!
+
+  """
+  View a particular device definition.
+  """
+  deviceDefinition(
+    """
+    criteria to search for a device definition
+    """
+    by: DeviceDefinitionBy!
+  ): DeviceDefinition!
+
+  """
+  View a particular manufacturer.
+  """
+  manufacturer(
+    """
+    criteria to search for a manufacturer
+    """
+    by: ManufacturerBy!
+  ): Manufacturer!
+
+  """
+  View a particular node.
+  """
+  node(
+    """
+    The ID of the node.
+    """
+    id: ID!
+  ): Node
+
+  """
+  List rewards for a user.
+  """
+  rewards(
+    """
+    The address of the user.
+    """
+    user: Address!
+  ): UserRewards
+
+  """
+  View a particular synthetic device.
+  """
+  syntheticDevice(by: SyntheticDeviceBy!): SyntheticDevice!
+
+  """
+  List synthetic devices.
+  Ordered by token id, descending.
+  """
+  syntheticDevices(
+    """
+    A cursor for pagination. Retrieve synthetic devices after this cursor.
+    """
+    after: String
+
+    """
+    A cursor for pagination. Retrieve synthetic devices before this cursor.
+    """
+    before: String
+
+    """
+    Filter synthetic devices by the given criteria.
+    """
+    filterBy: SyntheticDevicesFilter
+
+    """
+    Returns the first n elements from the list.
+    Mutually exclusive with `last`.
+    """
+    first: Int
+
+    """
+    Returns the last n elements from the list.
+    Mutually exclusive with `first`.
+    """
+    last: Int
+  ): SyntheticDeviceConnection!
+
+  """
+  View a particular vehicle.
+  """
+  vehicle(
+    """
+    The token ID of the vehicle.
+    """
+    tokenId: Int!
+  ): Vehicle!
+
+  """
+  List minted vehicles.
+
+  For now, these are always ordered by token ID in descending order.
+  """
+  vehicles(
+    """
+    A cursor for pagination. Retrieve vehicles after this cursor.
+    """
+    after: String
+
+    """
+    A cursor for pagination. Retrieve vehicles before this cursor.
+    """
+    before: String
+
+    """
+    Filter the vehicles based on specific criteria.
+    """
+    filterBy: VehiclesFilter
+
+    """
+    The number of vehicles to retrieve.
+    Mutually exclusive with `last`.
+    """
+    first: Int
+
+    """
+    The number of vehicles to retrieve from the end of the list.
+    Mutually exclusive with `first`.
+    """
+    last: Int
+  ): VehicleConnection!
+}
+
+"""
+The SyntheticDevice is a software connection established to connect the vehicle to the DIMO network.
+"""
+type SyntheticDevice implements Node {
+  """
+  The Ethereum address for the device.
+  """
+  address: Address!
+
+  """
+  An opaque global identifier for this syntheticDevice.
+  """
+  id: ID!
+
+  """
+  Type of integration for the synthetic device.
+  """
+  integrationId: Int!
+
+  """
+  The block timestamp at which this device was minted.
+  """
+  mintedAt: Time!
+
+  """
+  Encoded name of the device
+  """
+  name: String!
+
+  """
+  The ERC-721 token id for the device.
+  """
+  tokenId: Int!
+
+  """
+  The vehicle with which the synthetic device is paired.
+  """
+  vehicle: Vehicle!
+}
+
+"""
+The SyntheticDeviceBy input is used to specify a unique synthetic device to query.
+"""
+input SyntheticDeviceBy {
+  """
+  The Ethereum address for the synthetic device.
+  """
+  address: Address
+
+  """
+  The token id for the synthetic device.
+  """
+  tokenId: Int
+}
+
+"""
+The Connection type for SyntheticDevice.
+"""
+type SyntheticDeviceConnection {
+  """
+  A list of edges.
+  """
+  edges: [SyntheticDeviceEdge!]!
+
+  """
+  A list of nodes in the connection (without going through the `edges` field).
+  """
+  nodes: [SyntheticDevice!]!
+
+  """
+  Information to aid in pagination.
+  """
+  pageInfo: PageInfo!
+
+  """
+  The total count of SyntheticDevices in the connection.
+  """
+  totalCount: Int!
+}
+
+"""
+An edge in a SytheticDeviceConnection.
+"""
+type SyntheticDeviceEdge {
+  """
+  A cursor for use in pagination.
+  """
+  cursor: String!
+
+  """
+  The item at the end of the edge.
+  """
+  node: SyntheticDevice!
+}
+
+"""
+The SyntheticDevicesFilter input is used to specify filtering criteria for querying synthetic devices.
+Synthetic devices must match all of the specified criteria.
+"""
+input SyntheticDevicesFilter {
+  """
+  Filter for synthetic devices with this integration id.
+  """
+  integrationId: Int
+
+  """
+  Filter for synthetic devices owned by this address.
+  """
+  owner: Address
+}
+
+"""
+A point in time, encoded per RFC-3999. Typically these will be in second precision,
+just like the blockchain, and in UTC.
+"""
+scalar Time
+
+type UserRewards {
+  history(after: String, before: String, first: Int, last: Int): EarningsConnection!
+  totalTokens: BigDecimal!
+}
+
+type Vehicle implements Node {
+  """
+  The paired aftermarket device, if any.
+  """
+  aftermarketDevice: AftermarketDevice
+  dataURI: String!
+  dcn: DCN
+
+  """
+  The device definition for this vehicle; which includes make, model, and year among
+  other things.
+  """
+  definition: Definition
+  earnings: VehicleEarnings
+
+  """
+  An opaque global identifier for this vehicle.
+  """
+  id: ID!
+  image: String! @deprecated(reason: "Use `imageURI` instead.")
+
+  """
+  A URI containing an image for the vehicle.
+  """
+  imageURI: String!
+
+  """
+  The manufacturer of this vehicle.
+  """
+  manufacturer: Manufacturer!
+
+  """
+  The block timestamp at which this vehicle was minted.
+  """
+  mintedAt: Time!
+
+  """
+  Encoded name of the device
+  """
+  name: String!
+
+  """
+  The Ethereum address of the owner of this vehicle.
+  """
+  owner: Address!
+
+  """
+  A Relay-style connection listing any active privilege grants on this vehicle.
+  """
+  privileges(after: String, before: String, filterBy: PrivilegeFilterBy, first: Int, last: Int): PrivilegesConnection!
+
+  """
+  The paired synthetic device, if any.
+  """
+  syntheticDevice: SyntheticDevice
+
+  """
+  The ERC-721 token id for the vehicle.
+  """
+  tokenId: Int!
+}
+
+"""
+The Connection type for Vehicle.
+"""
+type VehicleConnection {
+  edges: [VehicleEdge!]!
+  nodes: [Vehicle!]!
+  pageInfo: PageInfo!
+  totalCount: Int!
+}
+
+type VehicleEarnings {
+  history(after: String, before: String, first: Int, last: Int): EarningsConnection!
+  totalTokens: BigDecimal!
+}
+
+"""
+An edge in a VehicleConnection.
+"""
+type VehicleEdge {
+  cursor: String!
+  node: Vehicle!
+}
+
+"""
+The VehiclesFilter input is used to specify filtering criteria for querying vehicles.
+Vehicles must match all of the specified criteria.
+"""
+input VehiclesFilter {
+  """
+  Filter for vehicles by device definition id.
+  """
+  deviceDefinitionId: String
+
+  """
+  Make filters for vehicles that are of the given make.
+  """
+  make: String
+
+  """
+  Filter for vehicles produced by a particular manufacturer, specified by manufacturer token id.
+  """
+  manufacturerTokenId: Int
+
+  """
+  Model filters for vehicles that are of the given model.
+  """
+  model: String
+
+  """
+  Owner filters for vehicles that this address owns.
+  """
+  owner: Address
+
+  """
+  Privileged filters for vehicles to which the given address has access. This includes vehicles
+  that this address owns.
+  """
+  privileged: Address
+
+  """
+  Year filters for vehicles that are of the given year.
+  """
+  year: Int
+}

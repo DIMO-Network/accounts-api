@@ -1,0 +1,13 @@
+# Default genqlient config; for full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+# go run github.com/Khan/genqlient
+schema: schema.graphql
+operations:
+  - genqlient.graphql
+generated: ../generated.go
+optional: pointer
+package: services
+
+bindings:
+  Address:
+    type: github.com/ethereum/go-ethereum/common.Address

@@ -1,0 +1,15 @@
+query vehicles($first: Int, $filterBy: VehiclesFilter) {
+  vehicles(first: $first, filterBy: $filterBy) {
+    nodes {
+      tokenId
+    }
+  }
+}
+
+query aftermarketDevices($first: Int, $filterBy: AftermarketDevicesFilter) {
+  aftermarketDevices(first: $first, filterBy: $filterBy) {
+    nodes {
+      tokenId
+    }
+  }
+}
