@@ -19,13 +19,12 @@ import (
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/gocarina/gocsv"
 	"github.com/segmentio/ksuid"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	"accounts-api/internal/controller"
 
-	"github.com/gocarina/gocsv"
 	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -34,6 +33,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
+	"github.com/volatiletech/null/v8"
 )
 
 // @title DIMO Accounts API
@@ -103,65 +103,15 @@ func main() {
 		// logic from users api:
 		// many users have multiple entries for the same eth_addr, but we want to use the one with verified email
 		// get users by eth addr, if it exists, order by email_confirmed desc, if userId different, use the better user but just replace the user_id
-		bestUsers := map[string]User{}
-		for _, user := range users {
-			if user.EthereumConfirmed {
-				if _, ok := bestUsers[user.EthereumAddress]; !ok {
-					bestUsers[user.EthereumAddress] = *user
-					continue
-				} else {
-					if !bestUsers[user.EthereumAddress].EmailConfirmed {
-						if user.EmailConfirmed {
-							bestUsers[user.EthereumAddress] = *user
-						} else {
-							if user.CreateAtTime.After(bestUsers[user.EthereumAddress].CreateAtTime) {
-								// prioritize the one made most recently?
-								bestUsers[user.EthereumAddress] = *user
-							}
-						}
-					}
-				}
-			} else {
-				if user.EmailConfirmed {
-
-					for _, k := range bestUsers {
-						if k.Email == user.Email {
-							continue
-						}
-					}
-
-					if _, ok := bestUsers[user.Email]; !ok {
-						bestUsers[user.Email] = *user
-						continue
-					} else {
-						if !bestUsers[user.Email].EthereumConfirmed {
-							if user.EthereumConfirmed {
-								bestUsers[user.Email] = *user
-							} else {
-								if user.CreateAtTime.After(bestUsers[user.Email].CreateAtTime) {
-									// prioritize the one made most recently?
-									bestUsers[user.Email] = *user
-								}
-							}
-						}
-					}
-				} else {
-					fmt.Println("Neither email nor eth confirmed... this shouldn't happen", user.UserID)
-				}
-			}
-		}
-
 		n := 0
 		refCodeMap := map[string]string{}
 		timeFormat := "2006-01-0215:04:05+00"
-		for _, user := range bestUsers {
+		for _, user := range users {
 			n++
 			refCodeMap[user.UserID] = user.ReferralCode
-			created, _ := time.Parse(timeFormat, strings.Replace(user.CreatedAt, " ", "", -1))
-			user.CreateAtTime = created
 		}
 
-		for _, user := range bestUsers {
+		for _, user := range users {
 			if math.Mod(float64(successes), 1000) == 0 {
 				fmt.Println(fmt.Sprintf("Success rate: %d / %d", successes, n))
 				fmt.Println(fmt.Sprintf("Failures: %d / %d", failures, n))
@@ -175,7 +125,7 @@ func main() {
 			}
 
 			if user.EthereumAddress == "" && user.Email == "" {
-				uploadsFailed = append(uploadsFailed, user)
+				uploadsFailed = append(uploadsFailed, *user)
 				uploadsFailed[len(uploadsFailed)-1].ErrorReason = "No email or ethereum address"
 				failures++
 				continue
@@ -207,7 +157,7 @@ func main() {
 			}
 
 			if err := acct.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-				uploadsFailed = append(uploadsFailed, user)
+				uploadsFailed = append(uploadsFailed, *user)
 				uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert account: %v", err.Error())
 				failures++
 				continue
@@ -223,7 +173,7 @@ func main() {
 				if user.EmailConfirmed && user.EmailConfirmationKey != "" {
 					confirmationSent, err := time.Parse(timeFormat, strings.Replace(user.EmailConfirmationSentAt, " ", "", -1))
 					if err != nil {
-						uploadsFailed = append(uploadsFailed, user)
+						uploadsFailed = append(uploadsFailed, *user)
 						uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to parse email confirmation sent time: %v", err.Error())
 						failures++
 						continue
@@ -234,7 +184,7 @@ func main() {
 				}
 
 				if err := email.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-					uploadsFailed = append(uploadsFailed, user)
+					uploadsFailed = append(uploadsFailed, *user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert email address for user: %v", err.Error())
 					failures++
 					continue
@@ -244,14 +194,14 @@ func main() {
 			if user.EthereumAddress != "" && user.EthereumConfirmed {
 				mixAddr, err := common.NewMixedcaseAddressFromString(common.HexToAddress(strings.Replace(user.EthereumAddress, `\x`, "0x", -1)).Hex())
 				if err != nil {
-					uploadsFailed = append(uploadsFailed, user)
+					uploadsFailed = append(uploadsFailed, *user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to parse eth addr for user: %v", err.Error())
 					failures++
 					continue
 				}
 
 				if !mixAddr.ValidChecksum() {
-					uploadsFailed = append(uploadsFailed, user)
+					uploadsFailed = append(uploadsFailed, *user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("valid checksum failed for addr")
 					failures++
 					continue
@@ -264,7 +214,7 @@ func main() {
 				}
 
 				if err := wallet.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-					uploadsFailed = append(uploadsFailed, user)
+					uploadsFailed = append(uploadsFailed, *user)
 					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert wallet for user: %v", err.Error())
 					failures++
 					continue
@@ -274,7 +224,7 @@ func main() {
 			successes++
 		}
 
-		for _, user := range bestUsers {
+		for _, user := range users {
 			if user.ReferredAt != "" && user.ReferringUserID != "" {
 				if refCodeMap[user.ReferringUserID] == "" {
 					continue
@@ -301,7 +251,7 @@ func main() {
 		}
 
 		fmt.Println(fmt.Sprintf("Failed to upload %d users", len(uploadsFailed)))
-		file2, err := os.Create("failed_user_uploads.csv")
+		file2, err := os.Create("failed_no_dupes.csv")
 		if err != nil {
 			panic(err)
 		}
@@ -503,6 +453,6 @@ type User struct {
 	ReferralCode            string `csv:"referral_code"`
 	ReferredAt              string `csv:"referred_at"`
 	ReferringUserID         string `csv:"referring_user_id"`
-	ErrorReason             string `json:"error_reason" csv:"error_reason"`
-	CreateAtTime            time.Time
+	ErrorReason             string `csv:"error_reason"`
+	CreatedAtTime           time.Time
 }
