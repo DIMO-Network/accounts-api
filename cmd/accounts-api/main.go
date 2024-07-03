@@ -21,6 +21,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gocarina/gocsv"
 	"github.com/segmentio/ksuid"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 
 	"accounts-api/internal/controller"
@@ -33,7 +34,6 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
-	"github.com/volatiletech/null/v8"
 )
 
 // @title DIMO Accounts API
@@ -80,6 +80,76 @@ func main() {
 		}
 
 		return
+	case "quick-check":
+		if len(os.Args) != 3 {
+			logger.Fatal().Msg("Usage: go run ./cmd/accounts-api quick-check <path>")
+		}
+
+		filepath := os.Args[2]
+		f, err := os.Open(filepath)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Unable to read input file " + filepath)
+		}
+		defer f.Close()
+
+		users := []*User{}
+		if err := gocsv.UnmarshalFile(f, &users); err != nil {
+			logger.Fatal().Err(err).Msg("Unable to parse file as CSV for " + filepath)
+		}
+
+		idSvc := services.NewIdentityService(&settings)
+
+		file2, err := os.Create("dupes_that_own.csv")
+		if err != nil {
+			panic(err)
+		}
+		defer file2.Close()
+
+		writer := csv.NewWriter(file2)
+		defer writer.Flush()
+		headers := []string{
+			"id", "email_address", "email_confirmed", "email_confirmation_sent_at",
+			"email_confirmation_key", "created_at", "country_code", "ethereum_address",
+			"agreed_tos_at", "auth_provider_id", "ethereum_confirmed", "in_app_wallet",
+			"referral_code", "referred_at", "referring_user_id", "owned_aftermarket", "owned_vehicles",
+		}
+
+		writer.Write(headers)
+
+		ownersOnly := []User{}
+		seen := map[string]int{}
+		for _, u := range users {
+			addr := common.HexToAddress(strings.Replace(u.EthereumAddress, "\\x", "0x", -1))
+
+			if _, ok := seen[addr.Hex()]; ok {
+				continue
+			}
+
+			seen[addr.Hex()] = 1
+			u.CleanedEthAddr = addr
+
+			if ownedV, err := idSvc.VehiclesOwned(ctx, addr); err != nil {
+				panic(err)
+			} else if !ownedV {
+				if ownedAD, err := idSvc.AftermarketDevicesOwned(ctx, addr); err != nil {
+					panic(err)
+				} else if !ownedAD {
+					continue
+				}
+			}
+			fmt.Println("addr: ", addr.Hex())
+			ownersOnly = append(ownersOnly, *u)
+
+			row := []string{
+				u.UserID, u.Email, strconv.FormatBool(u.EmailConfirmed), u.EmailConfirmationSentAt,
+				u.EmailConfirmationKey, u.CreatedAt, u.CountryCode, u.EthereumAddress,
+				u.AgreedTOSAt, u.AuthProviderID, strconv.FormatBool(u.EthereumConfirmed), strconv.FormatBool(u.InAppWallet),
+				u.ReferralCode, u.ReferredAt, u.ReferringUserID,
+			}
+			writer.Write(row)
+		}
+
+		return
 	case "upload": // upload data from users db
 		failures := 0
 		successes := 0
@@ -95,14 +165,10 @@ func main() {
 		defer f.Close()
 
 		users := []*User{}
-		uploadsFailed := []User{}
 		if err := gocsv.UnmarshalFile(f, &users); err != nil {
 			logger.Fatal().Err(err).Msg("Unable to parse file as CSV for " + filepath)
 		}
 
-		// logic from users api:
-		// many users have multiple entries for the same eth_addr, but we want to use the one with verified email
-		// get users by eth addr, if it exists, order by email_confirmed desc, if userId different, use the better user but just replace the user_id
 		n := 0
 		refCodeMap := map[string]string{}
 		timeFormat := "2006-01-0215:04:05+00"
@@ -111,6 +177,7 @@ func main() {
 			refCodeMap[user.UserID] = user.ReferralCode
 		}
 
+		uploadsFailed := []User{}
 		for _, user := range users {
 			if math.Mod(float64(successes), 1000) == 0 {
 				fmt.Println(fmt.Sprintf("Success rate: %d / %d", successes, n))
@@ -123,7 +190,6 @@ func main() {
 				failures++
 				continue
 			}
-
 			if user.EthereumAddress == "" && user.Email == "" {
 				uploadsFailed = append(uploadsFailed, *user)
 				uploadsFailed[len(uploadsFailed)-1].ErrorReason = "No email or ethereum address"
@@ -157,6 +223,7 @@ func main() {
 			}
 
 			if err := acct.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
+				fmt.Println("Error here: ", err)
 				uploadsFailed = append(uploadsFailed, *user)
 				uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert account: %v", err.Error())
 				failures++
@@ -251,7 +318,7 @@ func main() {
 		}
 
 		fmt.Println(fmt.Sprintf("Failed to upload %d users", len(uploadsFailed)))
-		file2, err := os.Create("failed_no_dupes.csv")
+		file2, err := os.Create("failed_one_wallet_one_email.csv")
 		if err != nil {
 			panic(err)
 		}
@@ -454,5 +521,8 @@ type User struct {
 	ReferredAt              string `csv:"referred_at"`
 	ReferringUserID         string `csv:"referring_user_id"`
 	ErrorReason             string `csv:"error_reason"`
+	OwnedAftermarket        int    `csv:"owned_aftermarket"`
+	OwnedVehicles           int    `csv:"owned_vehicles"`
+	CleanedEthAddr          common.Address
 	CreatedAtTime           time.Time
 }
