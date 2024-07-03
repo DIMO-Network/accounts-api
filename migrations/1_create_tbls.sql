@@ -9,7 +9,7 @@ CREATE TABLE accounts(
     customer_io_id TEXT,
     accepted_tos_at timestamptz,
     referral_code TEXT UNIQUE CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
-    referred_by TEXT CHECK(length(referred_by)=6),
+    referred_by TEXT CHECK(length(id)=27),
     referred_at timestamptz
 );
 
@@ -19,6 +19,9 @@ ALTER TABLE accounts
         (referred_by IS NULL AND referred_at IS NULL) OR
         (referred_by IS NOT NULL AND referred_at IS NOT NULL)
     );
+
+ALTER TABLE accounts 
+    ADD CONSTRAINT accounts_referring_user_id_fkey FOREIGN KEY (referred_by) REFERENCES accounts(id);
 
 CREATE TABLE emails(
     email_address TEXT PRIMARY KEY,
