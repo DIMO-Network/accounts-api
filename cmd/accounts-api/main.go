@@ -137,7 +137,7 @@ func main() {
 					continue
 				}
 			}
-			fmt.Println("addr: ", addr.Hex())
+
 			ownersOnly = append(ownersOnly, *u)
 
 			row := []string{
@@ -156,6 +156,23 @@ func main() {
 		if len(os.Args) != 3 {
 			logger.Fatal().Msg("Usage: go run ./cmd/accounts-api upload <path>")
 		}
+
+		file2, err := os.Create("failed_one_wallet_one_email.csv")
+		if err != nil {
+			panic(err)
+		}
+		defer file2.Close()
+
+		writer := csv.NewWriter(file2)
+		defer writer.Flush()
+		headers := []string{
+			"id", "email_address", "email_confirmed", "email_confirmation_sent_at",
+			"email_confirmation_key", "created_at", "country_code", "ethereum_address",
+			"agreed_tos_at", "auth_provider_id", "ethereum_confirmed", "in_app_wallet",
+			"referral_code", "referred_at", "referring_user_id", "error_reason",
+		}
+
+		writer.Write(headers)
 
 		filepath := os.Args[2]
 		f, err := os.Open(filepath)
@@ -177,7 +194,6 @@ func main() {
 			refCodeMap[user.UserID] = user.ReferralCode
 		}
 
-		uploadsFailed := []User{}
 		for _, user := range users {
 			if math.Mod(float64(successes), 1000) == 0 {
 				fmt.Println(fmt.Sprintf("Success rate: %d / %d", successes, n))
@@ -188,12 +204,22 @@ func main() {
 			if err != nil {
 				logger.Error().Err(err).Str("created_at", user.CreatedAt).Msg("Failed to parse created_at")
 				failures++
+				writer.Write([]string{
+					user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+					user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+					user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+					user.ReferralCode, user.ReferredAt, user.ReferringUserID, "Failed to parse created_at",
+				})
 				continue
 			}
 			if user.EthereumAddress == "" && user.Email == "" {
-				uploadsFailed = append(uploadsFailed, *user)
-				uploadsFailed[len(uploadsFailed)-1].ErrorReason = "No email or ethereum address"
 				failures++
+				writer.Write([]string{
+					user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+					user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+					user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+					user.ReferralCode, user.ReferredAt, user.ReferringUserID, "No email or ethereum address",
+				})
 				continue
 			}
 
@@ -214,8 +240,13 @@ func main() {
 			if user.AgreedTOSAt != "" {
 				acceptedTOS, err := time.Parse(timeFormat, strings.Replace(user.AgreedTOSAt, " ", "", -1))
 				if err != nil {
-					logger.Error().Err(err).Str("accepted_tos_at", user.AgreedTOSAt).Msg("Failed to parse accepted_tos_at")
 					failures++
+					writer.Write([]string{
+						user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+						user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+						user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+						user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("Failed to parse accepted_tos_at: %v", err.Error()),
+					})
 					continue
 				}
 
@@ -223,10 +254,13 @@ func main() {
 			}
 
 			if err := acct.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-				fmt.Println("Error here: ", err)
-				uploadsFailed = append(uploadsFailed, *user)
-				uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert account: %v", err.Error())
 				failures++
+				writer.Write([]string{
+					user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+					user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+					user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+					user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("Failed to insert account: %v", err.Error()),
+				})
 				continue
 			}
 
@@ -240,9 +274,13 @@ func main() {
 				if user.EmailConfirmed && user.EmailConfirmationKey != "" {
 					confirmationSent, err := time.Parse(timeFormat, strings.Replace(user.EmailConfirmationSentAt, " ", "", -1))
 					if err != nil {
-						uploadsFailed = append(uploadsFailed, *user)
-						uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to parse email confirmation sent time: %v", err.Error())
 						failures++
+						writer.Write([]string{
+							user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+							user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+							user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+							user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("Failed to parse email confirmation sent time: %v", err.Error()),
+						})
 						continue
 					}
 
@@ -251,9 +289,13 @@ func main() {
 				}
 
 				if err := email.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-					uploadsFailed = append(uploadsFailed, *user)
-					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert email address for user: %v", err.Error())
 					failures++
+					writer.Write([]string{
+						user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+						user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+						user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+						user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("Failed to insert email address for user: %v", err.Error()),
+					})
 					continue
 				}
 			}
@@ -261,16 +303,24 @@ func main() {
 			if user.EthereumAddress != "" && user.EthereumConfirmed {
 				mixAddr, err := common.NewMixedcaseAddressFromString(common.HexToAddress(strings.Replace(user.EthereumAddress, `\x`, "0x", -1)).Hex())
 				if err != nil {
-					uploadsFailed = append(uploadsFailed, *user)
-					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to parse eth addr for user: %v", err.Error())
 					failures++
+					writer.Write([]string{
+						user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+						user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+						user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+						user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("Failed to parse eth addr for user: %v", err.Error()),
+					})
 					continue
 				}
 
 				if !mixAddr.ValidChecksum() {
-					uploadsFailed = append(uploadsFailed, *user)
-					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("valid checksum failed for addr")
 					failures++
+					writer.Write([]string{
+						user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+						user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+						user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+						user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("valid checksum failed for addr"),
+					})
 					continue
 				}
 
@@ -281,9 +331,19 @@ func main() {
 				}
 
 				if err := wallet.Insert(ctx, dbs.DBS().Writer, boil.Infer()); err != nil {
-					uploadsFailed = append(uploadsFailed, *user)
-					uploadsFailed[len(uploadsFailed)-1].ErrorReason = fmt.Sprintf("Failed to insert wallet for user: %v", err.Error())
+					if strings.Contains(err.Error(), "duplicate key value violates unique constraint") {
+
+						w, err := models.Wallets(models.WalletWhere.EthereumAddress.EQ(mixAddr.Address().Bytes())).One(ctx, dbs.DBS().Reader)
+						fmt.Println(err, w.AccountID, common.BytesToAddress(w.EthereumAddress), user.EthereumAddress, w.Provider)
+
+					}
 					failures++
+					writer.Write([]string{
+						user.UserID, user.Email, strconv.FormatBool(user.EmailConfirmed), user.EmailConfirmationSentAt,
+						user.EmailConfirmationKey, user.CreatedAt, user.CountryCode, user.EthereumAddress,
+						user.AgreedTOSAt, user.AuthProviderID, strconv.FormatBool(user.EthereumConfirmed), strconv.FormatBool(user.InAppWallet),
+						user.ReferralCode, user.ReferredAt, user.ReferringUserID, fmt.Sprintf("Failed to insert wallet for user: %v", err.Error()),
+					})
 					continue
 				}
 
@@ -317,33 +377,8 @@ func main() {
 			}
 		}
 
-		fmt.Println(fmt.Sprintf("Failed to upload %d users", len(uploadsFailed)))
-		file2, err := os.Create("failed_one_wallet_one_email.csv")
-		if err != nil {
-			panic(err)
-		}
-		defer file2.Close()
-
-		writer := csv.NewWriter(file2)
-		defer writer.Flush()
-		headers := []string{
-			"id", "email_address", "email_confirmed", "email_confirmation_sent_at",
-			"email_confirmation_key", "created_at", "country_code", "ethereum_address",
-			"agreed_tos_at", "auth_provider_id", "ethereum_confirmed", "in_app_wallet",
-			"referral_code", "referred_at", "referring_user_id", "error_reason",
-		}
-
-		writer.Write(headers)
-		for _, u := range uploadsFailed {
-			row := []string{
-				u.UserID, u.Email, strconv.FormatBool(u.EmailConfirmed), u.EmailConfirmationSentAt,
-				u.EmailConfirmationKey, u.CreatedAt, u.CountryCode, u.EthereumAddress,
-				u.AgreedTOSAt, u.AuthProviderID, strconv.FormatBool(u.EthereumConfirmed), strconv.FormatBool(u.InAppWallet),
-				u.ReferralCode, u.ReferredAt, u.ReferringUserID, u.ErrorReason,
-			}
-			writer.Write(row)
-		}
 		return
+
 	}
 
 	app := fiber.New(fiber.Config{
