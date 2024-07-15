@@ -104,13 +104,13 @@ func main() {
 	emailSvc := services.NewEmailService(&settings)
 	customerIoSvc, err := services.NewCustomerIoService(&settings, &logger)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to start customer io service")
+		logger.Fatal().Err(err).Msg("Failed to start customer io service.")
 	}
 	defer customerIoSvc.Close()
 
 	accountController, err := controller.NewAccountController(ctx, dbs, idSvc, emailSvc, customerIoSvc, &settings, &logger)
 	if err != nil {
-		logger.Fatal().Err(err).Msg("failed to start account controller")
+		logger.Fatal().Err(err).Msg("Failed to start account controller.")
 	}
 
 	//create account based on 0x or email

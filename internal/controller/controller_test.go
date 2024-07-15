@@ -106,7 +106,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 		Claims:     &AccountClaims{},
 	}))
 
-	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, nil, s.settings, test.Logger())
+	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.cioService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
 	s.app.Post("/", s.controller.CreateUserAccount)

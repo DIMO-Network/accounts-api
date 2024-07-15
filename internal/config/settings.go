@@ -27,6 +27,7 @@ type Settings struct {
 	IdentityAPIURL                     string        `yaml:"IDENTITY_API_URL"`
 	AllowableEmailConfirmationLateness time.Duration `yaml:"ALLOWABLE_EMAIL_CONFIRMATION_LATENESS"`
 	CustomerIOURL                      string        `yaml:"CUSTOMER_IO_URL"`
+	CustomerIOAPIKey                   string        `yaml:"CUSTOMER_IO_API_KEY"`
 	DisableCustomerIOEvents            bool          `yaml:"DISABLE_CUSTOMER_IO_EVENTS"`
 }
 

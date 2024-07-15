@@ -1,4 +1,3 @@
-//go:generate mockgen -source=customer_io_service.go -destination=customer_io_service_mock.go -package=services
 package services
 
 import (
@@ -72,7 +71,7 @@ type callbackI struct {
 
 func (c callbackI) Failure(m analytics.Message, err error) {
 	id := m.(analytics.Identify)
-	c.logger.Error().Err(err).Interface("traits", id.Traits).Msgf("failed to send message for customer: %s", id.UserId)
+	c.logger.Error().Err(err).Interface("traits", id.Traits).Msgf("failed to send customer io identify message for customer: %s", id.UserId)
 }
 
 func (c callbackI) Success(_ analytics.Message) {

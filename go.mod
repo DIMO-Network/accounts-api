@@ -14,7 +14,6 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.4
 	github.com/gofiber/swagger v1.0.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
-	github.com/golang/mock v1.6.0
 	github.com/pkg/errors v0.9.1
 	github.com/pressly/goose/v3 v3.20.0
 	github.com/prometheus/client_golang v1.18.0
@@ -26,6 +25,7 @@ require (
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.16.2
 	github.com/volatiletech/strmangle v0.0.6
+	go.uber.org/mock v0.4.0
 )
 
 require (
