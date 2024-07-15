@@ -120,7 +120,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Referrer was referred by this user.")
 	}
 
-	acct.ReferredBy = null.StringFrom(refAcct.ReferralCode.String)
+	acct.ReferredBy = null.StringFrom(refAcct.ID)
 	acct.ReferredAt = null.TimeFrom(time.Now())
 	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.ReferredBy, models.AccountColumns.ReferredAt)); err != nil {
 		return err
