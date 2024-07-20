@@ -28,7 +28,6 @@ type Account struct {
 	CreatedAt     time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt     time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	CountryCode   null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
-	CustomerIoID  null.String `boil:"customer_io_id" json:"customer_io_id,omitempty" toml:"customer_io_id" yaml:"customer_io_id,omitempty"`
 	AcceptedTosAt null.Time   `boil:"accepted_tos_at" json:"accepted_tos_at,omitempty" toml:"accepted_tos_at" yaml:"accepted_tos_at,omitempty"`
 	ReferralCode  null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
 	ReferredBy    null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
@@ -43,7 +42,6 @@ var AccountColumns = struct {
 	CreatedAt     string
 	UpdatedAt     string
 	CountryCode   string
-	CustomerIoID  string
 	AcceptedTosAt string
 	ReferralCode  string
 	ReferredBy    string
@@ -53,7 +51,6 @@ var AccountColumns = struct {
 	CreatedAt:     "created_at",
 	UpdatedAt:     "updated_at",
 	CountryCode:   "country_code",
-	CustomerIoID:  "customer_io_id",
 	AcceptedTosAt: "accepted_tos_at",
 	ReferralCode:  "referral_code",
 	ReferredBy:    "referred_by",
@@ -65,7 +62,6 @@ var AccountTableColumns = struct {
 	CreatedAt     string
 	UpdatedAt     string
 	CountryCode   string
-	CustomerIoID  string
 	AcceptedTosAt string
 	ReferralCode  string
 	ReferredBy    string
@@ -75,7 +71,6 @@ var AccountTableColumns = struct {
 	CreatedAt:     "accounts.created_at",
 	UpdatedAt:     "accounts.updated_at",
 	CountryCode:   "accounts.country_code",
-	CustomerIoID:  "accounts.customer_io_id",
 	AcceptedTosAt: "accounts.accepted_tos_at",
 	ReferralCode:  "accounts.referral_code",
 	ReferredBy:    "accounts.referred_by",
@@ -211,7 +206,6 @@ var AccountWhere = struct {
 	CreatedAt     whereHelpertime_Time
 	UpdatedAt     whereHelpertime_Time
 	CountryCode   whereHelpernull_String
-	CustomerIoID  whereHelpernull_String
 	AcceptedTosAt whereHelpernull_Time
 	ReferralCode  whereHelpernull_String
 	ReferredBy    whereHelpernull_String
@@ -221,7 +215,6 @@ var AccountWhere = struct {
 	CreatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
 	UpdatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
 	CountryCode:   whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
-	CustomerIoID:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"customer_io_id\""},
 	AcceptedTosAt: whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"accepted_tos_at\""},
 	ReferralCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
 	ReferredBy:    whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referred_by\""},
@@ -286,9 +279,9 @@ func (r *accountR) GetReferredByAccounts() AccountSlice {
 type accountL struct{}
 
 var (
-	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "customer_io_id", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountColumnsWithoutDefault = []string{"id"}
-	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "customer_io_id", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
 )

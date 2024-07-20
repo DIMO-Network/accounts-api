@@ -150,6 +150,10 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return err
 	}
 
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, &acct.R.Email.EmailAddress, nil); err != nil {
+		return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
+	}
+
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
@@ -210,6 +214,10 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 
 	if err := tx.Commit(); err != nil {
 		return err
+	}
+
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, infos.EmailAddress, nil); err != nil {
+		return fmt.Errorf("failed to send customer.io event while linking email with token: %w", err)
 	}
 
 	return c.SendStatus(fiber.StatusNoContent)

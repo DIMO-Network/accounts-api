@@ -84,7 +84,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %q.", body.ReferralCode)
+	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %s.", body.ReferralCode)
 	referralCode := strings.ToUpper(strings.TrimSpace(body.ReferralCode))
 	if !referralCodeRegex.MatchString(referralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
@@ -127,6 +127,6 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(SubmitReferralCodeResponse{
-		Message: "Referral code used.",
+		Message: "Referral code successfully submitted.",
 	})
 }
