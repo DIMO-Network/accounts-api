@@ -43,6 +43,7 @@ type Controller struct {
 	countryCodes    []string
 	identityService services.IdentityService
 	emailService    services.EmailService
+	cioService      services.CustomerIoService
 	jwkResource     keyfunc.Keyfunc
 	emailTemplate   *template.Template
 }
@@ -54,7 +55,7 @@ type AccountClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
+func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, cioSvc services.CustomerIoService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		return nil, err
@@ -72,6 +73,7 @@ func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.Iden
 		countryCodes:    countryCodes,
 		emailService:    emlSvc,
 		identityService: idSvc,
+		cioService:      cioSvc,
 		jwkResource:     jwkResource,
 		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),
 	}, nil
@@ -141,7 +143,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 	}
 
 	acct := models.Account{
-		ID:           ksuid.New().String(),
+		ID:           ksuid.New().String(), // this is also the cio id
 		ReferralCode: null.StringFrom(referralCode),
 	}
 
@@ -149,6 +151,8 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		return err
 	}
 
+	var cioWallet *common.MixedcaseAddress
+	var cioEmail *string
 	switch *userAccount.ProviderID {
 	case "web3":
 		wallet := &models.Wallet{
@@ -160,6 +164,8 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
 			return fmt.Errorf("failed to insert wallet: %w", err)
 		}
+
+		cioWallet = mixAddr
 	case "apple", "google":
 		email := models.Email{
 			AccountID:    acct.ID,
@@ -170,6 +176,12 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		if err := email.Insert(ctx, tx, boil.Infer()); err != nil {
 			return fmt.Errorf("failed to insert email: %w", err)
 		}
+
+		cioEmail = userAccount.EmailAddress
+	}
+
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, cioEmail, cioWallet); err != nil {
+		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
 	}
 
 	return nil

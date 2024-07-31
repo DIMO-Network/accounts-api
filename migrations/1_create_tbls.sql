@@ -2,14 +2,13 @@
 -- +goose StatementBegin
 
 CREATE TABLE accounts(
-    id TEXT PRIMARY KEY CHECK(length(id)=27),
+    id TEXT PRIMARY KEY CHECK(length(id)=27), -- this is the customer io id
     created_at timestamptz NOT NULL DEFAULT NOW(),
     updated_at timestamptz NOT NULL DEFAULT NOW(),
     country_code TEXT CHECK(length(country_code)=3),
-    customer_io_id TEXT,
     accepted_tos_at timestamptz,
     referral_code TEXT UNIQUE CHECK(length(referral_code)=6) CHECK (referral_code ~ '^[A-Z0-9]+$'),
-    referred_by TEXT CHECK(length(referred_by)=6),
+    referred_by TEXT CHECK(length(id)=27),
     referred_at timestamptz
 );
 
@@ -19,6 +18,9 @@ ALTER TABLE accounts
         (referred_by IS NULL AND referred_at IS NULL) OR
         (referred_by IS NOT NULL AND referred_at IS NOT NULL)
     );
+
+ALTER TABLE accounts 
+    ADD CONSTRAINT accounts_referring_user_id_fkey FOREIGN KEY (referred_by) REFERENCES accounts(id);
 
 CREATE TABLE emails(
     email_address TEXT PRIMARY KEY,
@@ -52,6 +54,4 @@ CREATE TABLE wallets(
 DROP TABLE wallets;
 DROP TABLE emails;
 DROP TABLE accounts;
-
-DROP TYPE wallet_provider;
 -- +goose StatementEnd

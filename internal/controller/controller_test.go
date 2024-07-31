@@ -76,6 +76,7 @@ type AccountControllerTestSuite struct {
 	controller      *Controller
 	identityService services.IdentityService
 	emailService    services.EmailService
+	cioService      services.CustomerIoService
 }
 
 // SetupSuite starts container db
@@ -93,13 +94,19 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.settings = &config.Settings{
 		JWTKeySetURL:                       fmt.Sprintf("%s/dex/keys", addr),
 		AllowableEmailConfirmationLateness: time.Minute * 1,
+		DisableCustomerIOEvents:            true,
 	}
+
+	cioSvc, err := services.NewCustomerIoService(s.settings, test.Logger())
+	s.Require().NoError(err)
+	s.cioService = cioSvc
+
 	s.app.Use(jwtware.New(jwtware.Config{
 		JWKSetURLs: []string{s.settings.JWTKeySetURL},
 		Claims:     &AccountClaims{},
 	}))
 
-	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.settings, test.Logger())
+	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.cioService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
 	s.app.Post("/", s.controller.CreateUserAccount)

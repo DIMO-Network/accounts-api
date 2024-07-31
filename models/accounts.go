@@ -28,7 +28,6 @@ type Account struct {
 	CreatedAt     time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 	UpdatedAt     time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	CountryCode   null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
-	CustomerIoID  null.String `boil:"customer_io_id" json:"customer_io_id,omitempty" toml:"customer_io_id" yaml:"customer_io_id,omitempty"`
 	AcceptedTosAt null.Time   `boil:"accepted_tos_at" json:"accepted_tos_at,omitempty" toml:"accepted_tos_at" yaml:"accepted_tos_at,omitempty"`
 	ReferralCode  null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
 	ReferredBy    null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
@@ -43,7 +42,6 @@ var AccountColumns = struct {
 	CreatedAt     string
 	UpdatedAt     string
 	CountryCode   string
-	CustomerIoID  string
 	AcceptedTosAt string
 	ReferralCode  string
 	ReferredBy    string
@@ -53,7 +51,6 @@ var AccountColumns = struct {
 	CreatedAt:     "created_at",
 	UpdatedAt:     "updated_at",
 	CountryCode:   "country_code",
-	CustomerIoID:  "customer_io_id",
 	AcceptedTosAt: "accepted_tos_at",
 	ReferralCode:  "referral_code",
 	ReferredBy:    "referred_by",
@@ -65,7 +62,6 @@ var AccountTableColumns = struct {
 	CreatedAt     string
 	UpdatedAt     string
 	CountryCode   string
-	CustomerIoID  string
 	AcceptedTosAt string
 	ReferralCode  string
 	ReferredBy    string
@@ -75,7 +71,6 @@ var AccountTableColumns = struct {
 	CreatedAt:     "accounts.created_at",
 	UpdatedAt:     "accounts.updated_at",
 	CountryCode:   "accounts.country_code",
-	CustomerIoID:  "accounts.customer_io_id",
 	AcceptedTosAt: "accounts.accepted_tos_at",
 	ReferralCode:  "accounts.referral_code",
 	ReferredBy:    "accounts.referred_by",
@@ -211,7 +206,6 @@ var AccountWhere = struct {
 	CreatedAt     whereHelpertime_Time
 	UpdatedAt     whereHelpertime_Time
 	CountryCode   whereHelpernull_String
-	CustomerIoID  whereHelpernull_String
 	AcceptedTosAt whereHelpernull_Time
 	ReferralCode  whereHelpernull_String
 	ReferredBy    whereHelpernull_String
@@ -221,7 +215,6 @@ var AccountWhere = struct {
 	CreatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
 	UpdatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
 	CountryCode:   whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
-	CustomerIoID:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"customer_io_id\""},
 	AcceptedTosAt: whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"accepted_tos_at\""},
 	ReferralCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
 	ReferredBy:    whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referred_by\""},
@@ -230,22 +223,35 @@ var AccountWhere = struct {
 
 // AccountRels is where relationship names are stored.
 var AccountRels = struct {
-	Email  string
-	Wallet string
+	ReferredByAccount  string
+	Email              string
+	Wallet             string
+	ReferredByAccounts string
 }{
-	Email:  "Email",
-	Wallet: "Wallet",
+	ReferredByAccount:  "ReferredByAccount",
+	Email:              "Email",
+	Wallet:             "Wallet",
+	ReferredByAccounts: "ReferredByAccounts",
 }
 
 // accountR is where relationships are stored.
 type accountR struct {
-	Email  *Email  `boil:"Email" json:"Email" toml:"Email" yaml:"Email"`
-	Wallet *Wallet `boil:"Wallet" json:"Wallet" toml:"Wallet" yaml:"Wallet"`
+	ReferredByAccount  *Account     `boil:"ReferredByAccount" json:"ReferredByAccount" toml:"ReferredByAccount" yaml:"ReferredByAccount"`
+	Email              *Email       `boil:"Email" json:"Email" toml:"Email" yaml:"Email"`
+	Wallet             *Wallet      `boil:"Wallet" json:"Wallet" toml:"Wallet" yaml:"Wallet"`
+	ReferredByAccounts AccountSlice `boil:"ReferredByAccounts" json:"ReferredByAccounts" toml:"ReferredByAccounts" yaml:"ReferredByAccounts"`
 }
 
 // NewStruct creates a new relationship struct
 func (*accountR) NewStruct() *accountR {
 	return &accountR{}
+}
+
+func (r *accountR) GetReferredByAccount() *Account {
+	if r == nil {
+		return nil
+	}
+	return r.ReferredByAccount
 }
 
 func (r *accountR) GetEmail() *Email {
@@ -262,13 +268,20 @@ func (r *accountR) GetWallet() *Wallet {
 	return r.Wallet
 }
 
+func (r *accountR) GetReferredByAccounts() AccountSlice {
+	if r == nil {
+		return nil
+	}
+	return r.ReferredByAccounts
+}
+
 // accountL is where Load methods for each relationship are stored.
 type accountL struct{}
 
 var (
-	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "customer_io_id", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountColumnsWithoutDefault = []string{"id"}
-	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "customer_io_id", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
 )
@@ -578,6 +591,17 @@ func (q accountQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bo
 	return count > 0, nil
 }
 
+// ReferredByAccount pointed to by the foreign key.
+func (o *Account) ReferredByAccount(mods ...qm.QueryMod) accountQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("\"id\" = ?", o.ReferredBy),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Accounts(queryMods...)
+}
+
 // Email pointed to by the foreign key.
 func (o *Account) Email(mods ...qm.QueryMod) emailQuery {
 	queryMods := []qm.QueryMod{
@@ -598,6 +622,144 @@ func (o *Account) Wallet(mods ...qm.QueryMod) walletQuery {
 	queryMods = append(queryMods, mods...)
 
 	return Wallets(queryMods...)
+}
+
+// ReferredByAccounts retrieves all the account's Accounts with an executor via referred_by column.
+func (o *Account) ReferredByAccounts(mods ...qm.QueryMod) accountQuery {
+	var queryMods []qm.QueryMod
+	if len(mods) != 0 {
+		queryMods = append(queryMods, mods...)
+	}
+
+	queryMods = append(queryMods,
+		qm.Where("\"accounts_api\".\"accounts\".\"referred_by\"=?", o.ID),
+	)
+
+	return Accounts(queryMods...)
+}
+
+// LoadReferredByAccount allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (accountL) LoadReferredByAccount(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAccount interface{}, mods queries.Applicator) error {
+	var slice []*Account
+	var object *Account
+
+	if singular {
+		var ok bool
+		object, ok = maybeAccount.(*Account)
+		if !ok {
+			object = new(Account)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAccount))
+			}
+		}
+	} else {
+		s, ok := maybeAccount.(*[]*Account)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAccount))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &accountR{}
+		}
+		if !queries.IsNil(object.ReferredBy) {
+			args[object.ReferredBy] = struct{}{}
+		}
+
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &accountR{}
+			}
+
+			if !queries.IsNil(obj.ReferredBy) {
+				args[obj.ReferredBy] = struct{}{}
+			}
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`accounts_api.accounts`),
+		qm.WhereIn(`accounts_api.accounts.id in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Account")
+	}
+
+	var resultSlice []*Account
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Account")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for accounts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for accounts")
+	}
+
+	if len(accountAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.ReferredByAccount = foreign
+		if foreign.R == nil {
+			foreign.R = &accountR{}
+		}
+		foreign.R.ReferredByAccounts = append(foreign.R.ReferredByAccounts, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if queries.Equal(local.ReferredBy, foreign.ID) {
+				local.R.ReferredByAccount = foreign
+				if foreign.R == nil {
+					foreign.R = &accountR{}
+				}
+				foreign.R.ReferredByAccounts = append(foreign.R.ReferredByAccounts, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadEmail allows an eager lookup of values, cached into the
@@ -834,6 +996,199 @@ func (accountL) LoadWallet(ctx context.Context, e boil.ContextExecutor, singular
 	return nil
 }
 
+// LoadReferredByAccounts allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for a 1-M or N-M relationship.
+func (accountL) LoadReferredByAccounts(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAccount interface{}, mods queries.Applicator) error {
+	var slice []*Account
+	var object *Account
+
+	if singular {
+		var ok bool
+		object, ok = maybeAccount.(*Account)
+		if !ok {
+			object = new(Account)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAccount))
+			}
+		}
+	} else {
+		s, ok := maybeAccount.(*[]*Account)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeAccount)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAccount))
+			}
+		}
+	}
+
+	args := make(map[interface{}]struct{})
+	if singular {
+		if object.R == nil {
+			object.R = &accountR{}
+		}
+		args[object.ID] = struct{}{}
+	} else {
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &accountR{}
+			}
+			args[obj.ID] = struct{}{}
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	argsSlice := make([]interface{}, len(args))
+	i := 0
+	for arg := range args {
+		argsSlice[i] = arg
+		i++
+	}
+
+	query := NewQuery(
+		qm.From(`accounts_api.accounts`),
+		qm.WhereIn(`accounts_api.accounts.referred_by in ?`, argsSlice...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load accounts")
+	}
+
+	var resultSlice []*Account
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice accounts")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results in eager load on accounts")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for accounts")
+	}
+
+	if len(accountAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+	if singular {
+		object.R.ReferredByAccounts = resultSlice
+		for _, foreign := range resultSlice {
+			if foreign.R == nil {
+				foreign.R = &accountR{}
+			}
+			foreign.R.ReferredByAccount = object
+		}
+		return nil
+	}
+
+	for _, foreign := range resultSlice {
+		for _, local := range slice {
+			if queries.Equal(local.ID, foreign.ReferredBy) {
+				local.R.ReferredByAccounts = append(local.R.ReferredByAccounts, foreign)
+				if foreign.R == nil {
+					foreign.R = &accountR{}
+				}
+				foreign.R.ReferredByAccount = local
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
+// SetReferredByAccount of the account to the related item.
+// Sets o.R.ReferredByAccount to related.
+// Adds o to related.R.ReferredByAccounts.
+func (o *Account) SetReferredByAccount(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Account) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE \"accounts_api\".\"accounts\" SET %s WHERE %s",
+		strmangle.SetParamNames("\"", "\"", 1, []string{"referred_by"}),
+		strmangle.WhereClause("\"", "\"", 2, accountPrimaryKeyColumns),
+	)
+	values := []interface{}{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	queries.Assign(&o.ReferredBy, related.ID)
+	if o.R == nil {
+		o.R = &accountR{
+			ReferredByAccount: related,
+		}
+	} else {
+		o.R.ReferredByAccount = related
+	}
+
+	if related.R == nil {
+		related.R = &accountR{
+			ReferredByAccounts: AccountSlice{o},
+		}
+	} else {
+		related.R.ReferredByAccounts = append(related.R.ReferredByAccounts, o)
+	}
+
+	return nil
+}
+
+// RemoveReferredByAccount relationship.
+// Sets o.R.ReferredByAccount to nil.
+// Removes o from all passed in related items' relationships struct.
+func (o *Account) RemoveReferredByAccount(ctx context.Context, exec boil.ContextExecutor, related *Account) error {
+	var err error
+
+	queries.SetScanner(&o.ReferredBy, nil)
+	if _, err = o.Update(ctx, exec, boil.Whitelist("referred_by")); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	if o.R != nil {
+		o.R.ReferredByAccount = nil
+	}
+	if related == nil || related.R == nil {
+		return nil
+	}
+
+	for i, ri := range related.R.ReferredByAccounts {
+		if queries.Equal(o.ReferredBy, ri.ReferredBy) {
+			continue
+		}
+
+		ln := len(related.R.ReferredByAccounts)
+		if ln > 1 && i < ln-1 {
+			related.R.ReferredByAccounts[i] = related.R.ReferredByAccounts[ln-1]
+		}
+		related.R.ReferredByAccounts = related.R.ReferredByAccounts[:ln-1]
+		break
+	}
+	return nil
+}
+
 // SetEmail of the account to the related item.
 // Sets o.R.Email to related.
 // Adds o to related.R.Account.
@@ -931,6 +1286,133 @@ func (o *Account) SetWallet(ctx context.Context, exec boil.ContextExecutor, inse
 	} else {
 		related.R.Account = o
 	}
+	return nil
+}
+
+// AddReferredByAccounts adds the given related objects to the existing relationships
+// of the account, optionally inserting them as new records.
+// Appends related to o.R.ReferredByAccounts.
+// Sets related.R.ReferredByAccount appropriately.
+func (o *Account) AddReferredByAccounts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Account) error {
+	var err error
+	for _, rel := range related {
+		if insert {
+			queries.Assign(&rel.ReferredBy, o.ID)
+			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
+				return errors.Wrap(err, "failed to insert into foreign table")
+			}
+		} else {
+			updateQuery := fmt.Sprintf(
+				"UPDATE \"accounts_api\".\"accounts\" SET %s WHERE %s",
+				strmangle.SetParamNames("\"", "\"", 1, []string{"referred_by"}),
+				strmangle.WhereClause("\"", "\"", 2, accountPrimaryKeyColumns),
+			)
+			values := []interface{}{o.ID, rel.ID}
+
+			if boil.IsDebug(ctx) {
+				writer := boil.DebugWriterFrom(ctx)
+				fmt.Fprintln(writer, updateQuery)
+				fmt.Fprintln(writer, values)
+			}
+			if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+				return errors.Wrap(err, "failed to update foreign table")
+			}
+
+			queries.Assign(&rel.ReferredBy, o.ID)
+		}
+	}
+
+	if o.R == nil {
+		o.R = &accountR{
+			ReferredByAccounts: related,
+		}
+	} else {
+		o.R.ReferredByAccounts = append(o.R.ReferredByAccounts, related...)
+	}
+
+	for _, rel := range related {
+		if rel.R == nil {
+			rel.R = &accountR{
+				ReferredByAccount: o,
+			}
+		} else {
+			rel.R.ReferredByAccount = o
+		}
+	}
+	return nil
+}
+
+// SetReferredByAccounts removes all previously related items of the
+// account replacing them completely with the passed
+// in related items, optionally inserting them as new records.
+// Sets o.R.ReferredByAccount's ReferredByAccounts accordingly.
+// Replaces o.R.ReferredByAccounts with related.
+// Sets related.R.ReferredByAccount's ReferredByAccounts accordingly.
+func (o *Account) SetReferredByAccounts(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Account) error {
+	query := "update \"accounts_api\".\"accounts\" set \"referred_by\" = null where \"referred_by\" = $1"
+	values := []interface{}{o.ID}
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, query)
+		fmt.Fprintln(writer, values)
+	}
+	_, err := exec.ExecContext(ctx, query, values...)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove relationships before set")
+	}
+
+	if o.R != nil {
+		for _, rel := range o.R.ReferredByAccounts {
+			queries.SetScanner(&rel.ReferredBy, nil)
+			if rel.R == nil {
+				continue
+			}
+
+			rel.R.ReferredByAccount = nil
+		}
+		o.R.ReferredByAccounts = nil
+	}
+
+	return o.AddReferredByAccounts(ctx, exec, insert, related...)
+}
+
+// RemoveReferredByAccounts relationships from objects passed in.
+// Removes related items from R.ReferredByAccounts (uses pointer comparison, removal does not keep order)
+// Sets related.R.ReferredByAccount.
+func (o *Account) RemoveReferredByAccounts(ctx context.Context, exec boil.ContextExecutor, related ...*Account) error {
+	if len(related) == 0 {
+		return nil
+	}
+
+	var err error
+	for _, rel := range related {
+		queries.SetScanner(&rel.ReferredBy, nil)
+		if rel.R != nil {
+			rel.R.ReferredByAccount = nil
+		}
+		if _, err = rel.Update(ctx, exec, boil.Whitelist("referred_by")); err != nil {
+			return err
+		}
+	}
+	if o.R == nil {
+		return nil
+	}
+
+	for _, rel := range related {
+		for i, ri := range o.R.ReferredByAccounts {
+			if rel != ri {
+				continue
+			}
+
+			ln := len(o.R.ReferredByAccounts)
+			if ln > 1 && i < ln-1 {
+				o.R.ReferredByAccounts[i] = o.R.ReferredByAccounts[ln-1]
+			}
+			o.R.ReferredByAccounts = o.R.ReferredByAccounts[:ln-1]
+			break
+		}
+	}
+
 	return nil
 }
 
