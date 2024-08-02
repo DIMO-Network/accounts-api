@@ -49,9 +49,9 @@ type Controller struct {
 }
 
 type AccountClaims struct {
-	EthereumAddress *common.Address `json:"ethereum_address,omitempty"`
 	EmailAddress    *string         `json:"email,omitempty"`
 	ProviderID      *string         `json:"provider_id,omitempty"`
+	EthereumAddress *common.Address `json:"ethereum_address,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -86,8 +86,26 @@ func getUserAccountClaims(c *fiber.Ctx) (*AccountClaims, error) {
 	}
 
 	infos := token.Claims.(*AccountClaims)
-	if infos.EthereumAddress == nil && (infos.EmailAddress == nil || !emailPattern.MatchString(*infos.EmailAddress)) {
-		return nil, errors.New("invalid user account infos")
+
+	validEthAddr := infos.EthereumAddress != nil
+	validEmlAddr := infos.EmailAddress != nil
+
+	if validEthAddr {
+		if mixAddr, err := common.NewMixedcaseAddressFromString((*infos.EthereumAddress).Hex()); err != nil {
+			validEthAddr = false
+		} else if !mixAddr.ValidChecksum() {
+			validEthAddr = false
+		}
+	}
+
+	if validEmlAddr {
+		if !emailPattern.MatchString(*infos.EmailAddress) {
+			validEmlAddr = false
+		}
+	}
+
+	if !validEthAddr && !validEmlAddr {
+		return nil, errors.New("invalid user token")
 	}
 
 	return infos, nil
@@ -137,17 +155,9 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 	var cioEmail *string
 	switch *userAccount.ProviderID {
 	case "web3":
-		mixAddr, err := common.NewMixedcaseAddressFromString(userAccount.EthereumAddress.Hex())
-		if err != nil {
-			return fmt.Errorf("invalid ethereum_address %s", userAccount.EthereumAddress.Hex())
-		}
-		if !mixAddr.ValidChecksum() {
-			d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", userAccount.EthereumAddress.Hex())
-		}
-
 		wallet := &models.Wallet{
 			AccountID:       acct.ID,
-			EthereumAddress: mixAddr.Address().Bytes(),
+			EthereumAddress: (*userAccount.EthereumAddress).Bytes(),
 			Provider:        null.StringFrom(*userAccount.ProviderID),
 		}
 
