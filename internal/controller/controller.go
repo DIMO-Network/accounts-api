@@ -203,7 +203,7 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 	}
 
 	if wallet != nil {
-		userResp.Web3 = &UserResponseWeb3{
+		userResp.Wallet = &UserResponseWallet{
 			Address: common.BytesToAddress(wallet.Address).Hex(),
 		}
 		userResp.ReferralCode = acct.ReferralCode

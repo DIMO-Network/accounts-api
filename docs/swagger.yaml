@@ -1,40 +1,40 @@
 definitions:
-  controller.CompleteEmailValidation:
+  internal_controller.CompleteEmailValidation:
     properties:
       key:
         description: Key is the 6-digit number from the confirmation email
         example: "010990"
         type: string
     type: object
-  controller.ErrorRes:
+  internal_controller.ErrorRes:
     properties:
       code:
         type: integer
       message:
         type: string
     type: object
-  controller.RequestEmailValidation:
+  internal_controller.RequestEmailValidation:
     properties:
       email:
         example: kilgore@kilgore.trout
         type: string
     type: object
-  controller.SubmitReferralCodeRequest:
+  internal_controller.SubmitReferralCodeRequest:
     properties:
       referralCode:
-        example: ANB95NBQA1N5
+        example: ANB1N5
         type: string
     type: object
-  controller.SubmitReferralCodeResponse:
+  internal_controller.SubmitReferralCodeResponse:
     properties:
       message:
         type: string
     type: object
-  controller.UserResponse:
+  internal_controller.UserResponse:
     properties:
-      agreedTosAt:
-        description: AgreedTosAt is the time at which the user last agreed to the
-          terms of service.
+      acceptedTOSAt:
+        description: AcceptedTOSAt is the time at which the user agreed to the terms
+          of service.
         example: "2021-12-01T09:00:41Z"
         type: string
       countryCode:
@@ -47,7 +47,8 @@ definitions:
         example: "2021-12-01T09:00:00Z"
         type: string
       email:
-        $ref: '#/definitions/controller.UserResponseEmail'
+        allOf:
+        - $ref: '#/definitions/internal_controller.UserResponseEmail'
         description: Email describes the user's email and the state of its confirmation.
       id:
         description: ID is the user's DIMO-internal ID.
@@ -69,11 +70,12 @@ definitions:
         description: UpdatedAt reflects the time of the most recent account changes.
         example: "2021-12-01T09:00:00Z"
         type: string
-      web3:
-        $ref: '#/definitions/controller.UserResponseWeb3'
-        description: Web3 describes the user's blockchain account.
+      wallet:
+        allOf:
+        - $ref: '#/definitions/internal_controller.UserResponseWallet'
+        description: Wallet describes the user's blockchain account.
     type: object
-  controller.UserResponseEmail:
+  internal_controller.UserResponseEmail:
     properties:
       address:
         description: Address is the email address for the user.
@@ -91,25 +93,14 @@ definitions:
         example: false
         type: boolean
     type: object
-  controller.UserResponseWeb3:
+  internal_controller.UserResponseWallet:
     properties:
       address:
         description: Address is the Ethereum address associated with the user.
         example: 0x142e0C7A098622Ea98E5D67034251C4dFA746B5d
         type: string
-      confirmed:
-        description: |-
-          Confirmed indicates whether the user has confirmed the address by signing a challenge
-          message.
-        example: false
-        type: boolean
-      inApp:
-        description: InApp indicates whether this is an in-app wallet, managed by
-          the DIMO app.
-        example: "false"
-        type: string
     type: object
-  controller.UserUpdateRequest:
+  internal_controller.UserUpdateRequest:
     properties:
       countryCode:
         description: CountryCode should be a valid ISO 3166-1 alpha-3 country code
@@ -129,15 +120,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "409":
           description: Returned if the user still has devices.
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Delete the authenticated user. Fails if the user has any devices.
     get:
       produces:
@@ -146,14 +137,29 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.UserResponse'
+            $ref: '#/definitions/internal_controller.UserResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       security:
       - BearerAuth: []
       summary: Get attributes for the authenticated user.
+    post:
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/internal_controller.UserResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+      security:
+      - BearerAuth: []
+      summary: Create an account based on email or 0x address.
     put:
       consumes:
       - application/json
@@ -163,24 +169,24 @@ paths:
         name: userUpdateRequest
         required: true
         schema:
-          $ref: '#/definitions/controller.UserUpdateRequest'
+          $ref: '#/definitions/internal_controller.UserUpdateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.UserResponse'
+            $ref: '#/definitions/internal_controller.UserResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Modify attributes for the authenticated user
-  /v1/accounts/agree-tos:
+  /v1/accounts/accept-tos:
     post:
       responses:
         "204":
@@ -188,8 +194,8 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
-      summary: Agree to the current terms of service
+            $ref: '#/definitions/internal_controller.ErrorRes'
+      summary: Agree to the current terms of service.
   /v1/accounts/confirm-email:
     post:
       consumes:
@@ -200,18 +206,18 @@ paths:
         name: confirmEmailRequest
         required: true
         schema:
-          $ref: '#/definitions/controller.CompleteEmailValidation'
+          $ref: '#/definitions/internal_controller.CompleteEmailValidation'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Submit an email confirmation key
   /v1/accounts/submit-referral-code:
     post:
@@ -222,20 +228,20 @@ paths:
         name: submitReferralCodeRequest
         required: true
         schema:
-          $ref: '#/definitions/controller.SubmitReferralCodeRequest'
+          $ref: '#/definitions/internal_controller.SubmitReferralCodeRequest'
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/controller.SubmitReferralCodeResponse'
+            $ref: '#/definitions/internal_controller.SubmitReferralCodeResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Takes the referral code, validates and stores it
   /v1/link/email:
     post:
@@ -245,22 +251,22 @@ paths:
         name: confirmEmailRequest
         required: true
         schema:
-          $ref: '#/definitions/controller.RequestEmailValidation'
+          $ref: '#/definitions/internal_controller.RequestEmailValidation'
       responses:
         "204":
           description: No Content
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Send a confirmation email to the authenticated user
   /v1/link/email/token:
     post:
@@ -270,7 +276,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Link an email to existing wallet account; require a signed JWT from
         auth server
   /v1/link/wallet/token:
@@ -281,7 +287,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Link a wallet to existing email account; require a signed JWT from
         auth server
 securityDefinitions:

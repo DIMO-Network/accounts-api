@@ -24,7 +24,7 @@ type UserResponseEmail struct {
 	ConfirmationSentAt *time.Time `json:"confirmationSentAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
 }
 
-type UserResponseWeb3 struct {
+type UserResponseWallet struct {
 	// Address is the Ethereum address associated with the user.
 	Address string `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 }
@@ -34,8 +34,8 @@ type UserResponse struct {
 	ID string `json:"id" example:"ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"`
 	// Email describes the user's email and the state of its confirmation.
 	Email *UserResponseEmail `json:"email"`
-	// Web3 describes the user's blockchain account.
-	Web3 *UserResponseWeb3 `json:"web3"`
+	// Wallet describes the user's blockchain account.
+	Wallet *UserResponseWallet `json:"wallet"`
 	// CreatedAt is when the user first logged in.
 	CreatedAt time.Time `json:"createdAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// UpdatedAt reflects the time of the most recent account changes.

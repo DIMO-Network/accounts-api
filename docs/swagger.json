@@ -21,13 +21,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.UserResponse"
+                            "$ref": "#/definitions/internal_controller.UserResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -47,7 +47,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.UserUpdateRequest"
+                            "$ref": "#/definitions/internal_controller.UserUpdateRequest"
                         }
                     }
                 ],
@@ -55,19 +55,44 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.UserResponse"
+                            "$ref": "#/definitions/internal_controller.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create an account based on email or 0x address.",
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.UserResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -81,27 +106,27 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "409": {
                         "description": "Returned if the user still has devices.",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
             }
         },
-        "/v1/accounts/agree-tos": {
+        "/v1/accounts/accept-tos": {
             "post": {
-                "summary": "Agree to the current terms of service",
+                "summary": "Agree to the current terms of service.",
                 "responses": {
                     "204": {
                         "description": "No Content"
@@ -109,7 +134,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -128,7 +153,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.CompleteEmailValidation"
+                            "$ref": "#/definitions/internal_controller.CompleteEmailValidation"
                         }
                     }
                 ],
@@ -139,13 +164,13 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -161,7 +186,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.SubmitReferralCodeRequest"
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeRequest"
                         }
                     }
                 ],
@@ -169,19 +194,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.SubmitReferralCodeResponse"
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -197,7 +222,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.RequestEmailValidation"
+                            "$ref": "#/definitions/internal_controller.RequestEmailValidation"
                         }
                     }
                 ],
@@ -208,19 +233,19 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -236,7 +261,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -252,7 +277,7 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -260,7 +285,7 @@
         }
     },
     "definitions": {
-        "controller.CompleteEmailValidation": {
+        "internal_controller.CompleteEmailValidation": {
             "type": "object",
             "properties": {
                 "key": {
@@ -270,7 +295,7 @@
                 }
             }
         },
-        "controller.ErrorRes": {
+        "internal_controller.ErrorRes": {
             "type": "object",
             "properties": {
                 "code": {
@@ -281,7 +306,7 @@
                 }
             }
         },
-        "controller.RequestEmailValidation": {
+        "internal_controller.RequestEmailValidation": {
             "type": "object",
             "properties": {
                 "email": {
@@ -290,16 +315,16 @@
                 }
             }
         },
-        "controller.SubmitReferralCodeRequest": {
+        "internal_controller.SubmitReferralCodeRequest": {
             "type": "object",
             "properties": {
                 "referralCode": {
                     "type": "string",
-                    "example": "ANB95NBQA1N5"
+                    "example": "ANB1N5"
                 }
             }
         },
-        "controller.SubmitReferralCodeResponse": {
+        "internal_controller.SubmitReferralCodeResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -307,11 +332,11 @@
                 }
             }
         },
-        "controller.UserResponse": {
+        "internal_controller.UserResponse": {
             "type": "object",
             "properties": {
-                "agreedTosAt": {
-                    "description": "AgreedTosAt is the time at which the user last agreed to the terms of service.",
+                "acceptedTOSAt": {
+                    "description": "AcceptedTOSAt is the time at which the user agreed to the terms of service.",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
                 },
@@ -327,7 +352,11 @@
                 },
                 "email": {
                     "description": "Email describes the user's email and the state of its confirmation.",
-                    "$ref": "#/definitions/controller.UserResponseEmail"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controller.UserResponseEmail"
+                        }
+                    ]
                 },
                 "id": {
                     "description": "ID is the user's DIMO-internal ID.",
@@ -352,13 +381,17 @@
                     "type": "string",
                     "example": "2021-12-01T09:00:00Z"
                 },
-                "web3": {
-                    "description": "Web3 describes the user's blockchain account.",
-                    "$ref": "#/definitions/controller.UserResponseWeb3"
+                "wallet": {
+                    "description": "Wallet describes the user's blockchain account.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controller.UserResponseWallet"
+                        }
+                    ]
                 }
             }
         },
-        "controller.UserResponseEmail": {
+        "internal_controller.UserResponseEmail": {
             "type": "object",
             "properties": {
                 "address": {
@@ -378,27 +411,17 @@
                 }
             }
         },
-        "controller.UserResponseWeb3": {
+        "internal_controller.UserResponseWallet": {
             "type": "object",
             "properties": {
                 "address": {
                     "description": "Address is the Ethereum address associated with the user.",
                     "type": "string",
                     "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
-                },
-                "confirmed": {
-                    "description": "Confirmed indicates whether the user has confirmed the address by signing a challenge\nmessage.",
-                    "type": "boolean",
-                    "example": false
-                },
-                "inApp": {
-                    "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
-                    "type": "string",
-                    "example": "false"
                 }
             }
         },
-        "controller.UserUpdateRequest": {
+        "internal_controller.UserUpdateRequest": {
             "type": "object",
             "properties": {
                 "countryCode": {
