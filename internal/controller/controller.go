@@ -21,7 +21,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
-	"github.com/volatiletech/null/v8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -41,7 +40,6 @@ type Controller struct {
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
-	identityService services.IdentityService
 	emailService    services.EmailService
 	cioService      services.CustomerIoService
 	jwkResource     keyfunc.Keyfunc
@@ -49,13 +47,13 @@ type Controller struct {
 }
 
 type AccountClaims struct {
+	jwt.RegisteredClaims
 	EmailAddress    *string         `json:"email,omitempty"`
 	ProviderID      *string         `json:"provider_id,omitempty"`
 	EthereumAddress *common.Address `json:"ethereum_address,omitempty"`
-	jwt.RegisteredClaims
 }
 
-func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, cioSvc services.CustomerIoService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
+func NewAccountController(ctx context.Context, dbs db.Store, emlSvc services.EmailService, cioSvc services.CustomerIoService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		return nil, err
@@ -72,7 +70,6 @@ func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.Iden
 		allowedLateness: settings.AllowableEmailConfirmationLateness * time.Minute,
 		countryCodes:    countryCodes,
 		emailService:    emlSvc,
-		identityService: idSvc,
 		cioService:      cioSvc,
 		jwkResource:     jwkResource,
 		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),
@@ -87,53 +84,48 @@ func getUserAccountClaims(c *fiber.Ctx) (*AccountClaims, error) {
 
 	infos := token.Claims.(*AccountClaims)
 
-	validEthAddr := infos.EthereumAddress != nil
-	validEmlAddr := infos.EmailAddress != nil
-
-	if validEthAddr {
-		if mixAddr, err := common.NewMixedcaseAddressFromString((*infos.EthereumAddress).Hex()); err != nil {
-			validEthAddr = false
-		} else if !mixAddr.ValidChecksum() {
-			validEthAddr = false
-		}
+	if infos.EthereumAddress == nil && infos.EmailAddress != nil {
+		return nil, errors.New("neither ethereum address nor email address present")
 	}
 
-	if validEmlAddr {
+	if infos.EmailAddress != nil {
 		if !emailPattern.MatchString(*infos.EmailAddress) {
-			validEmlAddr = false
+			return nil, errors.New("invalid email address")
 		}
 	}
-
-	if !validEthAddr && !validEmlAddr {
-		return nil, errors.New("invalid user token")
+	if infos.EthereumAddress != nil && infos.EmailAddress != nil {
+		return nil, errors.New("token has both an ethereum address and an email address")
 	}
 
 	return infos, nil
 }
 
 func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountClaims, exec boil.ContextExecutor) (*models.Account, error) {
-	queryMods := []qm.QueryMod{}
-
 	if userAccount.EmailAddress != nil {
-		queryMods = append(queryMods,
-			qm.InnerJoin("accounts_api.emails e on e.account_id = accounts.id"),
-			qm.Where("e.email_address = ?", *userAccount.EmailAddress),
-			qm.Load(models.AccountRels.Email),
-			qm.Load(models.AccountRels.Wallet),
-		)
+		email, err := models.Emails(
+			models.EmailWhere.Address.EQ(*userAccount.EmailAddress),
+			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
+		).One(ctx, exec)
+		if err != nil {
+			return nil, err
+		}
+
+		return email.R.Account, nil
 	}
 
 	if userAccount.EthereumAddress != nil {
-		queryMods = append(queryMods,
-			qm.InnerJoin("accounts_api.wallets w on w.account_id = accounts.id"),
-			qm.Where("w.ethereum_address = ?", userAccount.EthereumAddress.Bytes()),
-			qm.Load(models.AccountRels.Email),
-			qm.Load(models.AccountRels.Wallet),
-		)
+		wallet, err := models.Wallets(
+			models.WalletWhere.Address.EQ(userAccount.EthereumAddress.Bytes()),
+			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Email)),
+		).One(ctx, exec)
+		if err != nil {
+			return nil, err
+		}
+
+		return wallet.R.Account, nil
 	}
 
-	return models.Accounts(queryMods...,
-	).One(ctx, exec)
+	return nil, errors.New("no email or wallet in authorization token")
 }
 
 func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims, tx *sql.Tx) error {
@@ -143,34 +135,33 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 	}
 
 	acct := models.Account{
-		ID:           ksuid.New().String(), // this is also the cio id
-		ReferralCode: null.StringFrom(referralCode),
+		ID:           ksuid.New().String(),
+		ReferralCode: referralCode,
 	}
 
 	if err := acct.Insert(ctx, tx, boil.Infer()); err != nil {
 		return err
 	}
 
-	var cioWallet *common.MixedcaseAddress
+	var cioWallet *common.Address
 	var cioEmail *string
 	switch *userAccount.ProviderID {
 	case "web3":
 		wallet := &models.Wallet{
-			AccountID:       acct.ID,
-			EthereumAddress: (*userAccount.EthereumAddress).Bytes(),
-			Provider:        null.StringFrom(*userAccount.ProviderID),
+			AccountID: acct.ID,
+			Address:   userAccount.EthereumAddress.Bytes(),
 		}
 
 		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
 			return fmt.Errorf("failed to insert wallet: %w", err)
 		}
 
-		cioWallet = mixAddr
+		cioWallet = userAccount.EthereumAddress
 	case "apple", "google":
 		email := models.Email{
-			AccountID:    acct.ID,
-			EmailAddress: *userAccount.EmailAddress,
-			Confirmed:    true,
+			AccountID: acct.ID,
+			Address:   *userAccount.EmailAddress,
+			Confirmed: true,
 		}
 
 		if err := email.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -189,14 +180,13 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 
 func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models.Wallet, email *models.Email) (*UserResponse, error) {
 	userResp := &UserResponse{
-		ID:           acct.ID,
-		CreatedAt:    acct.CreatedAt,
-		ReferralCode: acct.ReferralCode.String,
-		ReferredBy:   acct.ReferredBy.String,
-		ReferredAt:   acct.ReferredAt.Time,
-		AgreedTOSAt:  acct.AcceptedTosAt.Time,
-		CountryCode:  acct.CountryCode.String,
-		UpdatedAt:    acct.UpdatedAt,
+		ID:            acct.ID,
+		ReferredBy:    acct.ReferredBy.String,
+		ReferredAt:    acct.ReferredAt.Time,
+		AcceptedTOSAt: acct.AcceptedTosAt.Ptr(),
+		CountryCode:   acct.CountryCode.String,
+		CreatedAt:     acct.CreatedAt,
+		UpdatedAt:     acct.UpdatedAt,
 	}
 
 	if acct.ReferredBy.Valid {
@@ -206,17 +196,17 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 
 	if email != nil {
 		userResp.Email = &UserResponseEmail{
-			Address:            email.EmailAddress,
+			Address:            email.Address,
 			Confirmed:          email.Confirmed,
-			ConfirmationSentAt: email.ConfirmationSentAt.Time,
+			ConfirmationSentAt: email.ConfirmationSentAt.Ptr(),
 		}
 	}
 
 	if wallet != nil {
 		userResp.Web3 = &UserResponseWeb3{
-			Address:  common.BytesToAddress(wallet.EthereumAddress),
-			Provider: wallet.Provider.String,
+			Address: common.BytesToAddress(wallet.Address).Hex(),
 		}
+		userResp.ReferralCode = acct.ReferralCode
 	}
 
 	return userResp, nil

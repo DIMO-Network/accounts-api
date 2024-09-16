@@ -55,7 +55,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("email address already linked with account")
 	}
 
-	if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(body.EmailAddress)).One(c.Context(), tx); err != nil {
+	if emlAssociated, err := models.Emails(models.EmailWhere.Address.EQ(body.EmailAddress)).One(c.Context(), tx); err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
 			return err
 		}
@@ -68,7 +68,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	confKey := generateConfirmationKey()
 	userEmail := &models.Email{
 		AccountID:          acct.ID,
-		EmailAddress:       body.EmailAddress,
+		Address:            body.EmailAddress,
 		Confirmed:          false,
 		ConfirmationCode:   null.StringFrom(confKey),
 		ConfirmationSentAt: null.TimeFrom(time.Now()),
@@ -150,7 +150,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, &acct.R.Email.EmailAddress, nil); err != nil {
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, &acct.R.Email.Address, nil); err != nil {
 		return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
 	}
 
@@ -203,9 +203,9 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	}
 
 	email := models.Email{
-		AccountID:    acct.ID,
-		Confirmed:    true,
-		EmailAddress: *infos.EmailAddress,
+		AccountID: acct.ID,
+		Confirmed: true,
+		Address:   *infos.EmailAddress,
 	}
 
 	if err := email.Insert(c.Context(), tx, boil.Infer()); err != nil {

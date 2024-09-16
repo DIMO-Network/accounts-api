@@ -67,16 +67,15 @@ var dexWalletUsers = []struct {
 
 type AccountControllerTestSuite struct {
 	suite.Suite
-	app             *fiber.App
-	settings        *config.Settings
-	pdb             db.Store
-	pgContainer     testcontainers.Container
-	dexContainer    testcontainers.Container
-	ctx             context.Context
-	controller      *Controller
-	identityService services.IdentityService
-	emailService    services.EmailService
-	cioService      services.CustomerIoService
+	app          *fiber.App
+	settings     *config.Settings
+	pdb          db.Store
+	pgContainer  testcontainers.Container
+	dexContainer testcontainers.Container
+	ctx          context.Context
+	controller   *Controller
+	emailService services.EmailService
+	cioService   services.CustomerIoService
 }
 
 // SetupSuite starts container db
@@ -84,7 +83,6 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.app = fiber.New()
 	s.ctx = context.Background()
 	s.emailService = test.NewEmailService()
-	s.identityService = test.NewIdentityService(true)
 	s.pdb, s.pgContainer = test.StartContainerDatabase(s.ctx, s.T(), migrationsDirRelPath)
 	s.dexContainer = test.StartContainerDex(s.ctx, s.T())
 	time.Sleep(5 * time.Second) // TODOAE: need to add wait for log w regex to container req
@@ -106,7 +104,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 		Claims:     &AccountClaims{},
 	}))
 
-	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.cioService, s.settings, test.Logger())
+	acctCont, err := NewAccountController(s.ctx, s.pdb, s.emailService, s.cioService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
 	s.app.Post("/", s.controller.CreateUserAccount)
@@ -114,7 +112,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.app.Delete("/", s.controller.DeleteUser)
 	s.app.Put("/update", s.controller.UpdateUser)
 
-	s.app.Post("/agree-tos", s.controller.AgreeTOS)
+	s.app.Post("/agree-tos", s.controller.AcceptTOS)
 	s.app.Post("/referral/submit", s.controller.SubmitReferralCode)
 	s.app.Post("/link/wallet/token", s.controller.LinkWalletToken)
 	s.app.Post("/link/email/token", s.controller.LinkEmailToken)
@@ -241,7 +239,7 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[0].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Web3)
-	s.Assert().Equal(userResp.Web3.Address.Hex(), dexWalletUsers[0].Wallet)
+	s.Assert().Equal(userResp.Web3.Address, dexWalletUsers[0].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
@@ -260,7 +258,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 
 	s.Assert().Nil(userResp.Email)
 	s.Require().NotNil(userResp.Web3)
-	s.Assert().Equal(dexWalletUsers[1].Wallet, userResp.Web3.Address.Hex())
+	s.Assert().Equal(dexWalletUsers[1].Wallet, userResp.Web3.Address)
 
 	// Set identity svc to be consistent with eligible deletion state
 	test.IdentityServiceResponse = false
@@ -308,7 +306,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[2].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Web3)
-	s.Assert().Equal(userResp.Web3.Address.Hex(), dexWalletUsers[0].Wallet)
+	s.Assert().Equal(userResp.Web3.Address, dexWalletUsers[0].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
@@ -329,7 +327,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 	s.Require().NoError(err)
 	s.Assert().Equal(204, postResp.StatusCode)
 
-	eml, err := models.Emails(models.EmailWhere.EmailAddress.EQ(dexEmailUsers[0].Email)).One(s.ctx, s.pdb.DBS().Reader)
+	eml, err := models.Emails(models.EmailWhere.Address.EQ(dexEmailUsers[0].Email)).One(s.ctx, s.pdb.DBS().Reader)
 	s.Require().NoError(err)
 
 	confirmEmailBody := CompleteEmailValidation{
@@ -354,7 +352,7 @@ func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
 	s.Require().NoError(err)
 
 	referralCodeBody := SubmitReferralCodeRequest{
-		ReferralCode: refAcct.ReferralCode.String,
+		ReferralCode: refAcct.ReferralCode,
 	}
 	referralCodeBodyBytes, _ := json.Marshal(referralCodeBody)
 
@@ -404,9 +402,7 @@ func (s *AccountControllerTestSuite) Test_ConflictingEmail_Token() {
 
 	linkEmailReq := test.BuildRequest("POST", "/link/email/token", string(linkEmailBodyBytes), dexWalletUsers[1].AuthToken)
 	linkEmailResp, _ := s.app.Test(linkEmailReq)
-	resp, err := io.ReadAll(linkEmailResp.Body)
 	s.Require().NoError(err)
-	s.Assert().Equal(string(resp), `models: unable to insert into emails: pq: duplicate key value violates unique constraint "emails_pkey"`)
 	s.Assert().Equal(500, linkEmailResp.StatusCode)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
@@ -492,7 +488,7 @@ func (s *AccountControllerTestSuite) Test_EmailFirst_AlternativeSignIn_Token() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[0].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Web3)
-	s.Assert().Equal(userResp.Web3.Address.Hex(), dexWalletUsers[2].Wallet)
+	s.Assert().Equal(userResp.Web3.Address, dexWalletUsers[2].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
@@ -525,7 +521,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirst_AlternativeSignIn_Token() 
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[2].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Web3)
-	s.Assert().Equal(userResp.Web3.Address.Hex(), dexWalletUsers[0].Wallet)
+	s.Assert().Equal(userResp.Web3.Address, dexWalletUsers[0].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 

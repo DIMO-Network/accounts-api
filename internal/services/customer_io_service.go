@@ -9,7 +9,7 @@ import (
 )
 
 type CustomerIoService interface {
-	SendCustomerIoEvent(customerID string, email *string, wallet *common.MixedcaseAddress) error
+	SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error
 	Close()
 }
 
@@ -40,7 +40,7 @@ func NewCustomerIoService(settings *config.Settings, logger *zerolog.Logger) (Cu
 
 }
 
-func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wallet *common.MixedcaseAddress) error {
+func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error {
 	if c.disableCustomerIOEvents {
 		return nil
 	}
@@ -51,7 +51,7 @@ func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wa
 	}
 
 	if wallet != nil {
-		userTraits.Set("wallet_address", wallet.Address().Hex())
+		userTraits.Set("wallet_address", wallet.Hex())
 	}
 
 	return c.client.Enqueue(analytics.Identify{

@@ -44,7 +44,7 @@ func main() {
 
 	settings, err := shared.LoadConfig[config.Settings]("settings.yaml")
 	if err != nil {
-		logger.Fatal().Err(err).Msg("could not load settings")
+		logger.Fatal().Err(err).Msg("Failed to load settings.")
 	}
 
 	dbs := db.NewDbConnectionFromSettings(ctx, &settings.DB, true)
@@ -100,7 +100,6 @@ func main() {
 		},
 	))
 
-	idSvc := services.NewIdentityService(&settings)
 	emailSvc := services.NewEmailService(&settings)
 	customerIoSvc, err := services.NewCustomerIoService(&settings, &logger)
 	if err != nil {
@@ -108,7 +107,7 @@ func main() {
 	}
 	defer customerIoSvc.Close()
 
-	accountController, err := controller.NewAccountController(ctx, dbs, idSvc, emailSvc, customerIoSvc, &settings, &logger)
+	accountController, err := controller.NewAccountController(ctx, dbs, emailSvc, customerIoSvc, &settings, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to start account controller.")
 	}
@@ -127,7 +126,7 @@ func main() {
 	v1.Delete("/", accountController.DeleteUser)
 
 	//agree to terms of service, can only be called after both email and wallet are linked
-	v1.Post("/agree-tos", accountController.AgreeTOS)
+	v1.Post("/accept-tos", accountController.AcceptTOS)
 
 	//agree to terms of service, can only be called after both email and wallet are linked
 	v1.Post("/referral/submit", accountController.SubmitReferralCode)
@@ -217,7 +216,6 @@ func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 		code = e.Code
 	}
 
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
 	logger.Err(err).Int("httpStatusCode", code).
 		Str("httpMethod", c.Method()).
 		Str("httpPath", c.Path()).

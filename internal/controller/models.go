@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"regexp"
 	"time"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
@@ -23,14 +21,12 @@ type UserResponseEmail struct {
 	Confirmed bool `example:"false" json:"confirmed"`
 	// ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
 	// be present if we've sent an email but the code has not been sent back to us.
-	ConfirmationSentAt time.Time `json:"confirmationSentAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
+	ConfirmationSentAt *time.Time `json:"confirmationSentAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
 }
 
 type UserResponseWeb3 struct {
 	// Address is the Ethereum address associated with the user.
-	Address common.Address `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
-	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
-	Provider string `json:"inApp" example:"false"`
+	Address string `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 }
 
 type UserResponse struct {
@@ -46,8 +42,8 @@ type UserResponse struct {
 	UpdatedAt time.Time `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
-	// AgreedTosAt is the time at which the user last agreed to the terms of service.
-	AgreedTOSAt time.Time `json:"agreedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	// AcceptedTOSAt is the time at which the user agreed to the terms of service.
+	AcceptedTOSAt *time.Time `json:"acceptedTOSAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
 	ReferralCode string    `json:"referralCode,omitempty" swaggertype:"string" example:"ANB95N"`
@@ -56,7 +52,7 @@ type UserResponse struct {
 }
 
 type SubmitReferralCodeRequest struct {
-	ReferralCode string `json:"referralCode" example:"ANB95NBQA1N5"`
+	ReferralCode string `json:"referralCode" example:"ANB1N5"`
 }
 
 type SubmitReferralCodeResponse struct {

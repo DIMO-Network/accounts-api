@@ -3,22 +3,20 @@ package controller
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 // CreateUserAccount godoc
-// @Summary Create user account based on email or 0x address.
+// @Summary Create an account based on email or 0x address.
 // @Produce json
-// @Success 200 {object} controller.UserResponse
+// @Success 201 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router /v1/accounts [get]
+// @Router /v1/accounts [post]
 func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -32,7 +30,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 	}
 	defer tx.Rollback() //nolint
 
-	if err := d.createUser(c.Context(), userAccount, tx); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err := d.createUser(c.Context(), userAccount, tx); err != nil {
 		return err
 	}
 
@@ -51,7 +49,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(formattedAcct)
+	return c.Status(fiber.StatusCreated).JSON(formattedAcct)
 }
 
 // GetUserAccount godoc
@@ -152,14 +150,6 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 		return err
 	}
 
-	if acct.R.Wallet != nil {
-		if ownedVehicles, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.EthereumAddress)); err != nil {
-			return err
-		} else if ownedVehicles {
-			return fmt.Errorf("user must burn on-chain vehicles before deleting account")
-		}
-	}
-
 	if _, err := acct.Delete(c.Context(), tx); err != nil {
 		return err
 	}
@@ -172,12 +162,12 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// AgreeTOS godoc
-// @Summary Agree to the current terms of service
+// AcceptTOS godoc
+// @Summary Agree to the current terms of service.
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
-// @Router /v1/accounts/agree-tos [post]
-func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
+// @Router /v1/accounts/accept-tos [post]
+func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")

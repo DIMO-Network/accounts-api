@@ -29,7 +29,6 @@ import (
 	"github.com/segmentio/ksuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -148,12 +147,10 @@ func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Contain
 	}
 	mappedPort, err := dexContainer.MappedPort(ctx, nat.Port(dexPort))
 	if err != nil {
-		if err != nil {
-			if dexContainer != nil {
-				dexContainer.Terminate(ctx) //nolint
-			}
-			t.Fatal(err)
+		if dexContainer != nil {
+			dexContainer.Terminate(ctx) //nolint
 		}
+		t.Fatal(err)
 	}
 	fmt.Printf("dex container session %s ready and running at port: %s \n", dexContainer.SessionID(), mappedPort)
 
@@ -271,22 +268,7 @@ func GenerateWallet() (*ecdsa.PrivateKey, *common.Address, error) {
 	return privateKey, &userAddr, nil
 }
 
-type identityService struct {
-}
-
 var IdentityServiceResponse bool = true
-
-func (i *identityService) VehiclesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	return IdentityServiceResponse, nil
-}
-
-func (i *identityService) AftermarketDevicesOwned(ctx context.Context, ethAddr common.Address) (bool, error) {
-	return IdentityServiceResponse, nil
-}
-
-func NewIdentityService(pass bool) services.IdentityService {
-	return &identityService{}
-}
 
 type emailService struct {
 }
@@ -302,18 +284,18 @@ func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate 
 func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
 	acct := models.Account{
 		ID:           ksuid.New().String(),
-		ReferralCode: null.StringFrom("GBI56X"),
+		ReferralCode: "GBI56X",
 	}
 
 	eml := models.Email{
-		AccountID:    acct.ID,
-		EmailAddress: "testemail@gmail.com",
-		Confirmed:    true,
+		AccountID: acct.ID,
+		Address:   "testemail@gmail.com",
+		Confirmed: true,
 	}
 
 	wallet := models.Wallet{
-		AccountID:       acct.ID,
-		EthereumAddress: common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
+		AccountID: acct.ID,
+		Address:   common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 	}
 
 	if err := acct.Insert(context.Background(), exec, boil.Infer()); err != nil {
