@@ -51,9 +51,9 @@ type UserResponse struct {
 	AcceptedTOSAt *time.Time `json:"acceptedTOSAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
-	ReferralCode string    `json:"referralCode,omitempty" swaggertype:"string" example:"ANB95N"`
-	ReferredBy   string    `json:"referredBy,omitempty" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
-	ReferredAt   time.Time `json:"referredAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	ReferralCode string     `json:"referralCode,omitempty" swaggertype:"string" example:"ANB95N"`
+	ReferredBy   string     `json:"referredBy,omitempty" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
+	ReferredAt   *time.Time `json:"referredAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 }
 
 type SubmitReferralCodeRequest struct {
@@ -82,7 +82,7 @@ type CompleteEmailValidation struct {
 	Key string `json:"key" example:"010990"`
 }
 
-type ErrorRes struct {
+type BasicResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }

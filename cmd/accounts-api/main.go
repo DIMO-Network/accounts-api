@@ -226,7 +226,7 @@ func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 		err = fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
-	return c.Status(code).JSON(controller.ErrorRes{
+	return c.Status(code).JSON(controller.BasicResponse{
 		Code:    code,
 		Message: err.Error(),
 	})

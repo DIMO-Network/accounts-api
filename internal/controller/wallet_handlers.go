@@ -74,10 +74,8 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
 	}
 
-	userResp, err := d.formatUserAcctResponse(acct, wallet, acct.R.Email)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(userResp)
+	return c.JSON(BasicResponse{
+		Code:    fiber.StatusOK,
+		Message: fmt.Sprintf("Linked wallet %s to account %s.", infos.EthereumAddress.Hex(), acct.ID),
+	})
 }

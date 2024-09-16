@@ -104,6 +104,7 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		email, err := models.Emails(
 			models.EmailWhere.Address.EQ(*userAccount.EmailAddress),
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
+			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.ReferredByAccount, models.AccountRels.Wallet)),
 		).One(ctx, exec)
 		if err != nil {
 			return nil, err
@@ -115,7 +116,8 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 	if userAccount.EthereumAddress != nil {
 		wallet, err := models.Wallets(
 			models.WalletWhere.Address.EQ(userAccount.EthereumAddress.Bytes()),
-			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Email)),
+			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
+			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.ReferredByAccount, models.AccountRels.Wallet)),
 		).One(ctx, exec)
 		if err != nil {
 			return nil, err
@@ -180,17 +182,10 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models.Wallet, email *models.Email) (*UserResponse, error) {
 	userResp := &UserResponse{
 		ID:            acct.ID,
-		ReferredBy:    acct.ReferredBy.String,
-		ReferredAt:    acct.ReferredAt.Time,
 		AcceptedTOSAt: acct.AcceptedTosAt.Ptr(),
-		CountryCode:   acct.CountryCode.String,
+		CountryCode:   acct.CountryCode.String, // Will just omit if not there.
 		CreatedAt:     acct.CreatedAt,
 		UpdatedAt:     acct.UpdatedAt,
-	}
-
-	if acct.ReferredBy.Valid {
-		userResp.ReferredBy = acct.ReferredBy.String
-		userResp.ReferredAt = acct.ReferredAt.Time
 	}
 
 	if email != nil {
@@ -205,7 +200,14 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 		userResp.Wallet = &UserResponseWallet{
 			Address: common.BytesToAddress(wallet.Address).Hex(),
 		}
+
+		// Don't want to show this if there's no wallet.
 		userResp.ReferralCode = acct.ReferralCode
+
+		userResp.ReferredAt = acct.ReferredAt.Ptr()
+		if acct.R.ReferredByAccount != nil && acct.R.ReferredByAccount.R.Wallet != nil {
+			userResp.ReferredBy = common.BytesToAddress(acct.R.ReferredByAccount.R.Wallet.Address).Hex()
+		}
 	}
 
 	return userResp, nil

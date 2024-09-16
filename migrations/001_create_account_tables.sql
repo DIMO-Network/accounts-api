@@ -2,7 +2,7 @@
 -- +goose StatementBegin
 CREATE TABLE accounts (
     id text CONSTRAINT accounts_pkey PRIMARY KEY,
-    country_code text,
+    country_code text CONSTRAINT accounts_country_code_check CHECK (country_code ~ '^[A-Z]{3}$'),
     accepted_tos_at timestamptz,
     referral_code text NOT NULL CONSTRAINT accounts_referral_code_key UNIQUE,
     referred_by text CONSTRAINT accounts_referred_by_fkey REFERENCES accounts (id) ON DELETE SET NULL,

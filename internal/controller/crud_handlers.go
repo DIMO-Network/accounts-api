@@ -1,8 +1,11 @@
 package controller
 
 import (
+	"accounts-api/models"
 	"database/sql"
 	"errors"
+	"fmt"
+	"slices"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -39,7 +42,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
 		return err
 	}
@@ -107,11 +110,16 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if body.CountryCode != "" {
-		acct.CountryCode = null.StringFrom(body.CountryCode)
-	}
+		if !slices.Contains(d.countryCodes, body.CountryCode) {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Unrecognized country code %q.", body.CountryCode))
+		}
 
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
-		return err
+		acct.CountryCode = null.StringFrom(body.CountryCode)
+
+		// This will get more awkward if there are ever more fields.
+		if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Whitelist(models.AccountColumns.CountryCode, models.AccountColumns.UpdatedAt)); err != nil {
+			return err
+		}
 	}
 
 	userResp, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)
@@ -179,9 +187,10 @@ func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 		return err
 	}
 
+	// TODO(elffjs): Make a note if they already agreed.
 	acct.AcceptedTosAt = null.TimeFrom(time.Now())
 
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
+	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Whitelist(models.AccountColumns.AcceptedTosAt, models.AccountColumns.UpdatedAt)); err != nil {
 		return err
 	}
 
