@@ -21,7 +21,7 @@ type TokenBody struct {
 
 type UserResponseEmail struct {
 	// Address is the email address for the user.
-	Address string `json:"address,omitempty" swaggertype:"string" example:"koblitz@dimo.zone"`
+	Address string `json:"address" swaggertype:"string" example:"koblitz@dimo.zone"`
 	// Confirmed indicates whether the user has confirmed the address by entering a code.
 	Confirmed bool `example:"false" json:"confirmed"`
 	// ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
@@ -31,7 +31,7 @@ type UserResponseEmail struct {
 
 type UserResponseWallet struct {
 	// Address is the Ethereum address associated with the user.
-	Address string `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
+	Address string `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 }
 
 type UserResponse struct {
@@ -69,12 +69,12 @@ type SubmitReferralCodeResponse struct {
 // of updates a user might make
 type UserUpdateRequest struct {
 	// CountryCode should be a valid ISO 3166-1 alpha-3 country code
-	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
+	CountryCode string `json:"countryCode" swaggertype:"string" example:"USA"`
 }
 
 // RequestEmailValidation request body used for adding an email that cannot be authenticated via federated sign in to account
 type RequestEmailValidation struct {
-	EmailAddress string `json:"email,omitempty" swaggertype:"string" example:"kilgore@kilgore.trout"`
+	EmailAddress string `json:"email" swaggertype:"string" example:"kilgore@kilgore.trout"`
 }
 
 type CompleteEmailValidation struct {
