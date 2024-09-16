@@ -16,7 +16,7 @@ import (
 // @Success 201 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router /v1/accounts [post]
+// @Router /v1/account [post]
 func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -58,7 +58,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 // @Success 200 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router /v1/accounts [get]
+// @Router /v1/account [get]
 func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -87,7 +87,7 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Success 200 {object} controller.UserResponse
 // @Success 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
-// @Router /v1/accounts [put]
+// @Router /v1/account [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -128,7 +128,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
 // @Failure 409 {object} controller.ErrorRes "Returned if the user still has devices."
-// @Router /v1/accounts [delete]
+// @Router /v1/account [delete]
 func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -166,7 +166,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 // @Summary Agree to the current terms of service.
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
-// @Router /v1/accounts/accept-tos [post]
+// @Router /v1/account/accept-tos [post]
 func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {

@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/v1/accounts": {
+        "/v1/account": {
             "get": {
                 "security": [
                     {
@@ -133,7 +133,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/accounts/accept-tos": {
+        "/v1/account/accept-tos": {
             "post": {
                 "summary": "Agree to the current terms of service.",
                 "responses": {
@@ -149,79 +149,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/accounts/confirm-email": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "summary": "Submit an email confirmation key",
-                "parameters": [
-                    {
-                        "description": "Specifies the key from the email",
-                        "name": "confirmEmailRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.CompleteEmailValidation"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/accounts/submit-referral-code": {
-            "post": {
-                "summary": "Takes the referral code, validates and stores it",
-                "parameters": [
-                    {
-                        "description": "ReferralCode is the 6-digit, alphanumeric referral code from another user.",
-                        "name": "submitReferralCodeRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeRequest"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/link/email": {
+        "/v1/account/link/email": {
             "post": {
                 "summary": "Send a confirmation email to the authenticated user",
                 "parameters": [
@@ -260,7 +188,43 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/link/email/token": {
+        "/v1/account/link/email/confirm": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "summary": "Submit an email confirmation key",
+                "parameters": [
+                    {
+                        "description": "Specifies the key from the email",
+                        "name": "confirmEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.CompleteEmailValidation"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/link/email/token": {
             "post": {
                 "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
                 "responses": {
@@ -276,7 +240,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/link/wallet/token": {
+        "/v1/account/link/wallet/token": {
             "post": {
                 "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
                 "responses": {
@@ -285,6 +249,42 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/referral/submit": {
+            "post": {
+                "summary": "Takes the referral code, validates and stores it",
+                "parameters": [
+                    {
+                        "description": "ReferralCode is the 6-digit, alphanumeric referral code from another user.",
+                        "name": "submitReferralCodeRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "schema": {
                             "$ref": "#/definitions/internal_controller.ErrorRes"
                         }

@@ -21,7 +21,7 @@ import (
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
 // @Failure 500 {object} controller.ErrorRes
-// @Router /v1/link/email [post]
+// @Router /v1/account/link/email [post]
 func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -96,7 +96,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
-// @Router /v1/accounts/confirm-email [post]
+// @Router /v1/account/link/email/confirm [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -161,7 +161,7 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 // @Summary Link an email to existing wallet account; require a signed JWT from auth server
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
-// @Router /v1/link/email/token [post]
+// @Router /v1/account/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {

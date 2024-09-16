@@ -120,7 +120,7 @@ func main() {
 	v1.Get("/", accountController.GetUserAccount)
 
 	//update account other data(region,etc)
-	v1.Put("/update", accountController.UpdateUser)
+	v1.Put("/", accountController.UpdateUser)
 
 	//delete account and all associated links, cascade
 	v1.Delete("/", accountController.DeleteUser)
@@ -216,14 +216,14 @@ func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 		code = e.Code
 	}
 
-	logger.Err(err).Int("httpStatusCode", code).
-		Str("httpMethod", c.Method()).
-		Str("httpPath", c.Path()).
-		Msg("caught an error from http request")
+	logger.Err(err).Int("statusCode", code).
+		Str("method", c.Method()).
+		Str("path", c.Path()).
+		Msg("HTTP request failed.")
 
 	// return an opaque error if we're in a higher level environment and we haven't specified an fiber type err.
 	if !isFiberErr && isProduction {
-		err = fiber.NewError(fiber.StatusInternalServerError, "Internal error")
+		err = fiber.NewError(fiber.StatusInternalServerError, "Internal error.")
 	}
 
 	return c.Status(code).JSON(controller.ErrorRes{

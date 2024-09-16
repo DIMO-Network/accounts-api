@@ -112,7 +112,7 @@ info:
   title: DIMO Accounts API
   version: "1.0"
 paths:
-  /v1/accounts:
+  /v1/account:
     delete:
       responses:
         "204":
@@ -186,7 +186,7 @@ paths:
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Modify attributes for the authenticated user
-  /v1/accounts/accept-tos:
+  /v1/account/accept-tos:
     post:
       responses:
         "204":
@@ -196,54 +196,7 @@ paths:
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Agree to the current terms of service.
-  /v1/accounts/confirm-email:
-    post:
-      consumes:
-      - application/json
-      parameters:
-      - description: Specifies the key from the email
-        in: body
-        name: confirmEmailRequest
-        required: true
-        schema:
-          $ref: '#/definitions/internal_controller.CompleteEmailValidation'
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-      summary: Submit an email confirmation key
-  /v1/accounts/submit-referral-code:
-    post:
-      parameters:
-      - description: ReferralCode is the 6-digit, alphanumeric referral code from
-          another user.
-        in: body
-        name: submitReferralCodeRequest
-        required: true
-        schema:
-          $ref: '#/definitions/internal_controller.SubmitReferralCodeRequest'
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/internal_controller.SubmitReferralCodeResponse'
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-      summary: Takes the referral code, validates and stores it
-  /v1/link/email:
+  /v1/account/link/email:
     post:
       parameters:
       - description: Specifies the email to be linked
@@ -268,7 +221,30 @@ paths:
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Send a confirmation email to the authenticated user
-  /v1/link/email/token:
+  /v1/account/link/email/confirm:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Specifies the key from the email
+        in: body
+        name: confirmEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.CompleteEmailValidation'
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+      summary: Submit an email confirmation key
+  /v1/account/link/email/token:
     post:
       responses:
         "204":
@@ -279,7 +255,7 @@ paths:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Link an email to existing wallet account; require a signed JWT from
         auth server
-  /v1/link/wallet/token:
+  /v1/account/link/wallet/token:
     post:
       responses:
         "204":
@@ -290,6 +266,30 @@ paths:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Link a wallet to existing email account; require a signed JWT from
         auth server
+  /v1/account/referral/submit:
+    post:
+      parameters:
+      - description: ReferralCode is the 6-digit, alphanumeric referral code from
+          another user.
+        in: body
+        name: submitReferralCodeRequest
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.SubmitReferralCodeRequest'
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.SubmitReferralCodeResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+      summary: Takes the referral code, validates and stores it
 securityDefinitions:
   BearerAuth:
     in: header
