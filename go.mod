@@ -4,7 +4,7 @@ go 1.23
 
 require (
 	github.com/DIMO-Network/shared v0.12.4
-	github.com/MicahParks/keyfunc/v3 v3.3.3
+	github.com/MicahParks/keyfunc/v3 v3.3.5
 	github.com/customerio/cdp-analytics-go v0.0.0-20231102115827-d9af6a6d570c
 	github.com/docker/go-connections v0.5.0
 	github.com/ethereum/go-ethereum v1.14.8
@@ -32,7 +32,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/DIMO-Network/yaml v0.1.0 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
-	github.com/MicahParks/jwkset v0.5.18 // indirect
+	github.com/MicahParks/jwkset v0.5.19 // indirect
 	github.com/MicahParks/keyfunc/v2 v2.1.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
