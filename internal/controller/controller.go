@@ -151,7 +151,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		return err
 	}
 
-	var cioWallet *common.MixedcaseAddress
+	var cioWallet *common.Address
 	var cioEmail *string
 	switch *userAccount.ProviderID {
 	case "web3":
@@ -165,7 +165,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 			return fmt.Errorf("failed to insert wallet: %w", err)
 		}
 
-		cioWallet = mixAddr
+		cioWallet = userAccount.EthereumAddress
 	case "apple", "google":
 		email := models.Email{
 			AccountID:    acct.ID,

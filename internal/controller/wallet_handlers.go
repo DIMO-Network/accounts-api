@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/null/v8"
@@ -59,14 +58,6 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return errors.New("failed to parse ethereum address from token")
 	}
 
-	mixAddr, err := common.NewMixedcaseAddressFromString(infos.EthereumAddress.Hex())
-	if err != nil {
-		return fmt.Errorf("invalid ethereum_address %s", userAccount.EthereumAddress.Hex())
-	}
-	if !mixAddr.ValidChecksum() {
-		d.log.Warn().Msgf("ethereum_address %s in ID token is not checksummed", userAccount.EthereumAddress.Hex())
-	}
-
 	wallet := &models.Wallet{
 		AccountID:       acct.ID,
 		EthereumAddress: infos.EthereumAddress.Bytes(),
@@ -81,7 +72,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, nil, mixAddr); err != nil {
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, nil, infos.EthereumAddress); err != nil {
 		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
 	}
 
