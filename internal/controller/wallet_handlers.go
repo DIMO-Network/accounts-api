@@ -70,7 +70,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, nil, infos.EthereumAddress); err != nil {
+	if err := d.cioService.SendCustomerIOEvent(acct.ID, nil, infos.EthereumAddress); err != nil {
 		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
 	}
 

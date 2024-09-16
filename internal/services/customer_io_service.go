@@ -9,7 +9,7 @@ import (
 )
 
 type CustomerIoService interface {
-	SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error
+	SendCustomerIOEvent(customerID string, email *string, wallet *common.Address) error
 	Close()
 }
 
@@ -40,7 +40,7 @@ func NewCustomerIoService(settings *config.Settings, logger *zerolog.Logger) (Cu
 
 }
 
-func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error {
+func (c *customerIoSvc) SendCustomerIOEvent(customerID string, email *string, wallet *common.Address) error {
 	if c.disableCustomerIOEvents {
 		return nil
 	}

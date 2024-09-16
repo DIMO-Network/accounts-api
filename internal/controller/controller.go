@@ -172,7 +172,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		cioEmail = userAccount.EmailAddress
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, cioEmail, cioWallet); err != nil {
+	if err := d.cioService.SendCustomerIOEvent(acct.ID, cioEmail, cioWallet); err != nil {
 		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
 	}
 
