@@ -226,7 +226,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 func generateConfirmationKey() string {
 	o := make([]rune, 6)
 	for i := range o {
-		o[i] = digits[rand.Intn(10)]
+		o[i] = emailCodeDigits[rand.Intn(10)]
 	}
 	return string(o)
 }

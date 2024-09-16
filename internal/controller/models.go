@@ -7,8 +7,13 @@ import (
 )
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
+
+// emailPattern is a rough email validation regular expression taken from the HTML 5 spec.
+// https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-var digits = []rune("0123456789")
+
+// emailCodeDigits are the digits allowed in an email confirmation code.
+var emailCodeDigits = []rune("0123456789")
 
 type TokenBody struct {
 	Token string `json:"token"`
@@ -33,9 +38,9 @@ type UserResponse struct {
 	// ID is the user's DIMO-internal ID.
 	ID string `json:"id" example:"ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"`
 	// Email describes the user's email and the state of its confirmation.
-	Email *UserResponseEmail `json:"email"`
+	Email *UserResponseEmail `json:"email,omitempty"`
 	// Wallet describes the user's blockchain account.
-	Wallet *UserResponseWallet `json:"wallet"`
+	Wallet *UserResponseWallet `json:"wallet,omitempty"`
 	// CreatedAt is when the user first logged in.
 	CreatedAt time.Time `json:"createdAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
 	// UpdatedAt reflects the time of the most recent account changes.
