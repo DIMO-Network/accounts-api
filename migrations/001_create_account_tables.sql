@@ -9,7 +9,8 @@ CREATE TABLE accounts (
     referred_at timestamptz,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT accounts_referred_by_referred_at_check CHECK (referred_by IS NULL OR referred_at IS NOT NULL)
+    CONSTRAINT accounts_referred_by_referred_at_check CHECK (referred_by IS NULL OR referred_at IS NOT NULL),
+    CONSTRAINT accounts_referred_by_id_check CHECK (referred_by != id)
 );
 
 CREATE TABLE emails (
