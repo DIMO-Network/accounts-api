@@ -17,7 +17,7 @@ import (
 // @Summary Create an account based on email or 0x address.
 // @Produce json
 // @Success 201 {object} controller.UserResponse
-// @Failure 403 {object} controller.ErrorRes
+// @Failure 403 {object} controller.BasicResponse
 // @Security BearerAuth
 // @Router /v1/account [post]
 func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
@@ -59,7 +59,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 // @Summary Get attributes for the authenticated user.
 // @Produce json
 // @Success 200 {object} controller.UserResponse
-// @Failure 403 {object} controller.ErrorRes
+// @Failure 403 {object} controller.BasicResponse
 // @Security BearerAuth
 // @Router /v1/account [get]
 func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
@@ -88,8 +88,8 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Produce json
 // @Param userUpdateRequest body controller.UserUpdateRequest true "New field values"
 // @Success 200 {object} controller.UserResponse
-// @Success 400 {object} controller.ErrorRes
-// @Failure 403 {object} controller.ErrorRes
+// @Success 400 {object} controller.BasicResponse
+// @Failure 403 {object} controller.BasicResponse
 // @Router /v1/account [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
@@ -133,9 +133,9 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 // DeleteUser godoc
 // @Summary Delete the authenticated user. Fails if the user has any devices.
 // @Success 204
-// @Failure 400 {object} controller.ErrorRes
-// @Failure 403 {object} controller.ErrorRes
-// @Failure 409 {object} controller.ErrorRes "Returned if the user still has devices."
+// @Failure 400 {object} controller.BasicResponse
+// @Failure 403 {object} controller.BasicResponse
+// @Failure 409 {object} controller.BasicResponse "Returned if the user still has devices."
 // @Router /v1/account [delete]
 func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
@@ -173,7 +173,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 // AcceptTOS godoc
 // @Summary Agree to the current terms of service.
 // @Success 204
-// @Failure 400 {object} controller.ErrorRes
+// @Failure 400 {object} controller.BasicResponse
 // @Router /v1/account/accept-tos [post]
 func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)

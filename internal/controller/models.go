@@ -12,9 +12,6 @@ var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 // https://html.spec.whatwg.org/multipage/input.html#valid-e-mail-address
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 
-// emailCodeDigits are the digits allowed in an email confirmation code.
-var emailCodeDigits = []rune("0123456789")
-
 type TokenBody struct {
 	Token string `json:"token"`
 }

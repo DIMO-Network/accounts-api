@@ -36,7 +36,7 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -70,13 +70,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -101,7 +101,7 @@ const docTemplate = `{
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -115,19 +115,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "409": {
                         "description": "Returned if the user still has devices.",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -143,7 +143,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -170,19 +170,19 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -212,13 +212,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -234,7 +234,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -250,7 +250,7 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -280,13 +280,13 @@ const docTemplate = `{
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.BasicResponse"
                         }
                     }
                 }
@@ -294,17 +294,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_controller.CompleteEmailValidation": {
-            "type": "object",
-            "properties": {
-                "key": {
-                    "description": "Key is the 6-digit number from the confirmation email",
-                    "type": "string",
-                    "example": "010990"
-                }
-            }
-        },
-        "internal_controller.ErrorRes": {
+        "internal_controller.BasicResponse": {
             "type": "object",
             "properties": {
                 "code": {
@@ -312,6 +302,16 @@ const docTemplate = `{
                 },
                 "message": {
                     "type": "string"
+                }
+            }
+        },
+        "internal_controller.CompleteEmailValidation": {
+            "type": "object",
+            "properties": {
+                "key": {
+                    "description": "Key is the 6-digit number from the confirmation email",
+                    "type": "string",
+                    "example": "010990"
                 }
             }
         },

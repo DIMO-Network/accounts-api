@@ -1,16 +1,16 @@
 definitions:
+  internal_controller.BasicResponse:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+    type: object
   internal_controller.CompleteEmailValidation:
     properties:
       key:
         description: Key is the 6-digit number from the confirmation email
         example: "010990"
-        type: string
-    type: object
-  internal_controller.ErrorRes:
-    properties:
-      code:
-        type: integer
-      message:
         type: string
     type: object
   internal_controller.RequestEmailValidation:
@@ -120,15 +120,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "409":
           description: Returned if the user still has devices.
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Delete the authenticated user. Fails if the user has any devices.
     get:
       produces:
@@ -141,7 +141,7 @@ paths:
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       security:
       - BearerAuth: []
       summary: Get attributes for the authenticated user.
@@ -156,7 +156,7 @@ paths:
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       security:
       - BearerAuth: []
       summary: Create an account based on email or 0x address.
@@ -180,11 +180,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Modify attributes for the authenticated user
   /v1/account/accept-tos:
     post:
@@ -194,7 +194,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Agree to the current terms of service.
   /v1/account/link/email:
     post:
@@ -211,15 +211,15 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Send a confirmation email to the authenticated user
   /v1/account/link/email/confirm:
     post:
@@ -238,11 +238,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "403":
           description: Forbidden
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Submit an email confirmation key
   /v1/account/link/email/token:
     post:
@@ -252,7 +252,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Link an email to existing wallet account; require a signed JWT from
         auth server
   /v1/account/link/wallet/token:
@@ -263,7 +263,7 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Link a wallet to existing email account; require a signed JWT from
         auth server
   /v1/account/referral/submit:
@@ -284,11 +284,11 @@ paths:
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
+            $ref: '#/definitions/internal_controller.BasicResponse'
       summary: Takes the referral code, validates and stores it
 securityDefinitions:
   BearerAuth:

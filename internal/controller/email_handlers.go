@@ -2,10 +2,11 @@ package controller
 
 import (
 	"accounts-api/models"
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
-	"math/rand"
+	"math/big"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
@@ -18,9 +19,9 @@ import (
 // @Summary Send a confirmation email to the authenticated user
 // @Success 204
 // @Param confirmEmailRequest body controller.RequestEmailValidation true "Specifies the email to be linked"
-// @Failure 400 {object} controller.ErrorRes
-// @Failure 403 {object} controller.ErrorRes
-// @Failure 500 {object} controller.ErrorRes
+// @Failure 400 {object} controller.BasicResponse
+// @Failure 403 {object} controller.BasicResponse
+// @Failure 500 {object} controller.BasicResponse
 // @Router /v1/account/link/email [post]
 func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
@@ -65,7 +66,11 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("email address linked to another account")
 	}
 
-	confKey := generateConfirmationKey()
+	confKey, err := generateConfirmationKey()
+	if err != nil {
+		return err
+	}
+
 	userEmail := &models.Email{
 		AccountID:          acct.ID,
 		Address:            body.EmailAddress,
@@ -86,7 +91,10 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(BasicResponse{
+		Code:    fiber.StatusOK,
+		Message: fmt.Sprintf("Sent confirmation email to %q.", body.EmailAddress),
+	})
 }
 
 // ConfirmEmail godoc
@@ -94,8 +102,8 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // @Accept json
 // @Param confirmEmailRequest body controller.CompleteEmailValidation true "Specifies the key from the email"
 // @Success 204
-// @Failure 400 {object} controller.ErrorRes
-// @Failure 403 {object} controller.ErrorRes
+// @Failure 400 {object} controller.BasicResponse
+// @Failure 403 {object} controller.BasicResponse
 // @Router /v1/account/link/email/confirm [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
@@ -154,13 +162,16 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(BasicResponse{
+		Code:    fiber.StatusOK,
+		Message: fmt.Sprintf("Linked email %s to account %s.", acct.R.Email.Address, acct.ID),
+	})
 }
 
 // LinkEmailToken godoc
 // @Summary Link an email to existing wallet account; require a signed JWT from auth server
 // @Success 204
-// @Failure 400 {object} controller.ErrorRes
+// @Failure 400 {object} controller.BasicResponse
 // @Router /v1/account/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
@@ -220,13 +231,20 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fmt.Errorf("failed to send customer.io event while linking email with token: %w", err)
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(BasicResponse{
+		Code:    fiber.StatusOK,
+		Message: fmt.Sprintf("Linked email %s to account %s.", *infos.EmailAddress, acct.ID),
+	})
 }
 
-func generateConfirmationKey() string {
-	o := make([]rune, 6)
-	for i := range o {
-		o[i] = emailCodeDigits[rand.Intn(10)]
+// We want all possibilities from 000000 to 999999.
+var emailCodeUpperBound = big.NewInt(1_000_000)
+
+func generateConfirmationKey() (string, error) {
+	number, err := rand.Int(rand.Reader, emailCodeUpperBound)
+	if err != nil {
+		return "", err
 	}
-	return string(o)
+
+	return fmt.Sprintf("%06d", number), nil
 }
