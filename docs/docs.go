@@ -251,6 +251,9 @@ const docTemplate = `{
         },
         "/v1/account/link/wallet/token": {
             "post": {
+                "tags": [
+                    "wallet"
+                ],
                 "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
                 "responses": {
                     "204": {

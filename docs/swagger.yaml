@@ -260,6 +260,8 @@ paths:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Link a wallet to existing email account; require a signed JWT from
         auth server
+      tags:
+      - wallet
   /v1/accounts/referral/submit:
     post:
       parameters:
