@@ -26,7 +26,7 @@ cronJob:
 env:
   LOG_LEVEL: info
   DB_PORT: 5432
-  DB_NAME: identity_api
+  DB_NAME: accounts_api
   PORT: 8080
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
   MON_PORT: 8888
