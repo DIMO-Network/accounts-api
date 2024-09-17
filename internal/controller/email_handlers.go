@@ -1,9 +1,6 @@
 package controller
 
 import (
-	"fmt"
-	"math/rand"
-
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -220,7 +217,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-func generateConfirmationKey() string {
-	n := rand.Intn(1_000_000) // Go from 000000 to 999999.
-	return fmt.Sprintf("%06d", n)
-}
+// func generateConfirmationKey() string {
+// 	n := rand.Intn(1_000_000) // Go from 000000 to 999999.
+// 	return fmt.Sprintf("%06d", n)
+// }

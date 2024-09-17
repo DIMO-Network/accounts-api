@@ -10,7 +10,8 @@ import (
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
 var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
-var digits = []rune("0123456789")
+
+// var digits = []rune("0123456789")
 
 type TokenBody struct {
 	Token string `json:"token"`
@@ -83,5 +84,9 @@ type CompleteEmailValidation struct {
 
 type ErrorRes struct {
 	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
+type StandardRes struct {
 	Message string `json:"message"`
 }

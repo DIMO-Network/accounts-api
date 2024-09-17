@@ -14,10 +14,11 @@ import (
 )
 
 // LinkWalletToken godoc
-// @Summary Link a wallet to existing email account; require a signed JWT from auth server
-// @Success 204
-// @Tags wallet
+// @Summary Link a wallet to an existing account.
+// @Param linkWalletRequest body controller.TokenBody true "JWT with an ethereum_address claim."
+// @Success 200 {object} controller.StandardRes
 // @Failure 400 {object} controller.ErrorRes
+// @Tags wallet
 // @Router /v1/account/link/wallet/token [post]
 func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
@@ -82,10 +83,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
 	}
 
-	userResp, err := d.formatUserAcctResponse(acct, wallet, acct.R.Email)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(userResp)
+	return c.JSON(StandardRes{
+		Message: fmt.Sprintf("Linked wallet %s to account %s.", *infos.EthereumAddress, acct.ID),
+	})
 }
