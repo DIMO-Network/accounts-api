@@ -82,10 +82,9 @@ func main() {
 		JSONDecoder:           json.Unmarshal,
 	})
 
-	app.Get("/", healthCheck)
-
 	go func() {
 		monApp := fiber.New(fiber.Config{DisableStartupMessage: true})
+		monApp.Get("/", healthCheck)
 		monApp.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
 		if err := monApp.Listen(":" + settings.MonitoringPort); err != nil {
 			logger.Fatal().Err(err).Str("port", settings.MonitoringPort).Msg("Failed to start monitoring web server.")
@@ -233,4 +232,21 @@ func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 		Code:    code,
 		Message: err.Error(),
 	})
+}
+
+func serveMonitoring(port string, logger *zerolog.Logger) *fiber.App {
+	logger.Info().Str("port", port).Msg("Starting monitoring web server.")
+
+	monApp := fiber.New(fiber.Config{DisableStartupMessage: true})
+
+	monApp.Get("/", func(c *fiber.Ctx) error { return nil })
+	monApp.Get("/metrics", adaptor.HTTPHandler(promhttp.Handler()))
+
+	go func() {
+		if err := monApp.Listen(":" + port); err != nil {
+			logger.Fatal().Err(err).Str("port", port).Msg("Failed to start monitoring web server.")
+		}
+	}()
+
+	return monApp
 }
