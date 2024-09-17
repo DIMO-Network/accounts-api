@@ -270,6 +270,9 @@ const docTemplate = `{
         },
         "/v1/accounts/referral/submit": {
             "post": {
+                "tags": [
+                    "referral"
+                ],
                 "summary": "Takes the referral code, validates and stores it",
                 "parameters": [
                     {

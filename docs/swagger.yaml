@@ -286,6 +286,8 @@ paths:
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Takes the referral code, validates and stores it
+      tags:
+      - referral
 securityDefinitions:
   BearerAuth:
     in: header
