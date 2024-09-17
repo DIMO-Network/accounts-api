@@ -92,8 +92,8 @@ const docTemplate = `{
                 ],
                 "summary": "Create user account based on email or 0x address.",
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Created",
                         "schema": {
                             "$ref": "#/definitions/internal_controller.UserResponse"
                         }

@@ -16,7 +16,7 @@ import (
 // CreateUserAccount godoc
 // @Summary Create user account based on email or 0x address.
 // @Produce json
-// @Success 200 {object} controller.UserResponse
+// @Success 201 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
 // @Router /v1/account [post]
@@ -52,7 +52,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(formattedAcct)
+	return c.Status(fiber.StatusCreated).JSON(formattedAcct)
 }
 
 // GetUserAccount godoc
