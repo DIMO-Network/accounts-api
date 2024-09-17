@@ -29,8 +29,6 @@ type UserResponseEmail struct {
 type UserResponseWeb3 struct {
 	// Address is the Ethereum address associated with the user.
 	Address common.Address `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
-	// InApp indicates whether this is an in-app wallet, managed by the DIMO app.
-	Provider string `json:"inApp" example:"false"`
 }
 
 type UserResponse struct {
@@ -43,8 +41,8 @@ type UserResponse struct {
 	Wallet *UserResponseWeb3 `json:"wallet"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
-	// AgreedTosAt is the time at which the user last agreed to the terms of service.
-	AgreedTOSAt *time.Time `json:"agreedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	// AcceptedTOSAt is the time at which the user last agreed to the terms of service.
+	AcceptedTOSAt *time.Time `json:"acceptedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
 	ReferralCode string     `json:"-" swaggertype:"string" example:"ANB95N"`

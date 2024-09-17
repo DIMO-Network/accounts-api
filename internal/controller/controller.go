@@ -187,14 +187,14 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 
 func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models.Wallet, email *models.Email) (*UserResponse, error) {
 	userResp := &UserResponse{
-		ID:           acct.ID,
-		CreatedAt:    acct.CreatedAt,
-		ReferralCode: acct.ReferralCode.String,
-		ReferredBy:   acct.ReferredBy.String,
-		ReferredAt:   acct.ReferredAt.Ptr(),
-		AgreedTOSAt:  acct.AcceptedTosAt.Ptr(),
-		CountryCode:  acct.CountryCode.String,
-		UpdatedAt:    acct.UpdatedAt,
+		ID:            acct.ID,
+		CreatedAt:     acct.CreatedAt,
+		ReferralCode:  acct.ReferralCode.String,
+		ReferredBy:    acct.ReferredBy.String,
+		ReferredAt:    acct.ReferredAt.Ptr(),
+		AcceptedTOSAt: acct.AcceptedTosAt.Ptr(),
+		CountryCode:   acct.CountryCode.String,
+		UpdatedAt:     acct.UpdatedAt,
 	}
 
 	if acct.ReferredBy.Valid {

@@ -32,8 +32,8 @@ definitions:
     type: object
   internal_controller.UserResponse:
     properties:
-      agreedTosAt:
-        description: AgreedTosAt is the time at which the user last agreed to the
+      acceptedTosAt:
+        description: AcceptedTOSAt is the time at which the user last agreed to the
           terms of service.
         example: "2021-12-01T09:00:41Z"
         type: string
@@ -86,11 +86,6 @@ definitions:
       address:
         description: Address is the Ethereum address associated with the user.
         example: 0x142e0C7A098622Ea98E5D67034251C4dFA746B5d
-        type: string
-      inApp:
-        description: InApp indicates whether this is an in-app wallet, managed by
-          the DIMO app.
-        example: "false"
         type: string
     type: object
   internal_controller.UserUpdateRequest:

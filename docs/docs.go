@@ -353,8 +353,8 @@ const docTemplate = `{
         "internal_controller.UserResponse": {
             "type": "object",
             "properties": {
-                "agreedTosAt": {
-                    "description": "AgreedTosAt is the time at which the user last agreed to the terms of service.",
+                "acceptedTosAt": {
+                    "description": "AcceptedTOSAt is the time at which the user last agreed to the terms of service.",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
                 },
@@ -423,11 +423,6 @@ const docTemplate = `{
                     "description": "Address is the Ethereum address associated with the user.",
                     "type": "string",
                     "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
-                },
-                "inApp": {
-                    "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
-                    "type": "string",
-                    "example": "false"
                 }
             }
         },
