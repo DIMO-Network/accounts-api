@@ -218,6 +218,6 @@ func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(StandardRes{
-		Message: "Successfully accepted the terms of service.",
+		Message: "Accepted the terms of service.",
 	})
 }

@@ -84,6 +84,6 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(StandardRes{
-		Message: fmt.Sprintf("Linked wallet %s to account %s.", *infos.EthereumAddress, acct.ID),
+		Message: fmt.Sprintf("Linked wallet %s.", *infos.EthereumAddress),
 	})
 }

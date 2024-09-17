@@ -1,6 +1,8 @@
 package controller
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -198,6 +200,17 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Token in the body does not have an email claim.")
 	}
 
+	emailConflict, err := models.Emails(
+		models.EmailWhere.Address.EQ(*infos.EmailAddress),
+	).One(c.Context(), tx)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	} else {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s already linked to account %s.", *infos.EmailAddress, emailConflict.AccountID))
+	}
+
 	email := models.Email{
 		Address:   *infos.EmailAddress,
 		AccountID: acct.ID,
@@ -222,7 +235,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(StandardRes{
-		Message: fmt.Sprintf("Linked email %s with account %s.", *infos.EmailAddress, acct.ID),
+		Message: fmt.Sprintf("Linked email %s.", *infos.EmailAddress),
 	})
 }
 
