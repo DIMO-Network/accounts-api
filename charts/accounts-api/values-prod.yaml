@@ -1,0 +1,56 @@
+replicaCount: 2
+image:
+  repository: dimozone/accounts-api
+  pullPolicy: IfNotPresent
+  tag: 0.2.2
+cronJob:
+  enabled: false
+  schedule: 0 0 * * 0
+env:
+  KAFKA_BROKERS: kafka-prod-dimo-kafka-kafka-brokers:9092
+  DIMO_REGISTRY_CHAIN_ID: 137
+  DIMO_REGISTRY_ADDR: '0xFA8beC73cebB9D88FF88a2f75E7D7312f2Fd39EC'
+  DIMO_VEHICLE_NFT_ADDR: '0xbA5738a18d83D41847dfFbDC6101d37C69c9B0cF'
+  AFTERMARKET_DEVICE_CONTRACT_ADDRESS: '0x9c94C395cBcBDe662235E0A9d3bB87Ad708561BA'
+  DCN_REGISTRY_ADDR: '0xE9F4dfE02f895DC17E2e146e578873c9095bA293'
+  DCN_RESOLVER_ADDR: '0x60627326F55054Ea448e0a7BC750785bD65EF757'
+  SYNTHETIC_DEVICE_CONTRACT_ADDRESS: '0x4804e8D1661cd1a1e5dDdE1ff458A7f878c0aC6D'
+  REWARDS_CONTRACT_ADDRESS: '0x8129f3cd3eba82136caf5ab87e2321c958da5b63'
+  BASE_IMAGE_URL: https://devices-api.dimo.zone/v1
+  BASE_VEHICLE_DATA_URI: https://device-data-api.dimo.zone/v2/vehicles/
+  TABLELAND_API_GATEWAY: https://tableland-node.dimo.zone/
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/auth-tls-secret: ingress/cf-origin-ca
+    nginx.ingress.kubernetes.io/auth-tls-verify-client: 'on'
+    nginx.ingress.kubernetes.io/enable-cors: 'true'
+    nginx.ingress.kubernetes.io/cors-allow-origin: '*'
+    nginx.ingress.kubernetes.io/limit-rps: '50'
+    external-dns.alpha.kubernetes.io/hostname: accounts-api.dimo.zone
+  hosts:
+    - host: accounts-api.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+resources:
+  limits:
+    cpu: 1
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podDisruptionBudget:
+  minAvailable: 1
+kafka:
+  clusterName: kafka-prod-dimo-kafka

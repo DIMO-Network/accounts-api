@@ -1,0 +1,12 @@
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: {{ include "accounts-api.fullname" . }}
+  labels:
+    {{- include "accounts-api.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+    {{- include "accounts-api.selectorLabels" . | nindent 6 }}
+{{ toYaml .Values.podDisruptionBudget | indent 2 }}
