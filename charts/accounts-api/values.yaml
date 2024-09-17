@@ -44,6 +44,7 @@ env:
   BASE_VEHICLE_DATA_URI: https://device-data-api.dev.dimo.zone/v2/vehicles/
   TABLELAND_API_GATEWAY: https://tableland-node.dev.dimo.zone/
   SACD_ADDRESS: '0x3e78Cb1f68132D34C811dcd7D4a10E0Aad752C3c'
+  DISABLE_CUSTOMER_IO_EVENTS: true
 service:
   type: ClusterIP
   ports:
