@@ -2,7 +2,7 @@ replicaCount: 1
 image:
   repository: dimozone/accounts-api
   pullPolicy: IfNotPresent
-  tag: e8fabf7
+  tag: dc9ddc3
 imagePullSecrets: []
 nameOverride: ''
 fullnameOverride: ''
