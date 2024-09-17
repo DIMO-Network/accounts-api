@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/": {
+        "/v1/account": {
             "get": {
                 "security": [
                     {
@@ -105,9 +105,7 @@ const docTemplate = `{
                         }
                     }
                 }
-            }
-        },
-        "/v1/account": {
+            },
             "delete": {
                 "summary": "Delete the authenticated user. Fails if the user has any devices.",
                 "responses": {

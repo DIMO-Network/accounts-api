@@ -19,7 +19,7 @@ import (
 // @Success 200 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router / [post]
+// @Router /v1/account [post]
 func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -61,7 +61,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 // @Success 200 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router / [get]
+// @Router /v1/account [get]
 func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -94,7 +94,7 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Success 200 {object} controller.UserResponse
 // @Success 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
-// @Router / [put]
+// @Router /v1/account [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {

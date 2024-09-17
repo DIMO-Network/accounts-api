@@ -105,7 +105,24 @@ info:
   title: DIMO Accounts API
   version: "1.0"
 paths:
-  /:
+  /v1/account:
+    delete:
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+        "409":
+          description: Returned if the user still has devices.
+          schema:
+            $ref: '#/definitions/internal_controller.ErrorRes'
+      summary: Delete the authenticated user. Fails if the user has any devices.
     get:
       produces:
       - application/json
@@ -162,24 +179,6 @@ paths:
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Modify attributes for the authenticated user
-  /v1/account:
-    delete:
-      responses:
-        "204":
-          description: No Content
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-        "403":
-          description: Forbidden
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-        "409":
-          description: Returned if the user still has devices.
-          schema:
-            $ref: '#/definitions/internal_controller.ErrorRes'
-      summary: Delete the authenticated user. Fails if the user has any devices.
   /v1/account/accept-tos:
     post:
       responses:

@@ -6,7 +6,7 @@
         "version": "1.0"
     },
     "paths": {
-        "/": {
+        "/v1/account": {
             "get": {
                 "security": [
                     {
@@ -96,9 +96,7 @@
                         }
                     }
                 }
-            }
-        },
-        "/v1/account": {
+            },
             "delete": {
                 "summary": "Delete the authenticated user. Fails if the user has any devices.",
                 "responses": {

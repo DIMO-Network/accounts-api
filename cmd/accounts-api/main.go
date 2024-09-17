@@ -27,7 +27,6 @@ import (
 // @version 1.0
 // @securityDefinitions.apikey BearerAuth
 // @in header
-// @BasePath                   /v1/account
 // @name Authorization
 func main() {
 	ctx := context.Background()
