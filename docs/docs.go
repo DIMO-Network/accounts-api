@@ -151,6 +151,9 @@ const docTemplate = `{
         },
         "/v1/account/link/email": {
             "post": {
+                "tags": [
+                    "email"
+                ],
                 "summary": "Send a confirmation email to the authenticated user",
                 "parameters": [
                     {
@@ -193,6 +196,9 @@ const docTemplate = `{
                 "consumes": [
                     "application/json"
                 ],
+                "tags": [
+                    "email"
+                ],
                 "summary": "Submit an email confirmation key",
                 "parameters": [
                     {
@@ -226,6 +232,9 @@ const docTemplate = `{
         },
         "/v1/account/link/email/token": {
             "post": {
+                "tags": [
+                    "email"
+                ],
                 "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
                 "responses": {
                     "204": {
