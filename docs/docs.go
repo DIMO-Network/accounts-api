@@ -243,8 +243,11 @@ const docTemplate = `{
                 ],
                 "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.StandardRes"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",

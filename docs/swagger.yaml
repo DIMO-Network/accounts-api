@@ -253,8 +253,10 @@ paths:
   /v1/account/link/email/token:
     post:
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.StandardRes'
         "400":
           description: Bad Request
           schema:

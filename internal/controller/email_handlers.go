@@ -1,7 +1,13 @@
 package controller
 
 import (
+	"fmt"
+	"time"
+
+	"github.com/DIMO-Network/accounts-api/models"
 	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
 // LinkEmail godoc
@@ -152,69 +158,72 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 
 // LinkEmailToken godoc
 // @Summary Link an email to existing wallet account; require a signed JWT from auth server
-// @Success 204
+// @Success 200 {object} controller.StandardRes
 // @Tags email
 // @Failure 400 {object} controller.ErrorRes
 // @Router /v1/account/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
-	// userAccount, err := getUserAccountClaims(c)
-	// if err != nil {
-	// 	d.log.Err(err).Msg("failed to parse user")
-	// 	return err
-	// }
+	userAccount, err := getUserAccountClaims(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
 
-	// tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer tx.Rollback() //nolint
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint
 
-	// acct, err := d.getUserAccount(c.Context(), userAccount, tx)
-	// if err != nil {
-	// 	return err
-	// }
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	if err != nil {
+		return err
+	}
 
-	// if acct.R.Wallet == nil {
-	// 	return fmt.Errorf("no wallet associated with user account")
-	// }
+	if acct.R.Email != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already linked with email %s.", acct.R.Email.Address))
+	}
 
-	// if acct.R.Email != nil {
-	// 	return fmt.Errorf("account already has linked email")
-	// }
+	var tb TokenBody
+	if err := c.BodyParser(&tb); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
+	}
 
-	// var tb TokenBody
-	// if err := c.BodyParser(&tb); err != nil {
-	// 	return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
-	// }
+	infos := AccountClaims{}
+	if _, err = jwt.ParseWithClaims(tb.Token, &infos, d.jwkResource.Keyfunc); err != nil {
+		return err
+	}
 
-	// infos := AccountClaims{}
-	// if _, err = jwt.ParseWithClaims(tb.Token, &infos, d.jwkResource.Keyfunc); err != nil {
-	// 	return err
-	// }
+	if infos.EmailAddress == nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Token in the body does not have an email claim.")
+	}
 
-	// if infos.EmailAddress == nil || !emailPattern.MatchString(*infos.EmailAddress) {
-	// 	return errors.New("failed to parse email address from token")
-	// }
+	email := models.Email{
+		Address:   *infos.EmailAddress,
+		AccountID: acct.ID,
+	}
 
-	// email := models.Email{
-	// 	AccountID:    acct.ID,
-	// 	Confirmed:    true,
-	// 	EmailAddress: *infos.EmailAddress,
-	// }
+	if err := email.Insert(c.Context(), tx, boil.Infer()); err != nil {
+		return err
+	}
 
-	// if err := email.Insert(c.Context(), tx, boil.Infer()); err != nil {
-	// 	return err
-	// }
+	acct.UpdatedAt = time.Now()
+	_, err = acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt))
+	if err != nil {
+		return err
+	}
 
-	// if err := tx.Commit(); err != nil {
-	// 	return err
-	// }
+	if err := tx.Commit(); err != nil {
+		return err
+	}
 
-	// if err := d.cioService.SendCustomerIoEvent(acct.ID, infos.EmailAddress, nil); err != nil {
-	// 	return fmt.Errorf("failed to send customer.io event while linking email with token: %w", err)
-	// }
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, infos.EmailAddress, nil); err != nil {
+		return fmt.Errorf("failed to send customer.io event while linking email with token: %w", err)
+	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(StandardRes{
+		Message: fmt.Sprintf("Linked email %s with account %s.", *infos.EmailAddress, acct.ID),
+	})
 }
 
 // func generateConfirmationKey() string {
