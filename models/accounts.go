@@ -26,7 +26,7 @@ import (
 type Account struct {
 	ID            string      `boil:"id" json:"id" toml:"id" yaml:"id"`
 	CountryCode   null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
-	ReferralCode  null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
+	ReferralCode  string      `boil:"referral_code" json:"referral_code" toml:"referral_code" yaml:"referral_code"`
 	ReferredBy    null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
 	ReferredAt    null.Time   `boil:"referred_at" json:"referred_at,omitempty" toml:"referred_at" yaml:"referred_at,omitempty"`
 	AcceptedTosAt null.Time   `boil:"accepted_tos_at" json:"accepted_tos_at,omitempty" toml:"accepted_tos_at" yaml:"accepted_tos_at,omitempty"`
@@ -204,7 +204,7 @@ func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
 var AccountWhere = struct {
 	ID            whereHelperstring
 	CountryCode   whereHelpernull_String
-	ReferralCode  whereHelpernull_String
+	ReferralCode  whereHelperstring
 	ReferredBy    whereHelpernull_String
 	ReferredAt    whereHelpernull_Time
 	AcceptedTosAt whereHelpernull_Time
@@ -213,7 +213,7 @@ var AccountWhere = struct {
 }{
 	ID:            whereHelperstring{field: "\"accounts_api\".\"accounts\".\"id\""},
 	CountryCode:   whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
-	ReferralCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
+	ReferralCode:  whereHelperstring{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
 	ReferredBy:    whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referred_by\""},
 	ReferredAt:    whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"referred_at\""},
 	AcceptedTosAt: whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"accepted_tos_at\""},
@@ -280,8 +280,8 @@ type accountL struct{}
 
 var (
 	accountAllColumns            = []string{"id", "country_code", "referral_code", "referred_by", "referred_at", "accepted_tos_at", "created_at", "updated_at"}
-	accountColumnsWithoutDefault = []string{"id"}
-	accountColumnsWithDefault    = []string{"country_code", "referral_code", "referred_by", "referred_at", "accepted_tos_at", "created_at", "updated_at"}
+	accountColumnsWithoutDefault = []string{"id", "referral_code"}
+	accountColumnsWithDefault    = []string{"country_code", "referred_by", "referred_at", "accepted_tos_at", "created_at", "updated_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
 )

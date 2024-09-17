@@ -29,7 +29,6 @@ import (
 	"github.com/segmentio/ksuid"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -302,7 +301,7 @@ func (e *emailService) SendConfirmationEmail(ctx context.Context, emailTemplate 
 func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
 	acct := models.Account{
 		ID:           ksuid.New().String(),
-		ReferralCode: null.StringFrom("GBI56X"),
+		ReferralCode: "GBI56X",
 	}
 
 	eml := models.Email{

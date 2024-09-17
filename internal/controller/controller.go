@@ -21,7 +21,6 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
-	"github.com/volatiletech/null/v8"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -144,7 +143,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 
 	acct := models.Account{
 		ID:           ksuid.New().String(), // this is also the cio id
-		ReferralCode: null.StringFrom(referralCode),
+		ReferralCode: referralCode,
 	}
 
 	if err := acct.Insert(ctx, tx, boil.Infer()); err != nil {
@@ -189,7 +188,7 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 	userResp := &UserResponse{
 		ID:            acct.ID,
 		CreatedAt:     acct.CreatedAt,
-		ReferralCode:  acct.ReferralCode.String,
+		ReferralCode:  acct.ReferralCode,
 		ReferredBy:    acct.ReferredBy.String,
 		ReferredAt:    acct.ReferredAt.Ptr(),
 		AcceptedTOSAt: acct.AcceptedTosAt.Ptr(),

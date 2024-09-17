@@ -17,21 +17,19 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
+var referralCodeAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
 func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
-	rand.New(rand.NewSource(time.Now().UnixNano()))
-	alphabet := []byte("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
 	for {
 		// Generate a random 6-character code
 		codeB := make([]byte, 6)
 		for i := range codeB {
-			codeB[i] = alphabet[rand.Intn(len(alphabet))]
+			codeB[i] = referralCodeAlphabet[rand.Intn(len(referralCodeAlphabet))]
 		}
 		code := string(codeB)
 
-		if exists, err := models.Accounts(
-			models.AccountWhere.ReferralCode.EQ(null.StringFrom(code)),
-		).Exists(ctx, d.dbs.DBS().Reader); err != nil {
+		if exists, err := models.Accounts(models.AccountWhere.ReferralCode.EQ(code)).Exists(ctx, d.dbs.DBS().Reader); err != nil {
 			return "", err
 		} else if !exists {
 			return code, nil
@@ -92,7 +90,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	refAcct, err := models.Accounts(
-		models.AccountWhere.ReferralCode.EQ(null.StringFrom(referralCode)),
+		models.AccountWhere.ReferralCode.EQ(referralCode),
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), tx)
 	if err != nil {
@@ -117,7 +115,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	// No circular referrals.
-	if refAcct.ReferredBy.Valid && refAcct.ReferredBy.String == acct.ReferralCode.String {
+	if refAcct.ReferredBy.Valid && refAcct.ReferredBy.String == acct.ID {
 		return fiber.NewError(fiber.StatusBadRequest, "Referrer was referred by this user.")
 	}
 

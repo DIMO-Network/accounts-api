@@ -356,7 +356,7 @@ func (s *AccountControllerTestSuite) Test_SubmitReferralCode() {
 	s.Require().NoError(err)
 
 	referralCodeBody := SubmitReferralCodeRequest{
-		ReferralCode: refAcct.ReferralCode.String,
+		ReferralCode: refAcct.ReferralCode,
 	}
 	referralCodeBodyBytes, _ := json.Marshal(referralCodeBody)
 

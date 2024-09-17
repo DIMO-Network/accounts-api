@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
 
@@ -41,8 +42,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	}
 
 	if acct.R.Wallet != nil {
-		return errors.New("account already has linked wallet")
-
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already has a linked wallet, %s.", acct.R.Wallet.Address))
 	}
 
 	var tb TokenBody
@@ -50,13 +50,13 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "failed to parse request body.")
 	}
 
-	infos := AccountClaims{}
+	var infos AccountClaims
 	if _, err = jwt.ParseWithClaims(tb.Token, &infos, d.jwkResource.Keyfunc); err != nil {
 		return err
 	}
 
 	if infos.EthereumAddress == nil {
-		return errors.New("failed to parse ethereum address from token")
+		return fiber.NewError(fiber.StatusBadRequest, "Token in the body has no ethereum_address claim.")
 	}
 
 	wallet := &models.Wallet{
@@ -65,6 +65,12 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {
+		return err
+	}
+
+	acct.UpdatedAt = time.Now()
+	_, err = acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt))
+	if err != nil {
 		return err
 	}
 
