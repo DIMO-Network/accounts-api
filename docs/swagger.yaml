@@ -265,7 +265,7 @@ paths:
             $ref: '#/definitions/internal_controller.ErrorRes'
       summary: Link a wallet to existing email account; require a signed JWT from
         auth server
-  /v1/accounts/submit-referral-code:
+  /v1/accounts/referral/submit:
     post:
       parameters:
       - description: ReferralCode is the 6-digit, alphanumeric referral code from
