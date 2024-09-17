@@ -147,12 +147,10 @@ func StartContainerDex(ctx context.Context, t *testing.T) testcontainers.Contain
 	}
 	mappedPort, err := dexContainer.MappedPort(ctx, nat.Port(dexPort))
 	if err != nil {
-		if err != nil {
-			if dexContainer != nil {
-				dexContainer.Terminate(ctx) //nolint
-			}
-			t.Fatal(err)
+		if dexContainer != nil {
+			dexContainer.Terminate(ctx) //nolint
 		}
+		t.Fatal(err)
 	}
 	fmt.Printf("dex container session %s ready and running at port: %s \n", dexContainer.SessionID(), mappedPort)
 
