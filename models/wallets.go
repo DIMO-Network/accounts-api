@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -24,32 +23,27 @@ import (
 
 // Wallet is an object representing the database table.
 type Wallet struct {
-	EthereumAddress []byte      `boil:"ethereum_address" json:"ethereum_address" toml:"ethereum_address" yaml:"ethereum_address"`
-	AccountID       string      `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
-	Provider        null.String `boil:"provider" json:"provider,omitempty" toml:"provider" yaml:"provider,omitempty"`
+	Address   []byte `boil:"address" json:"address" toml:"address" yaml:"address"`
+	AccountID string `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
 
 	R *walletR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L walletL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var WalletColumns = struct {
-	EthereumAddress string
-	AccountID       string
-	Provider        string
+	Address   string
+	AccountID string
 }{
-	EthereumAddress: "ethereum_address",
-	AccountID:       "account_id",
-	Provider:        "provider",
+	Address:   "address",
+	AccountID: "account_id",
 }
 
 var WalletTableColumns = struct {
-	EthereumAddress string
-	AccountID       string
-	Provider        string
+	Address   string
+	AccountID string
 }{
-	EthereumAddress: "wallets.ethereum_address",
-	AccountID:       "wallets.account_id",
-	Provider:        "wallets.provider",
+	Address:   "wallets.address",
+	AccountID: "wallets.account_id",
 }
 
 // Generated where
@@ -64,13 +58,11 @@ func (w whereHelper__byte) GT(x []byte) qm.QueryMod  { return qmhelper.Where(w.f
 func (w whereHelper__byte) GTE(x []byte) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
 
 var WalletWhere = struct {
-	EthereumAddress whereHelper__byte
-	AccountID       whereHelperstring
-	Provider        whereHelpernull_String
+	Address   whereHelper__byte
+	AccountID whereHelperstring
 }{
-	EthereumAddress: whereHelper__byte{field: "\"accounts_api\".\"wallets\".\"ethereum_address\""},
-	AccountID:       whereHelperstring{field: "\"accounts_api\".\"wallets\".\"account_id\""},
-	Provider:        whereHelpernull_String{field: "\"accounts_api\".\"wallets\".\"provider\""},
+	Address:   whereHelper__byte{field: "\"accounts_api\".\"wallets\".\"address\""},
+	AccountID: whereHelperstring{field: "\"accounts_api\".\"wallets\".\"account_id\""},
 }
 
 // WalletRels is where relationship names are stored.
@@ -101,10 +93,10 @@ func (r *walletR) GetAccount() *Account {
 type walletL struct{}
 
 var (
-	walletAllColumns            = []string{"ethereum_address", "account_id", "provider"}
-	walletColumnsWithoutDefault = []string{"ethereum_address", "account_id"}
-	walletColumnsWithDefault    = []string{"provider"}
-	walletPrimaryKeyColumns     = []string{"ethereum_address"}
+	walletAllColumns            = []string{"address", "account_id"}
+	walletColumnsWithoutDefault = []string{"address", "account_id"}
+	walletColumnsWithDefault    = []string{}
+	walletPrimaryKeyColumns     = []string{"address"}
 	walletGeneratedColumns      = []string{}
 )
 
@@ -560,7 +552,7 @@ func (o *Wallet) SetAccount(ctx context.Context, exec boil.ContextExecutor, inse
 		strmangle.SetParamNames("\"", "\"", 1, []string{"account_id"}),
 		strmangle.WhereClause("\"", "\"", 2, walletPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.EthereumAddress}
+	values := []interface{}{related.ID, o.Address}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -604,7 +596,7 @@ func Wallets(mods ...qm.QueryMod) walletQuery {
 
 // FindWallet retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindWallet(ctx context.Context, exec boil.ContextExecutor, ethereumAddress []byte, selectCols ...string) (*Wallet, error) {
+func FindWallet(ctx context.Context, exec boil.ContextExecutor, address []byte, selectCols ...string) (*Wallet, error) {
 	walletObj := &Wallet{}
 
 	sel := "*"
@@ -612,10 +604,10 @@ func FindWallet(ctx context.Context, exec boil.ContextExecutor, ethereumAddress 
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"accounts_api\".\"wallets\" where \"ethereum_address\"=$1", sel,
+		"select %s from \"accounts_api\".\"wallets\" where \"address\"=$1", sel,
 	)
 
-	q := queries.Raw(query, ethereumAddress)
+	q := queries.Raw(query, address)
 
 	err := q.Bind(ctx, exec, walletObj)
 	if err != nil {
@@ -973,7 +965,7 @@ func (o *Wallet) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, 
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), walletPrimaryKeyMapping)
-	sql := "DELETE FROM \"accounts_api\".\"wallets\" WHERE \"ethereum_address\"=$1"
+	sql := "DELETE FROM \"accounts_api\".\"wallets\" WHERE \"address\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1070,7 +1062,7 @@ func (o WalletSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Wallet) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindWallet(ctx, exec, o.EthereumAddress)
+	ret, err := FindWallet(ctx, exec, o.Address)
 	if err != nil {
 		return err
 	}
@@ -1109,16 +1101,16 @@ func (o *WalletSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) 
 }
 
 // WalletExists checks if the Wallet row exists.
-func WalletExists(ctx context.Context, exec boil.ContextExecutor, ethereumAddress []byte) (bool, error) {
+func WalletExists(ctx context.Context, exec boil.ContextExecutor, address []byte) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"accounts_api\".\"wallets\" where \"ethereum_address\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"accounts_api\".\"wallets\" where \"address\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, ethereumAddress)
+		fmt.Fprintln(writer, address)
 	}
-	row := exec.QueryRowContext(ctx, sql, ethereumAddress)
+	row := exec.QueryRowContext(ctx, sql, address)
 
 	err := row.Scan(&exists)
 	if err != nil {
@@ -1130,5 +1122,5 @@ func WalletExists(ctx context.Context, exec boil.ContextExecutor, ethereumAddres
 
 // Exists checks if the Wallet row exists.
 func (o *Wallet) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return WalletExists(ctx, exec, o.EthereumAddress)
+	return WalletExists(ctx, exec, o.Address)
 }

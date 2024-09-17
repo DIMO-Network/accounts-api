@@ -6,7 +6,7 @@
         "version": "1.0"
     },
     "paths": {
-        "/v1/accounts": {
+        "/": {
             "get": {
                 "security": [
                     {
@@ -21,13 +21,13 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.UserResponse"
+                            "$ref": "#/definitions/internal_controller.UserResponse"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -47,7 +47,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.UserUpdateRequest"
+                            "$ref": "#/definitions/internal_controller.UserUpdateRequest"
                         }
                     }
                 ],
@@ -55,23 +55,50 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.UserResponse"
+                            "$ref": "#/definitions/internal_controller.UserResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
             },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create user account based on email or 0x address.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.UserResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account": {
             "delete": {
                 "summary": "Delete the authenticated user. Fails if the user has any devices.",
                 "responses": {
@@ -81,25 +108,25 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "409": {
                         "description": "Returned if the user still has devices.",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
             }
         },
-        "/v1/accounts/agree-tos": {
+        "/v1/account/accept-tos": {
             "post": {
                 "summary": "Agree to the current terms of service",
                 "responses": {
@@ -109,13 +136,52 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
             }
         },
-        "/v1/accounts/confirm-email": {
+        "/v1/account/link/email": {
+            "post": {
+                "summary": "Send a confirmation email to the authenticated user",
+                "parameters": [
+                    {
+                        "description": "Specifies the email to be linked",
+                        "name": "confirmEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.RequestEmailValidation"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/link/email/confirm": {
             "post": {
                 "consumes": [
                     "application/json"
@@ -128,7 +194,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.CompleteEmailValidation"
+                            "$ref": "#/definitions/internal_controller.CompleteEmailValidation"
                         }
                     }
                 ],
@@ -139,13 +205,45 @@
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "403": {
                         "description": "Forbidden",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/link/email/token": {
+            "post": {
+                "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/account/link/wallet/token": {
+            "post": {
+                "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -161,7 +259,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/controller.SubmitReferralCodeRequest"
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeRequest"
                         }
                     }
                 ],
@@ -169,90 +267,19 @@
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/controller.SubmitReferralCodeResponse"
+                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeResponse"
                         }
                     },
                     "400": {
                         "description": "Bad Request",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     },
                     "500": {
                         "description": "Internal Server Error",
                         "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/link/email": {
-            "post": {
-                "summary": "Send a confirmation email to the authenticated user",
-                "parameters": [
-                    {
-                        "description": "Specifies the email to be linked",
-                        "name": "confirmEmailRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/controller.RequestEmailValidation"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/link/email/token": {
-            "post": {
-                "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
-                        }
-                    }
-                }
-            }
-        },
-        "/v1/link/wallet/token": {
-            "post": {
-                "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/controller.ErrorRes"
+                            "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
                     }
                 }
@@ -260,7 +287,7 @@
         }
     },
     "definitions": {
-        "controller.CompleteEmailValidation": {
+        "internal_controller.CompleteEmailValidation": {
             "type": "object",
             "properties": {
                 "key": {
@@ -270,7 +297,7 @@
                 }
             }
         },
-        "controller.ErrorRes": {
+        "internal_controller.ErrorRes": {
             "type": "object",
             "properties": {
                 "code": {
@@ -281,7 +308,7 @@
                 }
             }
         },
-        "controller.RequestEmailValidation": {
+        "internal_controller.RequestEmailValidation": {
             "type": "object",
             "properties": {
                 "email": {
@@ -290,7 +317,7 @@
                 }
             }
         },
-        "controller.SubmitReferralCodeRequest": {
+        "internal_controller.SubmitReferralCodeRequest": {
             "type": "object",
             "properties": {
                 "referralCode": {
@@ -299,7 +326,7 @@
                 }
             }
         },
-        "controller.SubmitReferralCodeResponse": {
+        "internal_controller.SubmitReferralCodeResponse": {
             "type": "object",
             "properties": {
                 "message": {
@@ -307,7 +334,7 @@
                 }
             }
         },
-        "controller.UserResponse": {
+        "internal_controller.UserResponse": {
             "type": "object",
             "properties": {
                 "agreedTosAt": {
@@ -327,38 +354,33 @@
                 },
                 "email": {
                     "description": "Email describes the user's email and the state of its confirmation.",
-                    "$ref": "#/definitions/controller.UserResponseEmail"
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controller.UserResponseEmail"
+                        }
+                    ]
                 },
                 "id": {
                     "description": "ID is the user's DIMO-internal ID.",
                     "type": "string",
-                    "example": "ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"
-                },
-                "referralCode": {
-                    "description": "ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,\nonly present if the account has a confirmed Ethereum address.",
-                    "type": "string",
-                    "example": "ANB95N"
-                },
-                "referredAt": {
-                    "type": "string",
-                    "example": "2021-12-01T09:00:41Z"
-                },
-                "referredBy": {
-                    "type": "string",
-                    "example": "0x3497B704a954789BC39999262510DE9B09Ff1366"
+                    "example": "2mD8CtraxOCAAwIeydt2Q4oCiAQ"
                 },
                 "updatedAt": {
                     "description": "UpdatedAt reflects the time of the most recent account changes.",
                     "type": "string",
                     "example": "2021-12-01T09:00:00Z"
                 },
-                "web3": {
-                    "description": "Web3 describes the user's blockchain account.",
-                    "$ref": "#/definitions/controller.UserResponseWeb3"
+                "wallet": {
+                    "description": "Wallet describes the user's blockchain account.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controller.UserResponseWeb3"
+                        }
+                    ]
                 }
             }
         },
-        "controller.UserResponseEmail": {
+        "internal_controller.UserResponseEmail": {
             "type": "object",
             "properties": {
                 "address": {
@@ -378,18 +400,13 @@
                 }
             }
         },
-        "controller.UserResponseWeb3": {
+        "internal_controller.UserResponseWeb3": {
             "type": "object",
             "properties": {
                 "address": {
                     "description": "Address is the Ethereum address associated with the user.",
                     "type": "string",
                     "example": "0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"
-                },
-                "confirmed": {
-                    "description": "Confirmed indicates whether the user has confirmed the address by signing a challenge\nmessage.",
-                    "type": "boolean",
-                    "example": false
                 },
                 "inApp": {
                     "description": "InApp indicates whether this is an in-app wallet, managed by the DIMO app.",
@@ -398,7 +415,7 @@
                 }
             }
         },
-        "controller.UserUpdateRequest": {
+        "internal_controller.UserUpdateRequest": {
             "type": "object",
             "properties": {
                 "countryCode": {

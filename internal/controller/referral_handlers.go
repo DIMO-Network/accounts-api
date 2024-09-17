@@ -72,7 +72,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	if acct.R.Wallet != nil {
-		if devicesPaired, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.EthereumAddress)); err != nil {
+		if devicesPaired, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.Address)); err != nil {
 			return err
 		} else if devicesPaired {
 			return fiber.NewError(fiber.StatusBadRequest, "Can't enter a referral code after adding vehicles.")
@@ -111,7 +111,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return fmt.Errorf("referred user %s has no wallet", acct.ID)
 	}
 
-	if common.BytesToAddress(referree.EthereumAddress) == common.BytesToAddress(referrer.EthereumAddress) {
+	if common.BytesToAddress(referree.Address) == common.BytesToAddress(referrer.Address) {
 		return fiber.NewError(fiber.StatusBadRequest, "User and referrer have the same Ethereum address.")
 	}
 

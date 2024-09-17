@@ -35,24 +35,26 @@ type UserResponseWeb3 struct {
 
 type UserResponse struct {
 	// ID is the user's DIMO-internal ID.
-	ID string `json:"id" example:"ChFrb2JsaXR6QGRpbW8uem9uZRIGZ29vZ2xl"`
+	ID string `json:"id" example:"2mD8CtraxOCAAwIeydt2Q4oCiAQ"`
+
 	// Email describes the user's email and the state of its confirmation.
 	Email *UserResponseEmail `json:"email"`
-	// Web3 describes the user's blockchain account.
-	Web3 *UserResponseWeb3 `json:"web3"`
-	// CreatedAt is when the user first logged in.
-	CreatedAt time.Time `json:"createdAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
-	// UpdatedAt reflects the time of the most recent account changes.
-	UpdatedAt time.Time `json:"updatedAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:00Z"`
+	// Wallet describes the user's blockchain account.
+	Wallet *UserResponseWeb3 `json:"wallet"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
 	// AgreedTosAt is the time at which the user last agreed to the terms of service.
-	AgreedTOSAt time.Time `json:"agreedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	AgreedTOSAt *time.Time `json:"agreedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
 	// only present if the account has a confirmed Ethereum address.
-	ReferralCode string    `json:"referralCode,omitempty" swaggertype:"string" example:"ANB95N"`
-	ReferredBy   string    `json:"referredBy,omitempty" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
-	ReferredAt   time.Time `json:"referredAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+	ReferralCode string     `json:"-" swaggertype:"string" example:"ANB95N"`
+	ReferredBy   string     `json:"-" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
+	ReferredAt   *time.Time `json:"-" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
+
+	// CreatedAt is when the user first logged in.
+	CreatedAt time.Time `json:"createdAt" example:"2021-12-01T09:00:00Z"`
+	// UpdatedAt reflects the time of the most recent account changes.
+	UpdatedAt time.Time `json:"updatedAt" example:"2021-12-01T09:00:00Z"`
 }
 
 type SubmitReferralCodeRequest struct {

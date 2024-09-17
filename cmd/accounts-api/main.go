@@ -28,6 +28,7 @@ import (
 // @version 1.0
 // @securityDefinitions.apikey BearerAuth
 // @in header
+// @BasePath                   /v1/account
 // @name Authorization
 func main() {
 	ctx := context.Background()
@@ -127,7 +128,7 @@ func main() {
 	v1.Delete("/", accountController.DeleteUser)
 
 	//agree to terms of service, can only be called after both email and wallet are linked
-	v1.Post("/agree-tos", accountController.AgreeTOS)
+	v1.Post("/accept-tos", accountController.AcceptTOS)
 
 	//agree to terms of service, can only be called after both email and wallet are linked
 	v1.Post("/referral/submit", accountController.SubmitReferralCode)

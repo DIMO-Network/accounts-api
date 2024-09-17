@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +19,7 @@ import (
 // @Success 200 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router /v1/accounts [get]
+// @Router / [post]
 func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -60,7 +61,7 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 // @Success 200 {object} controller.UserResponse
 // @Failure 403 {object} controller.ErrorRes
 // @Security BearerAuth
-// @Router /v1/accounts [get]
+// @Router / [get]
 func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -70,6 +71,10 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 
 	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// TODO(elffjs): Make this more precise.
+			return fiber.NewError(fiber.StatusNotFound, "No account found with this email or wallet.")
+		}
 		return err
 	}
 
@@ -89,7 +94,7 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 // @Success 200 {object} controller.UserResponse
 // @Success 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
-// @Router /v1/accounts [put]
+// @Router / [put]
 func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -109,6 +114,9 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if body.CountryCode != "" {
+		if !slices.Contains(d.countryCodes, body.CountryCode) {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Unrecognized country code %q.", body.CountryCode))
+		}
 		acct.CountryCode = null.StringFrom(body.CountryCode)
 	}
 
@@ -130,7 +138,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
 // @Failure 409 {object} controller.ErrorRes "Returned if the user still has devices."
-// @Router /v1/accounts [delete]
+// @Router /v1/account [delete]
 func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -153,7 +161,7 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	if acct.R.Wallet != nil {
-		if ownedVehicles, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.EthereumAddress)); err != nil {
+		if ownedVehicles, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.Address)); err != nil {
 			return err
 		} else if ownedVehicles {
 			return fmt.Errorf("user must burn on-chain vehicles before deleting account")
@@ -172,12 +180,12 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	return c.SendStatus(fiber.StatusNoContent)
 }
 
-// AgreeTOS godoc
+// AcceptTOS godoc
 // @Summary Agree to the current terms of service
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
-// @Router /v1/accounts/agree-tos [post]
-func (d *Controller) AgreeTOS(c *fiber.Ctx) error {
+// @Router /v1/account/accept-tos [post]
+func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")

@@ -25,13 +25,13 @@ import (
 // Account is an object representing the database table.
 type Account struct {
 	ID            string      `boil:"id" json:"id" toml:"id" yaml:"id"`
-	CreatedAt     time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
-	UpdatedAt     time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 	CountryCode   null.String `boil:"country_code" json:"country_code,omitempty" toml:"country_code" yaml:"country_code,omitempty"`
-	AcceptedTosAt null.Time   `boil:"accepted_tos_at" json:"accepted_tos_at,omitempty" toml:"accepted_tos_at" yaml:"accepted_tos_at,omitempty"`
 	ReferralCode  null.String `boil:"referral_code" json:"referral_code,omitempty" toml:"referral_code" yaml:"referral_code,omitempty"`
 	ReferredBy    null.String `boil:"referred_by" json:"referred_by,omitempty" toml:"referred_by" yaml:"referred_by,omitempty"`
 	ReferredAt    null.Time   `boil:"referred_at" json:"referred_at,omitempty" toml:"referred_at" yaml:"referred_at,omitempty"`
+	AcceptedTosAt null.Time   `boil:"accepted_tos_at" json:"accepted_tos_at,omitempty" toml:"accepted_tos_at" yaml:"accepted_tos_at,omitempty"`
+	CreatedAt     time.Time   `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt     time.Time   `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
 	R *accountR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L accountL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -39,42 +39,42 @@ type Account struct {
 
 var AccountColumns = struct {
 	ID            string
-	CreatedAt     string
-	UpdatedAt     string
 	CountryCode   string
-	AcceptedTosAt string
 	ReferralCode  string
 	ReferredBy    string
 	ReferredAt    string
+	AcceptedTosAt string
+	CreatedAt     string
+	UpdatedAt     string
 }{
 	ID:            "id",
-	CreatedAt:     "created_at",
-	UpdatedAt:     "updated_at",
 	CountryCode:   "country_code",
-	AcceptedTosAt: "accepted_tos_at",
 	ReferralCode:  "referral_code",
 	ReferredBy:    "referred_by",
 	ReferredAt:    "referred_at",
+	AcceptedTosAt: "accepted_tos_at",
+	CreatedAt:     "created_at",
+	UpdatedAt:     "updated_at",
 }
 
 var AccountTableColumns = struct {
 	ID            string
-	CreatedAt     string
-	UpdatedAt     string
 	CountryCode   string
-	AcceptedTosAt string
 	ReferralCode  string
 	ReferredBy    string
 	ReferredAt    string
+	AcceptedTosAt string
+	CreatedAt     string
+	UpdatedAt     string
 }{
 	ID:            "accounts.id",
-	CreatedAt:     "accounts.created_at",
-	UpdatedAt:     "accounts.updated_at",
 	CountryCode:   "accounts.country_code",
-	AcceptedTosAt: "accounts.accepted_tos_at",
 	ReferralCode:  "accounts.referral_code",
 	ReferredBy:    "accounts.referred_by",
 	ReferredAt:    "accounts.referred_at",
+	AcceptedTosAt: "accounts.accepted_tos_at",
+	CreatedAt:     "accounts.created_at",
+	UpdatedAt:     "accounts.updated_at",
 }
 
 // Generated where
@@ -104,27 +104,6 @@ func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
 		values = append(values, value)
 	}
 	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
-
-type whereHelpertime_Time struct{ field string }
-
-func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.EQ, x)
-}
-func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.NEQ, x)
-}
-func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LT, x)
-}
-func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.LTE, x)
-}
-func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GT, x)
-}
-func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
-	return qmhelper.Where(w.field, qmhelper.GTE, x)
 }
 
 type whereHelpernull_String struct{ field string }
@@ -201,24 +180,45 @@ func (w whereHelpernull_Time) GTE(x null.Time) qm.QueryMod {
 func (w whereHelpernull_Time) IsNull() qm.QueryMod    { return qmhelper.WhereIsNull(w.field) }
 func (w whereHelpernull_Time) IsNotNull() qm.QueryMod { return qmhelper.WhereIsNotNull(w.field) }
 
+type whereHelpertime_Time struct{ field string }
+
+func (w whereHelpertime_Time) EQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.EQ, x)
+}
+func (w whereHelpertime_Time) NEQ(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.NEQ, x)
+}
+func (w whereHelpertime_Time) LT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LT, x)
+}
+func (w whereHelpertime_Time) LTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.LTE, x)
+}
+func (w whereHelpertime_Time) GT(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GT, x)
+}
+func (w whereHelpertime_Time) GTE(x time.Time) qm.QueryMod {
+	return qmhelper.Where(w.field, qmhelper.GTE, x)
+}
+
 var AccountWhere = struct {
 	ID            whereHelperstring
-	CreatedAt     whereHelpertime_Time
-	UpdatedAt     whereHelpertime_Time
 	CountryCode   whereHelpernull_String
-	AcceptedTosAt whereHelpernull_Time
 	ReferralCode  whereHelpernull_String
 	ReferredBy    whereHelpernull_String
 	ReferredAt    whereHelpernull_Time
+	AcceptedTosAt whereHelpernull_Time
+	CreatedAt     whereHelpertime_Time
+	UpdatedAt     whereHelpertime_Time
 }{
 	ID:            whereHelperstring{field: "\"accounts_api\".\"accounts\".\"id\""},
-	CreatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
-	UpdatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
 	CountryCode:   whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"country_code\""},
-	AcceptedTosAt: whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"accepted_tos_at\""},
 	ReferralCode:  whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referral_code\""},
 	ReferredBy:    whereHelpernull_String{field: "\"accounts_api\".\"accounts\".\"referred_by\""},
 	ReferredAt:    whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"referred_at\""},
+	AcceptedTosAt: whereHelpernull_Time{field: "\"accounts_api\".\"accounts\".\"accepted_tos_at\""},
+	CreatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"created_at\""},
+	UpdatedAt:     whereHelpertime_Time{field: "\"accounts_api\".\"accounts\".\"updated_at\""},
 }
 
 // AccountRels is where relationship names are stored.
@@ -279,9 +279,9 @@ func (r *accountR) GetReferredByAccounts() AccountSlice {
 type accountL struct{}
 
 var (
-	accountAllColumns            = []string{"id", "created_at", "updated_at", "country_code", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountAllColumns            = []string{"id", "country_code", "referral_code", "referred_by", "referred_at", "accepted_tos_at", "created_at", "updated_at"}
 	accountColumnsWithoutDefault = []string{"id"}
-	accountColumnsWithDefault    = []string{"created_at", "updated_at", "country_code", "accepted_tos_at", "referral_code", "referred_by", "referred_at"}
+	accountColumnsWithDefault    = []string{"country_code", "referral_code", "referred_by", "referred_at", "accepted_tos_at", "created_at", "updated_at"}
 	accountPrimaryKeyColumns     = []string{"id"}
 	accountGeneratedColumns      = []string{}
 )
@@ -1207,7 +1207,7 @@ func (o *Account) SetEmail(ctx context.Context, exec boil.ContextExecutor, inser
 			strmangle.SetParamNames("\"", "\"", 1, []string{"account_id"}),
 			strmangle.WhereClause("\"", "\"", 2, emailPrimaryKeyColumns),
 		)
-		values := []interface{}{o.ID, related.EmailAddress}
+		values := []interface{}{o.ID, related.Address}
 
 		if boil.IsDebug(ctx) {
 			writer := boil.DebugWriterFrom(ctx)
@@ -1257,7 +1257,7 @@ func (o *Account) SetWallet(ctx context.Context, exec boil.ContextExecutor, inse
 			strmangle.SetParamNames("\"", "\"", 1, []string{"account_id"}),
 			strmangle.WhereClause("\"", "\"", 2, walletPrimaryKeyColumns),
 		)
-		values := []interface{}{o.ID, related.EthereumAddress}
+		values := []interface{}{o.ID, related.Address}
 
 		if boil.IsDebug(ctx) {
 			writer := boil.DebugWriterFrom(ctx)

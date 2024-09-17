@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -24,67 +23,37 @@ import (
 
 // Email is an object representing the database table.
 type Email struct {
-	EmailAddress       string      `boil:"email_address" json:"email_address" toml:"email_address" yaml:"email_address"`
-	AccountID          string      `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
-	Confirmed          bool        `boil:"confirmed" json:"confirmed" toml:"confirmed" yaml:"confirmed"`
-	ConfirmationSentAt null.Time   `boil:"confirmation_sent_at" json:"confirmation_sent_at,omitempty" toml:"confirmation_sent_at" yaml:"confirmation_sent_at,omitempty"`
-	ConfirmationCode   null.String `boil:"confirmation_code" json:"confirmation_code,omitempty" toml:"confirmation_code" yaml:"confirmation_code,omitempty"`
+	Address   string `boil:"address" json:"address" toml:"address" yaml:"address"`
+	AccountID string `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
 
 	R *emailR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L emailL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var EmailColumns = struct {
-	EmailAddress       string
-	AccountID          string
-	Confirmed          string
-	ConfirmationSentAt string
-	ConfirmationCode   string
+	Address   string
+	AccountID string
 }{
-	EmailAddress:       "email_address",
-	AccountID:          "account_id",
-	Confirmed:          "confirmed",
-	ConfirmationSentAt: "confirmation_sent_at",
-	ConfirmationCode:   "confirmation_code",
+	Address:   "address",
+	AccountID: "account_id",
 }
 
 var EmailTableColumns = struct {
-	EmailAddress       string
-	AccountID          string
-	Confirmed          string
-	ConfirmationSentAt string
-	ConfirmationCode   string
+	Address   string
+	AccountID string
 }{
-	EmailAddress:       "emails.email_address",
-	AccountID:          "emails.account_id",
-	Confirmed:          "emails.confirmed",
-	ConfirmationSentAt: "emails.confirmation_sent_at",
-	ConfirmationCode:   "emails.confirmation_code",
+	Address:   "emails.address",
+	AccountID: "emails.account_id",
 }
 
 // Generated where
 
-type whereHelperbool struct{ field string }
-
-func (w whereHelperbool) EQ(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperbool) NEQ(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperbool) LT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperbool) LTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperbool) GT(x bool) qm.QueryMod  { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperbool) GTE(x bool) qm.QueryMod { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-
 var EmailWhere = struct {
-	EmailAddress       whereHelperstring
-	AccountID          whereHelperstring
-	Confirmed          whereHelperbool
-	ConfirmationSentAt whereHelpernull_Time
-	ConfirmationCode   whereHelpernull_String
+	Address   whereHelperstring
+	AccountID whereHelperstring
 }{
-	EmailAddress:       whereHelperstring{field: "\"accounts_api\".\"emails\".\"email_address\""},
-	AccountID:          whereHelperstring{field: "\"accounts_api\".\"emails\".\"account_id\""},
-	Confirmed:          whereHelperbool{field: "\"accounts_api\".\"emails\".\"confirmed\""},
-	ConfirmationSentAt: whereHelpernull_Time{field: "\"accounts_api\".\"emails\".\"confirmation_sent_at\""},
-	ConfirmationCode:   whereHelpernull_String{field: "\"accounts_api\".\"emails\".\"confirmation_code\""},
+	Address:   whereHelperstring{field: "\"accounts_api\".\"emails\".\"address\""},
+	AccountID: whereHelperstring{field: "\"accounts_api\".\"emails\".\"account_id\""},
 }
 
 // EmailRels is where relationship names are stored.
@@ -115,10 +84,10 @@ func (r *emailR) GetAccount() *Account {
 type emailL struct{}
 
 var (
-	emailAllColumns            = []string{"email_address", "account_id", "confirmed", "confirmation_sent_at", "confirmation_code"}
-	emailColumnsWithoutDefault = []string{"email_address", "account_id", "confirmed"}
-	emailColumnsWithDefault    = []string{"confirmation_sent_at", "confirmation_code"}
-	emailPrimaryKeyColumns     = []string{"email_address"}
+	emailAllColumns            = []string{"address", "account_id"}
+	emailColumnsWithoutDefault = []string{"address", "account_id"}
+	emailColumnsWithDefault    = []string{}
+	emailPrimaryKeyColumns     = []string{"address"}
 	emailGeneratedColumns      = []string{}
 )
 
@@ -574,7 +543,7 @@ func (o *Email) SetAccount(ctx context.Context, exec boil.ContextExecutor, inser
 		strmangle.SetParamNames("\"", "\"", 1, []string{"account_id"}),
 		strmangle.WhereClause("\"", "\"", 2, emailPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.EmailAddress}
+	values := []interface{}{related.ID, o.Address}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -618,7 +587,7 @@ func Emails(mods ...qm.QueryMod) emailQuery {
 
 // FindEmail retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindEmail(ctx context.Context, exec boil.ContextExecutor, emailAddress string, selectCols ...string) (*Email, error) {
+func FindEmail(ctx context.Context, exec boil.ContextExecutor, address string, selectCols ...string) (*Email, error) {
 	emailObj := &Email{}
 
 	sel := "*"
@@ -626,10 +595,10 @@ func FindEmail(ctx context.Context, exec boil.ContextExecutor, emailAddress stri
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from \"accounts_api\".\"emails\" where \"email_address\"=$1", sel,
+		"select %s from \"accounts_api\".\"emails\" where \"address\"=$1", sel,
 	)
 
-	q := queries.Raw(query, emailAddress)
+	q := queries.Raw(query, address)
 
 	err := q.Bind(ctx, exec, emailObj)
 	if err != nil {
@@ -987,7 +956,7 @@ func (o *Email) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, e
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), emailPrimaryKeyMapping)
-	sql := "DELETE FROM \"accounts_api\".\"emails\" WHERE \"email_address\"=$1"
+	sql := "DELETE FROM \"accounts_api\".\"emails\" WHERE \"address\"=$1"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1084,7 +1053,7 @@ func (o EmailSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (i
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Email) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindEmail(ctx, exec, o.EmailAddress)
+	ret, err := FindEmail(ctx, exec, o.Address)
 	if err != nil {
 		return err
 	}
@@ -1123,16 +1092,16 @@ func (o *EmailSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) e
 }
 
 // EmailExists checks if the Email row exists.
-func EmailExists(ctx context.Context, exec boil.ContextExecutor, emailAddress string) (bool, error) {
+func EmailExists(ctx context.Context, exec boil.ContextExecutor, address string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from \"accounts_api\".\"emails\" where \"email_address\"=$1 limit 1)"
+	sql := "select exists(select 1 from \"accounts_api\".\"emails\" where \"address\"=$1 limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, emailAddress)
+		fmt.Fprintln(writer, address)
 	}
-	row := exec.QueryRowContext(ctx, sql, emailAddress)
+	row := exec.QueryRowContext(ctx, sql, address)
 
 	err := row.Scan(&exists)
 	if err != nil {
@@ -1144,5 +1113,5 @@ func EmailExists(ctx context.Context, exec boil.ContextExecutor, emailAddress st
 
 // Exists checks if the Email row exists.
 func (o *Email) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return EmailExists(ctx, exec, o.EmailAddress)
+	return EmailExists(ctx, exec, o.Address)
 }

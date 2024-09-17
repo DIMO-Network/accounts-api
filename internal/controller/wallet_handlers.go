@@ -8,7 +8,6 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
@@ -16,7 +15,7 @@ import (
 // @Summary Link a wallet to existing email account; require a signed JWT from auth server
 // @Success 204
 // @Failure 400 {object} controller.ErrorRes
-// @Router /v1/link/wallet/token [post]
+// @Router /v1/account/link/wallet/token [post]
 func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -59,9 +58,8 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	}
 
 	wallet := &models.Wallet{
-		AccountID:       acct.ID,
-		EthereumAddress: infos.EthereumAddress.Bytes(),
-		Provider:        null.StringFrom(*infos.ProviderID),
+		AccountID: acct.ID,
+		Address:   infos.EthereumAddress.Bytes(),
 	}
 
 	if err := wallet.Insert(c.Context(), tx, boil.Infer()); err != nil {

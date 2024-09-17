@@ -306,14 +306,13 @@ func NewAccount(exec boil.ContextExecutor) (*models.Account, error) {
 	}
 
 	eml := models.Email{
-		AccountID:    acct.ID,
-		EmailAddress: "testemail@gmail.com",
-		Confirmed:    true,
+		AccountID: acct.ID,
+		Address:   "testemail@gmail.com",
 	}
 
 	wallet := models.Wallet{
-		AccountID:       acct.ID,
-		EthereumAddress: common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
+		AccountID: acct.ID,
+		Address:   common.Hex2Bytes("5FF137D4b0FDCD49DcA30c7CF57E578a026d2789"),
 	}
 
 	if err := acct.Insert(context.Background(), exec, boil.Infer()); err != nil {
