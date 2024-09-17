@@ -10,9 +10,9 @@ import (
 	"log"
 	"time"
 
-	"accounts-api/internal/config"
-	"accounts-api/internal/services"
-	"accounts-api/models"
+	"github.com/DIMO-Network/accounts-api/internal/config"
+	"github.com/DIMO-Network/accounts-api/internal/services"
+	"github.com/DIMO-Network/accounts-api/models"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/MicahParks/keyfunc/v3"

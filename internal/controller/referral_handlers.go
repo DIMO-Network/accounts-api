@@ -1,13 +1,14 @@
 package controller
 
 import (
-	"accounts-api/models"
 	"context"
 	"database/sql"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
+
+	"github.com/DIMO-Network/accounts-api/models"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"

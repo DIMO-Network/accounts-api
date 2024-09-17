@@ -1,19 +1,18 @@
 package main
 
 import (
-	"accounts-api/internal/config"
-	"accounts-api/internal/services"
 	"context"
 	"database/sql"
 	"errors"
 	"os"
 	"runtime/debug"
 
+	_ "github.com/DIMO-Network/accounts-api/docs"
+	"github.com/DIMO-Network/accounts-api/internal/config"
+	"github.com/DIMO-Network/accounts-api/internal/controller"
+	"github.com/DIMO-Network/accounts-api/internal/services"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
-
-	"accounts-api/internal/controller"
-
 	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"

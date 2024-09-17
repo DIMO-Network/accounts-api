@@ -1,10 +1,11 @@
 package services
 
 import (
-	"accounts-api/internal/config"
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/DIMO-Network/accounts-api/internal/config"
 
 	"github.com/Khan/genqlient/graphql"
 	"github.com/ethereum/go-ethereum/common"

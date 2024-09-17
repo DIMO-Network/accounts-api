@@ -1,16 +1,17 @@
 package controller
 
 import (
-	"accounts-api/internal/config"
-	"accounts-api/internal/services"
-	"accounts-api/internal/test"
-	"accounts-api/models"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"testing"
 	"time"
+
+	"github.com/DIMO-Network/accounts-api/internal/config"
+	"github.com/DIMO-Network/accounts-api/internal/services"
+	"github.com/DIMO-Network/accounts-api/internal/test"
+	"github.com/DIMO-Network/accounts-api/models"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/MicahParks/keyfunc/v3"

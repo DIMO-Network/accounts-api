@@ -14,9 +14,9 @@ import (
 	"testing"
 	"time"
 
-	"accounts-api/internal/config"
-	"accounts-api/internal/services"
-	"accounts-api/models"
+	"github.com/DIMO-Network/accounts-api/internal/config"
+	"github.com/DIMO-Network/accounts-api/internal/services"
+	"github.com/DIMO-Network/accounts-api/models"
 
 	"github.com/DIMO-Network/shared/db"
 	"github.com/docker/go-connections/nat"
@@ -198,7 +198,7 @@ func getTestDbSettings() config.Settings {
 	settings := config.Settings{
 		LogLevel:    "info",
 		DB:          dbSettings,
-		ServiceName: "accounts-api",
+		ServiceName: "github.com/DIMO-Network/accounts-api",
 	}
 	return settings
 }
@@ -255,7 +255,7 @@ func TruncateTables(db *sql.DB, t *testing.T) {
 func Logger() *zerolog.Logger {
 	l := zerolog.New(os.Stdout).With().
 		Timestamp().
-		Str("app", "accounts-api").
+		Str("app", "github.com/DIMO-Network/accounts-api").
 		Logger()
 	return &l
 }

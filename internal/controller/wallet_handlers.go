@@ -1,10 +1,11 @@
 package controller
 
 import (
-	"accounts-api/models"
 	_ "embed"
 	"errors"
 	"fmt"
+
+	"github.com/DIMO-Network/accounts-api/models"
 
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt/v5"

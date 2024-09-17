@@ -1,7 +1,6 @@
 package services
 
 import (
-	"accounts-api/internal/config"
 	"bytes"
 	"context"
 	_ "embed"
@@ -11,6 +10,8 @@ import (
 	"mime/quotedprintable"
 	"net/smtp"
 	"net/textproto"
+
+	"github.com/DIMO-Network/accounts-api/internal/config"
 )
 
 type EmailService interface {
