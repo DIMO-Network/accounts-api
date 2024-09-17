@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"math/rand"
-	"strings"
 	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
@@ -85,7 +84,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	}
 
 	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %s.", body.ReferralCode)
-	referralCode := strings.ToUpper(strings.TrimSpace(body.ReferralCode))
+	referralCode := body.ReferralCode
 	if !referralCodeRegex.MatchString(referralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
 	}

@@ -19,6 +19,11 @@ definitions:
         example: kilgore@kilgore.trout
         type: string
     type: object
+  internal_controller.StandardRes:
+    properties:
+      message:
+        type: string
+    type: object
   internal_controller.SubmitReferralCodeRequest:
     properties:
       referralCode:
@@ -28,6 +33,11 @@ definitions:
   internal_controller.SubmitReferralCodeResponse:
     properties:
       message:
+        type: string
+    type: object
+  internal_controller.TokenBody:
+    properties:
+      token:
         type: string
     type: object
   internal_controller.UserResponse:
@@ -103,8 +113,10 @@ paths:
   /v1/account:
     delete:
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.StandardRes'
         "400":
           description: Bad Request
           schema:
@@ -177,8 +189,10 @@ paths:
   /v1/account/accept-tos:
     post:
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.StandardRes'
         "400":
           description: Bad Request
           schema:
@@ -251,15 +265,23 @@ paths:
       - email
   /v1/account/link/wallet/token:
     post:
+      parameters:
+      - description: JWT with an ethereum_address claim.
+        in: body
+        name: linkWalletRequest
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.TokenBody'
       responses:
-        "204":
-          description: No Content
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.StandardRes'
         "400":
           description: Bad Request
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
-      summary: Link a wallet to existing email account; require a signed JWT from
-        auth server
+      summary: Link a wallet to an existing account.
       tags:
       - wallet
   /v1/accounts/referral/submit:

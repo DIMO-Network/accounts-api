@@ -7,6 +7,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/DIMO-Network/accounts-api/models"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
@@ -117,11 +118,14 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		if !slices.Contains(d.countryCodes, body.CountryCode) {
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Unrecognized country code %q.", body.CountryCode))
 		}
-		acct.CountryCode = null.StringFrom(body.CountryCode)
-	}
 
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
-		return err
+		if !acct.CountryCode.Valid || acct.CountryCode.String != body.CountryCode {
+			acct.CountryCode = null.StringFrom(body.CountryCode)
+
+			if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Whitelist(models.AccountColumns.CountryCode, models.AccountColumns.UpdatedAt)); err != nil {
+				return err
+			}
+		}
 	}
 
 	userResp, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)
@@ -134,7 +138,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 
 // DeleteUser godoc
 // @Summary Delete the authenticated user. Fails if the user has any devices.
-// @Success 204
+// @Success 200 {object} controller.StandardRes
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
 // @Failure 409 {object} controller.ErrorRes "Returned if the user still has devices."
@@ -177,12 +181,14 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 	}
 
 	d.log.Info().Str("userId", acct.ID).Msg("Deleted user.")
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(StandardRes{
+		Message: fmt.Sprintf("Deleted account %s.", acct.ID),
+	})
 }
 
 // AcceptTOS godoc
 // @Summary Agree to the current terms of service
-// @Success 204
+// @Success 200 {object} controller.StandardRes
 // @Failure 400 {object} controller.ErrorRes
 // @Router /v1/account/accept-tos [post]
 func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
@@ -197,11 +203,21 @@ func (d *Controller) AcceptTOS(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct.AcceptedTosAt = null.TimeFrom(time.Now())
+	if acct.AcceptedTosAt.Valid {
+		return c.JSON(StandardRes{
+			Message: fmt.Sprintf("Already accepted the terms of service at %s.", acct.AcceptedTosAt.Time),
+		})
+	}
 
-	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Infer()); err != nil {
+	accTime := time.Now()
+
+	acct.AcceptedTosAt = null.TimeFrom(accTime)
+
+	if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Whitelist(models.AccountColumns.AcceptedTosAt, models.AccountColumns.UpdatedAt)); err != nil {
 		return err
 	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	return c.JSON(StandardRes{
+		Message: "Successfully accepted the terms of service.",
+	})
 }

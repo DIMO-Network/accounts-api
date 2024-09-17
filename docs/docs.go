@@ -109,8 +109,11 @@ const docTemplate = `{
             "delete": {
                 "summary": "Delete the authenticated user. Fails if the user has any devices.",
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.StandardRes"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -137,8 +140,11 @@ const docTemplate = `{
             "post": {
                 "summary": "Agree to the current terms of service",
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.StandardRes"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -254,10 +260,24 @@ const docTemplate = `{
                 "tags": [
                     "wallet"
                 ],
-                "summary": "Link a wallet to existing email account; require a signed JWT from auth server",
+                "summary": "Link a wallet to an existing account.",
+                "parameters": [
+                    {
+                        "description": "JWT with an ethereum_address claim.",
+                        "name": "linkWalletRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.TokenBody"
+                        }
+                    }
+                ],
                 "responses": {
-                    "204": {
-                        "description": "No Content"
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.StandardRes"
+                        }
                     },
                     "400": {
                         "description": "Bad Request",
@@ -339,6 +359,14 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_controller.StandardRes": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
         "internal_controller.SubmitReferralCodeRequest": {
             "type": "object",
             "properties": {
@@ -352,6 +380,14 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_controller.TokenBody": {
+            "type": "object",
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }
