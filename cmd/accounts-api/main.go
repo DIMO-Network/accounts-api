@@ -120,7 +120,7 @@ func main() {
 	v1.Get("/", accountController.GetUserAccount)
 
 	//update account other data(region,etc)
-	v1.Put("/update", accountController.UpdateUser)
+	v1.Put("/", accountController.UpdateUser)
 
 	//delete account and all associated links, cascade
 	v1.Delete("/", accountController.DeleteUser)
