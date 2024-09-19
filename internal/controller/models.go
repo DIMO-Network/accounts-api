@@ -58,7 +58,7 @@ type UserResponse struct {
 }
 
 type SubmitReferralCodeRequest struct {
-	ReferralCode string `json:"referralCode" example:"ANB95NBQA1N5"`
+	Code string `json:"code" example:"ANBJN5"`
 }
 
 type SubmitReferralCodeResponse struct {
