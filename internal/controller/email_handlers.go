@@ -190,12 +190,12 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, &conf.Address, nil); err != nil {
-		return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
-	}
-
 	if err := tx.Commit(); err != nil {
 		return err
+	}
+
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, &conf.Address, nil); err != nil {
+		return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
 	}
 
 	return c.JSON(StandardRes{
