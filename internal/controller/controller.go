@@ -65,10 +65,17 @@ func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.Iden
 		log.Fatalf("Failed to create a keyfunc.Keyfunc from the server's URL.\nError: %s", err)
 	}
 
+	dur, err := time.ParseDuration(settings.EmailCodeDuration)
+	if err != nil {
+		return nil, err
+	} else if dur <= 0 {
+		return nil, fmt.Errorf("email confirmation code duration %s is non-positive", dur)
+	}
+
 	return &Controller{
 		dbs:             dbs,
 		log:             logger,
-		allowedLateness: settings.AllowableEmailConfirmationLateness * time.Minute,
+		allowedLateness: dur,
 		countryCodes:    countryCodes,
 		emailService:    emlSvc,
 		identityService: idSvc,
@@ -116,6 +123,7 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		email, err := models.Emails(
 			models.EmailWhere.Address.EQ(*userAccount.EmailAddress),
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
+			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.EmailConfirmation)),
 		).One(ctx, exec)
 		if err != nil {
 			return nil, err
@@ -125,6 +133,7 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		wallet, err := models.Wallets(
 			models.WalletWhere.Address.EQ(userAccount.EthereumAddress.Bytes()),
 			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
+			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.EmailConfirmation)),
 		).One(ctx, exec)
 		if err != nil {
 			return nil, err
@@ -203,7 +212,14 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 
 	if email != nil {
 		userResp.Email = &UserResponseEmail{
-			Address: email.Address,
+			Address:   email.Address,
+			Confirmed: true,
+		}
+	} else if acct.R.EmailConfirmation != nil {
+		userResp.Email = &UserResponseEmail{
+			Address:       acct.R.EmailConfirmation.Address,
+			Confirmed:     false,
+			CodeExpiresAt: &acct.R.EmailConfirmation.ExpiresAt,
 		}
 	}
 

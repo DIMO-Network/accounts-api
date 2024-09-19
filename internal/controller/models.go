@@ -22,9 +22,10 @@ type UserResponseEmail struct {
 	Address string `json:"address,omitempty" swaggertype:"string" example:"koblitz@dimo.zone"`
 	// Confirmed indicates whether the user has confirmed the address by entering a code.
 	Confirmed bool `example:"false" json:"confirmed"`
-	// ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
-	// be present if we've sent an email but the code has not been sent back to us.
-	ConfirmationSentAt time.Time `json:"confirmationSentAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
+	// CodeExpiresAt is the time at which the current confirmation code will expire. This will only
+	// be present if we've sent an email but the code has not been sent back to us. In that case, Confirmed
+	// will certainly be false.
+	CodeExpiresAt *time.Time `json:"codeExpiresAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
 }
 
 type UserResponseWeb3 struct {
@@ -74,12 +75,12 @@ type UserUpdateRequest struct {
 
 // RequestEmailValidation request body used for adding an email that cannot be authenticated via federated sign in to account
 type RequestEmailValidation struct {
-	EmailAddress string `json:"email,omitempty" swaggertype:"string" example:"kilgore@kilgore.trout"`
+	Address string `json:"address" swaggertype:"string" example:"kilgore@kilgore.trout"`
 }
 
 type CompleteEmailValidation struct {
-	// Key is the 6-digit number from the confirmation email
-	Key string `json:"key" example:"010990"`
+	// Code is the 6-digit number from the confirmation email
+	Code string `json:"code" example:"010990"`
 }
 
 type ErrorRes struct {

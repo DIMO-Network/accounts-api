@@ -93,9 +93,9 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.Require().NoError(err)
 
 	s.settings = &config.Settings{
-		JWTKeySetURL:                       fmt.Sprintf("%s/dex/keys", addr),
-		AllowableEmailConfirmationLateness: time.Minute * 1,
-		DisableCustomerIOEvents:            true,
+		JWTKeySetURL:            fmt.Sprintf("%s/dex/keys", addr),
+		EmailCodeDuration:       "5m",
+		DisableCustomerIOEvents: true,
 	}
 
 	cioSvc, err := services.NewCustomerIoService(s.settings, test.Logger())
@@ -322,7 +322,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 
 	// Link email via confirmation code
 	linkEmailBody := RequestEmailValidation{
-		EmailAddress: dexEmailUsers[0].Email,
+		Address: dexEmailUsers[0].Email,
 	}
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
 	postReq := test.BuildRequest("POST", "/link/email", string(linkEmailBodyBytes), dexWalletUsers[0].AuthToken)
@@ -427,7 +427,7 @@ func (s *AccountControllerTestSuite) Test_ConflictingEmail_Challenge() {
 	s.Assert().Equal(200, createWalletAcctResp.StatusCode)
 
 	linkEmailBody := RequestEmailValidation{
-		EmailAddress: dexEmailUsers[0].Email,
+		Address: dexEmailUsers[0].Email,
 	}
 
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)

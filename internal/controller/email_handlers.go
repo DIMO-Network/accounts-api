@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"errors"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
@@ -22,71 +24,106 @@ import (
 // @Failure 500 {object} controller.ErrorRes
 // @Router /v1/account/link/email [post]
 func (d *Controller) LinkEmail(c *fiber.Ctx) error {
-	// userAccount, err := getUserAccountClaims(c)
-	// if err != nil {
-	// 	d.log.Err(err).Msg("failed to parse user")
-	// 	return err
-	// }
+	reqTime := time.Now()
 
-	// var body RequestEmailValidation
-	// if err := c.BodyParser(&body); err != nil {
-	// 	return err
-	// }
+	userAccount, err := getUserAccountClaims(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
 
-	// tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer tx.Rollback() //nolint
+	var body RequestEmailValidation
+	if err := c.BodyParser(&body); err != nil {
+		return err
+	}
 
-	// acct, err := d.getUserAccount(c.Context(), userAccount, tx)
-	// if err != nil {
-	// 	if !errors.Is(err, sql.ErrNoRows) {
-	// 		return err
-	// 	}
-	// }
+	if !emailPattern.MatchString(body.Address) {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email address %q is invalid.", body.Address))
+	}
 
-	// if acct.R.Wallet == nil {
-	// 	return fmt.Errorf("email-first accounts must associate wallet before updating email")
-	// }
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint
 
-	// if acct.R.Email != nil && acct.R.Email.Confirmed {
-	// 	return fmt.Errorf("email address already linked with account")
-	// }
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	}
 
-	// if emlAssociated, err := models.Emails(models.EmailWhere.EmailAddress.EQ(body.EmailAddress)).One(c.Context(), tx); err != nil {
-	// 	if !errors.Is(err, sql.ErrNoRows) {
-	// 		return err
-	// 	}
-	// } else if emlAssociated != nil && emlAssociated.Confirmed {
-	// 	// TODO AE: note that this does imply someone can link a non-confirmed email to their account
-	// 	// for example, by not completing this step
-	// 	return fmt.Errorf("email address linked to another account")
-	// }
+	if acct.R.Email != nil {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already has a linked email address %s.", acct.R.Email.Address))
+	}
 
-	// confKey := generateConfirmationKey()
-	// userEmail := &models.Email{
-	// 	AccountID:          acct.ID,
-	// 	EmailAddress:       body.EmailAddress,
-	// 	Confirmed:          false,
-	// 	ConfirmationCode:   null.StringFrom(confKey),
-	// 	ConfirmationSentAt: null.TimeFrom(time.Now()),
-	// }
+	if inUse, err := models.EmailExists(c.Context(), tx, body.Address); err != nil {
+		return err
+	} else if inUse {
+		return fiber.NewError(fiber.StatusBadRequest, "Email address already linked to another account.")
+	}
 
-	// if err := userEmail.Insert(c.Context(), tx, boil.Infer()); err != nil {
-	// 	return err
-	// }
+	if conf, err := models.EmailConfirmations(
+		models.EmailConfirmationWhere.AccountID.EQ(acct.ID),
+	).One(c.Context(), tx); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	} else {
+		if !reqTime.After(conf.ExpiresAt) {
+			if conf.Address == body.Address {
+				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("A confirmation code expiring at %s was previously sent to this address.", conf.ExpiresAt))
+			} else {
+				return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("A confirmation code expiring at %s was previously sent to another address, %s.", conf.ExpiresAt, conf.Address))
+			}
+		}
+		if _, err := conf.Delete(c.Context(), tx); err != nil {
+			return err
+		}
+	}
 
-	// if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, body.EmailAddress, confKey); err != nil {
-	// 	return err
-	// }
+	if oldConf, err := models.EmailConfirmations(
+		models.EmailConfirmationWhere.Address.EQ(body.Address),
+	).One(c.Context(), tx); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	} else {
+		if !oldConf.ExpiresAt.After(reqTime) {
+			return fiber.NewError(fiber.StatusBadRequest, "A confirmation code that has not yet expired was sent to this email address for a different account.")
+		}
+		if _, err := oldConf.Delete(c.Context(), tx); err != nil {
+			return err
+		}
+	}
 
-	// if err := tx.Commit(); err != nil {
-	// 	return err
-	// }
+	code, err := generateConfirmationCode()
+	if err != nil {
+		return err
+	}
+	newConf := &models.EmailConfirmation{
+		AccountID: acct.ID,
+		Address:   body.Address,
+		ExpiresAt: reqTime.Add(d.allowedLateness),
+		Code:      code,
+	}
 
-	// return c.SendStatus(fiber.StatusNoContent)
-	return nil
+	if err := newConf.Insert(c.Context(), tx, boil.Infer()); err != nil {
+		return err
+	}
+
+	if err := d.emailService.SendConfirmationEmail(c.Context(), d.emailTemplate, body.Address, code); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return c.JSON(StandardRes{
+		Message: fmt.Sprintf("Confirmation code sent to %s.", body.Address),
+	})
 }
 
 // ConfirmEmail godoc
@@ -99,63 +136,71 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 // @Failure 403 {object} controller.ErrorRes
 // @Router /v1/account/link/email/confirm [post]
 func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
-	// userAccount, err := getUserAccountClaims(c)
-	// if err != nil {
-	// 	d.log.Err(err).Msg("failed to parse user")
-	// 	return err
-	// }
+	reqTime := time.Now()
 
-	// tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
-	// if err != nil {
-	// 	return err
-	// }
-	// defer tx.Rollback() //nolint
+	userAccount, err := getUserAccountClaims(c)
+	if err != nil {
+		d.log.Err(err).Msg("failed to parse user")
+		return err
+	}
 
-	// acct, err := d.getUserAccount(c.Context(), userAccount, tx)
-	// if err != nil {
-	// 	if !errors.Is(err, sql.ErrNoRows) {
-	// 		return err
-	// 	}
-	// }
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), &sql.TxOptions{Isolation: sql.LevelSerializable})
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback() //nolint
 
-	// if acct.R.Email == nil {
-	// 	return fmt.Errorf("no email address associated with user account")
-	// }
+	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
+	if err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	}
 
-	// // can we be linking muttiple email addrs to the same account?
-	// if acct.R.Email.Confirmed {
-	// 	return fmt.Errorf("email already confirmed")
-	// }
+	conf := acct.R.EmailConfirmation
 
-	// if !acct.R.Email.ConfirmationSentAt.Valid || !acct.R.Email.ConfirmationCode.Valid {
-	// 	return fmt.Errorf("email confirmation never sent")
-	// }
+	if conf == nil {
+		return fiber.NewError(fiber.StatusBadRequest, "No email confirmation in progress for this account.")
+	}
 
-	// if time.Since(acct.R.Email.ConfirmationSentAt.Time) > d.allowedLateness {
-	// 	return fmt.Errorf("email confirmation message expired")
-	// }
+	if reqTime.After(conf.ExpiresAt) {
+		return fiber.NewError(fiber.StatusBadRequest, "Confirmation code expired.")
+	}
 
-	// confirmationBody := new(CompleteEmailValidation)
-	// if err := c.BodyParser(confirmationBody); err != nil {
-	// 	return err
-	// }
+	var confirmationBody CompleteEmailValidation
+	if err := c.BodyParser(confirmationBody); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
+	}
 
-	// if confirmationBody.Key != acct.R.Email.ConfirmationCode.String {
-	// 	return fmt.Errorf("email confirmation code invalid")
-	// }
+	if confirmationBody.Code != conf.Code {
+		return fiber.NewError(fiber.StatusBadRequest, "Incorrect confirmation code.")
+	}
 
-	// acct.R.Email.Confirmed = true
-	// acct.R.Email.ConfirmationCode = null.StringFromPtr(nil)
-	// acct.R.Email.ConfirmationSentAt = null.TimeFromPtr(nil)
-	// if _, err := acct.R.Email.Update(c.Context(), tx, boil.Infer()); err != nil {
-	// 	return err
-	// }
+	emailModel := models.Email{
+		AccountID: acct.ID,
+		Address:   conf.Address,
+	}
 
-	// if err := d.cioService.SendCustomerIoEvent(acct.ID, &acct.R.Email.EmailAddress, nil); err != nil {
-	// 	return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
-	// }
+	if err := emailModel.Insert(c.Context(), tx, boil.Infer()); err != nil {
+		return err
+	}
 
-	return c.SendStatus(fiber.StatusNoContent)
+	acct.UpdatedAt = reqTime
+	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt)); err != nil {
+		return err
+	}
+
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, &conf.Address, nil); err != nil {
+		return fmt.Errorf("failed to send customer.io event while linking email with confirmation: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	return c.JSON(StandardRes{
+		Message: "Email linked to account.",
+	})
 }
 
 // LinkEmailToken godoc
@@ -239,7 +284,10 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	})
 }
 
-// func generateConfirmationKey() string {
-// 	n := rand.Intn(1_000_000) // Go from 000000 to 999999.
-// 	return fmt.Sprintf("%06d", n)
-// }
+func generateConfirmationCode() (string, error) {
+	n, err := rand.Int(rand.Reader, big.NewInt(1_000_000))
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%06d", n), nil
+}

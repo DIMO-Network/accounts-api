@@ -64,7 +64,7 @@ func (e *emailSvc) SendConfirmationEmail(ctx context.Context, emailTemplate *tem
 	}
 
 	hw := quotedprintable.NewWriter(h)
-	if err := e.emailTemplate.Execute(hw, struct{ Key string }{confCode}); err != nil {
+	if err := e.emailTemplate.Execute(hw, struct{ Code string }{confCode}); err != nil {
 		return err
 	}
 	hw.Close()
