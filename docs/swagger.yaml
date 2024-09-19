@@ -1,8 +1,8 @@
 definitions:
   internal_controller.CompleteEmailValidation:
     properties:
-      key:
-        description: Key is the 6-digit number from the confirmation email
+      code:
+        description: Code is the 6-digit number from the confirmation email
         example: "010990"
         type: string
     type: object
@@ -15,7 +15,7 @@ definitions:
     type: object
   internal_controller.RequestEmailValidation:
     properties:
-      email:
+      address:
         example: kilgore@kilgore.trout
         type: string
     type: object
@@ -79,10 +79,11 @@ definitions:
         description: Address is the email address for the user.
         example: koblitz@dimo.zone
         type: string
-      confirmationSentAt:
+      codeExpiresAt:
         description: |-
-          ConfirmationSentAt is the time at which we last sent a confirmation email. This will only
-          be present if we've sent an email but the code has not been sent back to us.
+          CodeExpiresAt is the time at which the current confirmation code will expire. This will only
+          be present if we've sent an email but the code has not been sent back to us. In that case, Confirmed
+          will certainly be false.
         example: "2021-12-01T09:01:12Z"
         type: string
       confirmed:

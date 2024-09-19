@@ -335,8 +335,8 @@ const docTemplate = `{
         "internal_controller.CompleteEmailValidation": {
             "type": "object",
             "properties": {
-                "key": {
-                    "description": "Key is the 6-digit number from the confirmation email",
+                "code": {
+                    "description": "Code is the 6-digit number from the confirmation email",
                     "type": "string",
                     "example": "010990"
                 }
@@ -356,7 +356,7 @@ const docTemplate = `{
         "internal_controller.RequestEmailValidation": {
             "type": "object",
             "properties": {
-                "email": {
+                "address": {
                     "type": "string",
                     "example": "kilgore@kilgore.trout"
                 }
@@ -449,8 +449,8 @@ const docTemplate = `{
                     "type": "string",
                     "example": "koblitz@dimo.zone"
                 },
-                "confirmationSentAt": {
-                    "description": "ConfirmationSentAt is the time at which we last sent a confirmation email. This will only\nbe present if we've sent an email but the code has not been sent back to us.",
+                "codeExpiresAt": {
+                    "description": "CodeExpiresAt is the time at which the current confirmation code will expire. This will only\nbe present if we've sent an email but the code has not been sent back to us. In that case, Confirmed\nwill certainly be false.",
                     "type": "string",
                     "example": "2021-12-01T09:01:12Z"
                 },
