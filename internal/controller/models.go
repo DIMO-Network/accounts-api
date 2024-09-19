@@ -19,18 +19,18 @@ type TokenBody struct {
 
 type UserResponseEmail struct {
 	// Address is the email address for the user.
-	Address string `json:"address,omitempty" swaggertype:"string" example:"koblitz@dimo.zone"`
+	Address string `json:"address" swaggertype:"string" example:"koblitz@dimo.zone"`
 	// Confirmed indicates whether the user has confirmed the address by entering a code.
 	Confirmed bool `example:"false" json:"confirmed"`
 	// CodeExpiresAt is the time at which the current confirmation code will expire. This will only
 	// be present if we've sent an email but the code has not been sent back to us. In that case, Confirmed
 	// will certainly be false.
-	CodeExpiresAt *time.Time `json:"codeExpiresAt,omitempty" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
+	CodeExpiresAt *time.Time `json:"codeExpiresAt" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
 }
 
 type UserResponseWeb3 struct {
 	// Address is the Ethereum address associated with the user.
-	Address common.Address `json:"address,omitempty" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
+	Address common.Address `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 }
 
 type UserResponse struct {
@@ -42,7 +42,7 @@ type UserResponse struct {
 	// Wallet describes the user's blockchain account.
 	Wallet *UserResponseWeb3 `json:"wallet"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
-	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
+	CountryCode *string `json:"countryCode" swaggertype:"string" example:"USA"`
 	// AcceptedTOSAt is the time at which the user last agreed to the terms of service.
 	AcceptedTOSAt *time.Time `json:"acceptedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,

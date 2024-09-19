@@ -201,7 +201,7 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 		ReferredBy:    acct.ReferredBy.String,
 		ReferredAt:    acct.ReferredAt.Ptr(),
 		AcceptedTOSAt: acct.AcceptedTosAt.Ptr(),
-		CountryCode:   acct.CountryCode.String,
+		CountryCode:   acct.CountryCode.Ptr(),
 		UpdatedAt:     acct.UpdatedAt,
 	}
 
