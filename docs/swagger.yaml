@@ -26,8 +26,8 @@ definitions:
     type: object
   internal_controller.SubmitReferralCodeRequest:
     properties:
-      referralCode:
-        example: ANB95NBQA1N5
+      code:
+        example: ANBJN5
         type: string
     type: object
   internal_controller.SubmitReferralCodeResponse:
@@ -154,13 +154,13 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/internal_controller.UserResponse'
-        "403":
-          description: Forbidden
+        "400":
+          description: Bad Request
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
       security:
       - BearerAuth: []
-      summary: Create user account based on email or 0x address.
+      summary: Create user account using an auth token in the header.
     put:
       consumes:
       - application/json

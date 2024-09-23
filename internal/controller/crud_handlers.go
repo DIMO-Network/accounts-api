@@ -14,27 +14,27 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-// CreateUserAccount godoc
-// @Summary Create user account based on email or 0x address.
+// CreateAccount godoc
+// @Summary Create user account using an auth token in the header.
 // @Produce json
 // @Success 201 {object} controller.UserResponse
-// @Failure 403 {object} controller.ErrorRes
+// @Failure 400 {object} controller.ErrorRes
 // @Security BearerAuth
 // @Router /v1/account [post]
-func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
+func (d *Controller) CreateAccount(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
 		d.log.Err(err).Msg("failed to parse user")
 		return err
 	}
 
-	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback() //nolint
 
-	if err := d.createUser(c.Context(), userAccount, tx); err != nil && !errors.Is(err, sql.ErrNoRows) {
+	if err := d.createUser(c.Context(), userAccount, tx); err != nil {
 		return err
 	}
 
@@ -46,6 +46,12 @@ func (d *Controller) CreateUserAccount(c *fiber.Ctx) error {
 	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
 	if err != nil {
 		return err
+	}
+
+	if userAccount.EmailAddress != nil {
+		d.log.Info().Str("account", acct.ID).Msgf("Created account with email %s.", *userAccount.EmailAddress)
+	} else if userAccount.EthereumAddress != nil {
+		d.log.Info().Str("account", acct.ID).Msgf("Created account with wallet %s.", *userAccount.EthereumAddress)
 	}
 
 	formattedAcct, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)

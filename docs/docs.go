@@ -90,7 +90,7 @@ const docTemplate = `{
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Create user account based on email or 0x address.",
+                "summary": "Create user account using an auth token in the header.",
                 "responses": {
                     "201": {
                         "description": "Created",
@@ -98,8 +98,8 @@ const docTemplate = `{
                             "$ref": "#/definitions/internal_controller.UserResponse"
                         }
                     },
-                    "403": {
-                        "description": "Forbidden",
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/internal_controller.ErrorRes"
                         }
@@ -373,9 +373,9 @@ const docTemplate = `{
         "internal_controller.SubmitReferralCodeRequest": {
             "type": "object",
             "properties": {
-                "referralCode": {
+                "code": {
                     "type": "string",
-                    "example": "ANB95NBQA1N5"
+                    "example": "ANBJN5"
                 }
             }
         },

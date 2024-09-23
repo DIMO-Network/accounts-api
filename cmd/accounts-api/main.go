@@ -112,7 +112,7 @@ func main() {
 	}
 
 	//create account based on 0x or email
-	v1.Post("/", accountController.CreateUserAccount)
+	v1.Post("/", accountController.CreateAccount)
 
 	//fetch account information based on whether the 0x or email links to an existing account
 	//search is performed through wallets or emails table, whichever way you came in

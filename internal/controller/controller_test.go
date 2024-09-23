@@ -110,7 +110,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.cioService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
-	s.app.Post("/", s.controller.CreateUserAccount)
+	s.app.Post("/", s.controller.CreateAccount)
 	s.app.Get("/", s.controller.GetUserAccount)
 	s.app.Delete("/", s.controller.DeleteUser)
 	s.app.Put("/update", s.controller.UpdateUser)

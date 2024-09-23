@@ -96,12 +96,8 @@ func getUserAccountClaims(c *fiber.Ctx) (*AccountClaims, error) {
 	validEthAddr := infos.EthereumAddress != nil
 	validEmlAddr := infos.EmailAddress != nil
 
-	if validEthAddr {
-		if mixAddr, err := common.NewMixedcaseAddressFromString((*infos.EthereumAddress).Hex()); err != nil {
-			validEthAddr = false
-		} else if !mixAddr.ValidChecksum() {
-			validEthAddr = false
-		}
+	if validEthAddr && validEmlAddr {
+		return nil, errors.New("unexpected: both email and wallet present in token")
 	}
 
 	if validEmlAddr {
