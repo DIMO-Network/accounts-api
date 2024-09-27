@@ -206,28 +206,24 @@ func getLogger(c *fiber.Ctx, d *zerolog.Logger) *zerolog.Logger {
 func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction bool) error {
 	logger = getLogger(c, logger)
 
-	code := fiber.StatusInternalServerError // Default 500 statuscode
+	code := fiber.StatusInternalServerError // Default to 500.
+	message := "Internal error."
 
 	var e *fiber.Error
 	isFiberErr := errors.As(err, &e)
 	if isFiberErr {
 		// Override status code if fiber.Error type
 		code = e.Code
+		message = e.Message
 	}
 
-	c.Set(fiber.HeaderContentType, fiber.MIMEApplicationJSON)
-	logger.Err(err).Int("httpStatusCode", code).
-		Str("httpMethod", c.Method()).
-		Str("httpPath", c.Path()).
-		Msg("caught an error from http request")
-
-	// return an opaque error if we're in a higher level environment and we haven't specified an fiber type err.
-	if !isFiberErr && isProduction {
-		err = fiber.NewError(fiber.StatusInternalServerError, "Internal error")
-	}
+	logger.Err(err).Int("code", code).
+		Str("method", c.Method()).
+		Str("path", c.Path()).
+		Msg("Served an error.")
 
 	return c.Status(code).JSON(controller.ErrorRes{
 		Code:    code,
-		Message: err.Error(),
+		Message: message,
 	})
 }
