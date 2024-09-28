@@ -209,12 +209,13 @@ func errorHandler(c *fiber.Ctx, err error, logger *zerolog.Logger, isProduction 
 	code := fiber.StatusInternalServerError // Default to 500.
 	message := "Internal error."
 
-	var e *fiber.Error
-	isFiberErr := errors.As(err, &e)
-	if isFiberErr {
-		// Override status code if fiber.Error type
-		code = e.Code
-		message = e.Message
+	var fiberErr *fiber.Error
+
+	if errors.As(err, &fiberErr) {
+		code = fiberErr.Code
+		message = fiberErr.Message
+	} else if !isProduction {
+		message = err.Error()
 	}
 
 	logger.Err(err).Int("code", code).
