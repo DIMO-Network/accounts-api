@@ -217,7 +217,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), nil)
+	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {
 		return err
 	}
@@ -237,7 +237,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	infos := AccountClaims{}
+	var infos AccountClaims
 	if _, err = jwt.ParseWithClaims(tb.Token, &infos, d.jwkResource.Keyfunc); err != nil {
 		return err
 	}
