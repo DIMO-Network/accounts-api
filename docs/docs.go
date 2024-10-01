@@ -242,6 +242,17 @@ const docTemplate = `{
                     "email"
                 ],
                 "summary": "Link an email to existing wallet account; require a signed JWT from auth server",
+                "parameters": [
+                    {
+                        "description": "Includes the email token",
+                        "name": "linkEmailRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_controller.TokenBody"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",

@@ -205,8 +205,9 @@ func (d *Controller) ConfirmEmail(c *fiber.Ctx) error {
 
 // LinkEmailToken godoc
 // @Summary Link an email to existing wallet account; require a signed JWT from auth server
-// @Success 200 {object} controller.StandardRes
+// @Param linkEmailRequest body controller.TokenBody true "Includes the email token"
 // @Tags email
+// @Success 200 {object} controller.StandardRes
 // @Failure 400 {object} controller.ErrorRes
 // @Router /v1/account/link/email/token [post]
 func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {

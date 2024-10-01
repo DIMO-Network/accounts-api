@@ -253,6 +253,13 @@ paths:
       - email
   /v1/account/link/email/token:
     post:
+      parameters:
+      - description: Includes the email token
+        in: body
+        name: linkEmailRequest
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.TokenBody'
       responses:
         "200":
           description: OK
