@@ -9,8 +9,10 @@ definitions:
   internal_controller.ErrorRes:
     properties:
       code:
+        example: 400
         type: integer
       message:
+        example: Malformed request body.
         type: string
     type: object
   internal_controller.RequestEmailValidation:
@@ -22,6 +24,7 @@ definitions:
   internal_controller.StandardRes:
     properties:
       message:
+        example: Operation succeeded.
         type: string
     type: object
   internal_controller.SubmitReferralCodeRequest:

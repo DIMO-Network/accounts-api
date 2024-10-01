@@ -84,10 +84,10 @@ type CompleteEmailValidation struct {
 }
 
 type ErrorRes struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code    int    `json:"code" example:"400"`
+	Message string `json:"message" example:"Malformed request body."`
 }
 
 type StandardRes struct {
-	Message string `json:"message"`
+	Message string `json:"message" example:"Operation succeeded."`
 }
