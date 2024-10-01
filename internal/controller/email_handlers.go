@@ -280,6 +280,8 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fmt.Errorf("failed to send customer.io event while linking email with token: %w", err)
 	}
 
+	d.log.Info().Str("account", acct.ID).Msgf("Linked email %s.", *infos.EmailAddress)
+
 	return c.JSON(StandardRes{
 		Message: fmt.Sprintf("Linked email %s.", *infos.EmailAddress),
 	})
