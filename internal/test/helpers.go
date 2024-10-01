@@ -23,7 +23,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/gofiber/fiber/v2"
-	"github.com/pkg/errors"
 	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 	"github.com/segmentio/ksuid"
@@ -60,7 +59,7 @@ func StartContainerDatabase(ctx context.Context, t *testing.T, migrationsDirRelP
 	}
 	mappedPort, err := pgContainer.MappedPort(ctx, nat.Port(pgPort))
 	if err != nil {
-		return handleContainerStartErr(ctx, errors.Wrap(err, "failed to get container external port"), pgContainer, t)
+		return handleContainerStartErr(ctx, fmt.Errorf("failed to get container port: %w", err), pgContainer, t)
 	}
 	fmt.Printf("postgres container session %s ready and running at port: %s \n", pgContainer.SessionID(), mappedPort)
 	//defer pgContainer.Terminate(ctx) // this should be done by the caller
@@ -80,8 +79,7 @@ func StartContainerDatabase(ctx context.Context, t *testing.T, migrationsDirRelP
 		SET search_path = accounts_api, public;
 		`)
 	if err != nil {
-		return handleContainerStartErr(ctx, errors.Wrapf(err, "failed to apply schema. session: %s, port: %s",
-			pgContainer.SessionID(), mappedPort.Port()), pgContainer, t)
+		return handleContainerStartErr(ctx, fmt.Errorf("failed to create schema with session %s, port %s: %w", pgContainer.SessionID(), mappedPort.Port(), err), pgContainer, t)
 	}
 	// add truncate tables func
 	_, err = pdb.DBS().Writer.Exec(`
@@ -98,12 +96,12 @@ END;
 $$ LANGUAGE plpgsql;
 `)
 	if err != nil {
-		return handleContainerStartErr(ctx, errors.Wrap(err, "failed to create truncate func"), pgContainer, t)
+		return handleContainerStartErr(ctx, fmt.Errorf("failed to create truncate func: %w", err), pgContainer, t)
 	}
 
 	goose.SetTableName("accounts_api.migrations")
 	if err := goose.RunContext(ctx, "up", pdb.DBS().Writer.DB, migrationsDirRelPath); err != nil {
-		return handleContainerStartErr(ctx, errors.Wrap(err, "failed to apply goose migrations for test"), pgContainer, t)
+		return handleContainerStartErr(ctx, fmt.Errorf("failed to apply migrations: %w", err), pgContainer, t)
 	}
 
 	return pdb, pgContainer
