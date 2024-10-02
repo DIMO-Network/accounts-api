@@ -50,7 +50,7 @@ func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wa
 	}
 
 	if wallet != nil {
-		userTraits.Set("wallet_address", wallet.Hex())
+		userTraits.Set("wallet", wallet.Hex())
 	}
 
 	return c.client.Enqueue(analytics.Identify{
