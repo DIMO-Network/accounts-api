@@ -78,9 +78,6 @@ func main() {
 		BodyLimit:             10 * 1024 * 1024,
 		JSONEncoder:           json.Marshal,
 		JSONDecoder:           json.Unmarshal,
-		ErrorHandler: func(c *fiber.Ctx, err error) error {
-			return fiber.NewError(fiber.StatusUnauthorized, "Missing or malformed JWT.")
-		}
 	})
 
 	go func() {
@@ -98,6 +95,9 @@ func main() {
 		jwtware.Config{
 			JWKSetURLs: []string{settings.JWTKeySetURL},
 			Claims:     &controller.AccountClaims{},
+			ErrorHandler: func(c *fiber.Ctx, err error) error {
+				return fiber.NewError(fiber.StatusUnauthorized, "Missing or malformed JWT.")
+			},
 		},
 	))
 
