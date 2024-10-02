@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"slices"
 	"time"
 
@@ -92,6 +93,8 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 	return c.JSON(formattedAcct)
 }
 
+var countryCodePattern = regexp.MustCompile("^[A-Z]{3}$")
+
 // UpdateUser godoc
 // @Summary Modify attributes for the authenticated user
 // @Accept json
@@ -120,6 +123,10 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 	}
 
 	if body.CountryCode != "" {
+		if !countryCodePattern.MatchString(body.CountryCode) {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Unrecognized country code %q. Country codes consist of three capital letters.", body.CountryCode))
+		}
+
 		if !slices.Contains(d.countryCodes, body.CountryCode) {
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Unrecognized country code %q.", body.CountryCode))
 		}
@@ -130,6 +137,8 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 			if _, err := acct.Update(c.Context(), d.dbs.DBS().Reader, boil.Whitelist(models.AccountColumns.CountryCode, models.AccountColumns.UpdatedAt)); err != nil {
 				return err
 			}
+
+			d.log.Info().Str("account", acct.ID).Msgf("Updated country to %s.", body.CountryCode)
 		}
 	}
 
