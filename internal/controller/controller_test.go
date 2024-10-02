@@ -10,6 +10,7 @@ import (
 
 	"github.com/DIMO-Network/accounts-api/internal/config"
 	"github.com/DIMO-Network/accounts-api/internal/services"
+	"github.com/DIMO-Network/accounts-api/internal/services/cio"
 	"github.com/DIMO-Network/accounts-api/internal/test"
 	"github.com/DIMO-Network/accounts-api/models"
 
@@ -77,7 +78,7 @@ type AccountControllerTestSuite struct {
 	controller      *Controller
 	identityService services.IdentityService
 	emailService    services.EmailService
-	cioService      services.CustomerIoService
+	cioService      CIOClient
 }
 
 // SetupSuite starts container db
@@ -98,7 +99,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 		DisableCustomerIOEvents: true,
 	}
 
-	cioSvc, err := services.NewCustomerIoService(s.settings, test.Logger())
+	cioSvc, err := cio.New(s.settings, test.Logger())
 	s.Require().NoError(err)
 	s.cioService = cioSvc
 

@@ -1,4 +1,4 @@
-package services
+package cio
 
 import (
 	"github.com/DIMO-Network/accounts-api/internal/config"
@@ -8,17 +8,14 @@ import (
 	"github.com/rs/zerolog"
 )
 
-type CustomerIoService interface {
-	SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error
-	Close()
-}
+const walletTrait = "wallet"
 
-type customerIoSvc struct {
+type Client struct {
 	client                  analytics.Client
 	disableCustomerIOEvents bool
 }
 
-func NewCustomerIoService(settings *config.Settings, logger *zerolog.Logger) (CustomerIoService, error) {
+func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
 	client, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{
 		Callback: callbackI{
 			logger: logger,
@@ -32,14 +29,14 @@ func NewCustomerIoService(settings *config.Settings, logger *zerolog.Logger) (Cu
 		logger.Info().Msg("Customer.io events are disabled")
 	}
 
-	return &customerIoSvc{
+	return &Client{
 		client:                  client,
 		disableCustomerIOEvents: settings.DisableCustomerIOEvents,
 	}, nil
 
 }
 
-func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error {
+func (c *Client) SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error {
 	if c.disableCustomerIOEvents {
 		return nil
 	}
@@ -50,7 +47,7 @@ func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wa
 	}
 
 	if wallet != nil {
-		userTraits.Set("wallet", wallet.Hex())
+		userTraits.Set(walletTrait, wallet.Hex())
 	}
 
 	return c.client.Enqueue(analytics.Identify{
@@ -59,7 +56,7 @@ func (c *customerIoSvc) SendCustomerIoEvent(customerID string, email *string, wa
 	})
 }
 
-func (c *customerIoSvc) Close() {
+func (c *Client) Close() {
 	c.client.Close()
 }
 

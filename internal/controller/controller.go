@@ -35,6 +35,10 @@ var rawConfirmationEmail string
 //go:embed resources/country_codes.json
 var rawCountryCodes []byte
 
+type CIOClient interface {
+	SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error
+}
+
 type Controller struct {
 	dbs             db.Store
 	log             *zerolog.Logger
@@ -42,7 +46,7 @@ type Controller struct {
 	countryCodes    []string
 	identityService services.IdentityService
 	emailService    services.EmailService
-	cioService      services.CustomerIoService
+	cioService      CIOClient
 	jwkResource     keyfunc.Keyfunc
 	emailTemplate   *template.Template
 }
@@ -54,7 +58,7 @@ type AccountClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, cioSvc services.CustomerIoService, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
+func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, cioSvc CIOClient, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		return nil, err

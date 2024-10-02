@@ -11,6 +11,7 @@ import (
 	"github.com/DIMO-Network/accounts-api/internal/config"
 	"github.com/DIMO-Network/accounts-api/internal/controller"
 	"github.com/DIMO-Network/accounts-api/internal/services"
+	"github.com/DIMO-Network/accounts-api/internal/services/cio"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/goccy/go-json"
@@ -103,7 +104,7 @@ func main() {
 
 	idSvc := services.NewIdentityService(&settings)
 	emailSvc := services.NewEmailService(&settings)
-	customerIoSvc, err := services.NewCustomerIoService(&settings, &logger)
+	customerIoSvc, err := cio.New(&settings, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to start customer io service.")
 	}
