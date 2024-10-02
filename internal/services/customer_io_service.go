@@ -20,7 +20,6 @@ type customerIoSvc struct {
 
 func NewCustomerIoService(settings *config.Settings, logger *zerolog.Logger) (CustomerIoService, error) {
 	client, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{
-		Endpoint: settings.CustomerIOURL,
 		Callback: callbackI{
 			logger: logger,
 		},

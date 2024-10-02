@@ -47,7 +47,7 @@ env:
   SACD_ADDRESS: '0x3e78Cb1f68132D34C811dcd7D4a10E0Aad752C3c'
   EMAIL_PORT: '587'
   EMAIL_FROM: hello@dimo.co
-  DISABLE_CUSTOMER_IO_EVENTS: true
+  DISABLE_CUSTOMER_IO_EVENTS: false
 service:
   type: ClusterIP
   ports:

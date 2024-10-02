@@ -24,7 +24,6 @@ type Settings struct {
 	DevicesAPIGRPCAddr      string      `yaml:"DEVICES_API_GRPC_ADDR"`
 	IdentityAPIURL          string      `yaml:"IDENTITY_API_URL"`
 	EmailCodeDuration       string      `yaml:"EMAIL_CODE_DURATION"`
-	CustomerIOURL           string      `yaml:"CUSTOMER_IO_URL"`
 	CustomerIOAPIKey        string      `yaml:"CUSTOMER_IO_API_KEY"`
 	DisableCustomerIOEvents bool        `yaml:"DISABLE_CUSTOMER_IO_EVENTS"`
 }
