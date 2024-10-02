@@ -279,10 +279,6 @@ func (i *identityService) AftermarketDevicesOwned(ctx context.Context, ethAddr c
 	return IdentityServiceResponse, nil
 }
 
-func NewIdentityService(pass bool) services.IdentityService {
-	return &identityService{}
-}
-
 type emailService struct {
 }
 

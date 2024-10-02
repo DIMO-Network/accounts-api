@@ -44,7 +44,6 @@ type Controller struct {
 	log             *zerolog.Logger
 	allowedLateness time.Duration
 	countryCodes    []string
-	identityService services.IdentityService
 	emailService    services.EmailService
 	cioService      CIOClient
 	jwkResource     keyfunc.Keyfunc
@@ -58,7 +57,7 @@ type AccountClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.IdentityService, emlSvc services.EmailService, cioSvc CIOClient, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
+func NewAccountController(ctx context.Context, dbs db.Store, emlSvc services.EmailService, cioSvc CIOClient, settings *config.Settings, logger *zerolog.Logger) (*Controller, error) {
 	var countryCodes []string
 	if err := json.Unmarshal(rawCountryCodes, &countryCodes); err != nil {
 		return nil, err
@@ -82,7 +81,6 @@ func NewAccountController(ctx context.Context, dbs db.Store, idSvc services.Iden
 		allowedLateness: dur,
 		countryCodes:    countryCodes,
 		emailService:    emlSvc,
-		identityService: idSvc,
 		cioService:      cioSvc,
 		jwkResource:     jwkResource,
 		emailTemplate:   template.Must(template.New("confirmation_email").Parse(rawConfirmationEmail)),

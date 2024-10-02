@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -168,14 +167,6 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 			return err
 		}
 		return err
-	}
-
-	if acct.R.Wallet != nil {
-		if ownedVehicles, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.Address)); err != nil {
-			return err
-		} else if ownedVehicles {
-			return fmt.Errorf("user must burn on-chain vehicles before deleting account")
-		}
 	}
 
 	if _, err := acct.Delete(c.Context(), tx); err != nil {

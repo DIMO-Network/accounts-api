@@ -102,7 +102,6 @@ func main() {
 		},
 	))
 
-	idSvc := services.NewIdentityService(&settings)
 	emailSvc := services.NewEmailService(&settings)
 	customerIoSvc, err := cio.New(&settings, &logger)
 	if err != nil {
@@ -110,7 +109,7 @@ func main() {
 	}
 	defer customerIoSvc.Close()
 
-	accountController, err := controller.NewAccountController(ctx, dbs, idSvc, emailSvc, customerIoSvc, &settings, &logger)
+	accountController, err := controller.NewAccountController(ctx, dbs, emailSvc, customerIoSvc, &settings, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to start account controller.")
 	}

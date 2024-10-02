@@ -70,14 +70,6 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "already entered a referral code.")
 	}
 
-	if acct.R.Wallet != nil {
-		if devicesPaired, err := d.identityService.VehiclesOwned(c.Context(), common.BytesToAddress(acct.R.Wallet.Address)); err != nil {
-			return err
-		} else if devicesPaired {
-			return fiber.NewError(fiber.StatusBadRequest, "Can't enter a referral code after adding vehicles.")
-		}
-	}
-
 	var body SubmitReferralCodeRequest
 	if err := c.BodyParser(&body); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")

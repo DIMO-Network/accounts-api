@@ -69,16 +69,15 @@ var dexWalletUsers = []struct {
 
 type AccountControllerTestSuite struct {
 	suite.Suite
-	app             *fiber.App
-	settings        *config.Settings
-	pdb             db.Store
-	pgContainer     testcontainers.Container
-	dexContainer    testcontainers.Container
-	ctx             context.Context
-	controller      *Controller
-	identityService services.IdentityService
-	emailService    services.EmailService
-	cioService      CIOClient
+	app          *fiber.App
+	settings     *config.Settings
+	pdb          db.Store
+	pgContainer  testcontainers.Container
+	dexContainer testcontainers.Container
+	ctx          context.Context
+	controller   *Controller
+	emailService services.EmailService
+	cioService   CIOClient
 }
 
 // SetupSuite starts container db
@@ -86,7 +85,6 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.app = fiber.New()
 	s.ctx = context.Background()
 	s.emailService = test.NewEmailService()
-	s.identityService = test.NewIdentityService(true)
 	s.pdb, s.pgContainer = test.StartContainerDatabase(s.ctx, s.T(), migrationsDirRelPath)
 	s.dexContainer = test.StartContainerDex(s.ctx, s.T())
 	time.Sleep(5 * time.Second) // TODOAE: need to add wait for log w regex to container req
@@ -108,7 +106,7 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 		Claims:     &AccountClaims{},
 	}))
 
-	acctCont, err := NewAccountController(s.ctx, s.pdb, s.identityService, s.emailService, s.cioService, s.settings, test.Logger())
+	acctCont, err := NewAccountController(s.ctx, s.pdb, s.emailService, s.cioService, s.settings, test.Logger())
 	s.Assert().NoError(err)
 	s.controller = acctCont
 	s.app.Post("/", s.controller.CreateAccount)
