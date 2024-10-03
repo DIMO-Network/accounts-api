@@ -17,7 +17,7 @@ import (
 // @Summary Add an unconfirmed email to the account.
 // @Success 204
 // @Tags email
-// @Param confirmEmailRequest body controller.RequestEmailValidation true "Specifies the email to be linked"
+// @Param confirmEmailRequest body controller.AddEmailRequest true "Specifies the email to be linked"
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 403 {object} controller.ErrorRes
 // @Failure 500 {object} controller.ErrorRes

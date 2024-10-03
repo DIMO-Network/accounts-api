@@ -160,7 +160,7 @@ const docTemplate = `{
                 "tags": [
                     "email"
                 ],
-                "summary": "Send a confirmation email to the authenticated user",
+                "summary": "Add an unconfirmed email to the account.",
                 "parameters": [
                     {
                         "description": "Specifies the email to be linked",
@@ -168,7 +168,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.RequestEmailValidation"
+                            "$ref": "#/definitions/internal_controller.AddEmailRequest"
                         }
                     }
                 ],
@@ -304,6 +304,15 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "internal_controller.AddEmailRequest": {
+            "type": "object",
+            "properties": {
+                "address": {
+                    "type": "string",
+                    "example": "kilgore@kilgore.trout"
+                }
+            }
+        },
         "internal_controller.ErrorRes": {
             "type": "object",
             "properties": {
@@ -314,15 +323,6 @@ const docTemplate = `{
                 "message": {
                     "type": "string",
                     "example": "Malformed request body."
-                }
-            }
-        },
-        "internal_controller.RequestEmailValidation": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "example": "kilgore@kilgore.trout"
                 }
             }
         },

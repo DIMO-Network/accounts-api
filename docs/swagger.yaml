@@ -1,4 +1,10 @@
 definitions:
+  internal_controller.AddEmailRequest:
+    properties:
+      address:
+        example: kilgore@kilgore.trout
+        type: string
+    type: object
   internal_controller.ErrorRes:
     properties:
       code:
@@ -6,12 +12,6 @@ definitions:
         type: integer
       message:
         example: Malformed request body.
-        type: string
-    type: object
-  internal_controller.RequestEmailValidation:
-    properties:
-      address:
-        example: kilgore@kilgore.trout
         type: string
     type: object
   internal_controller.StandardRes:
@@ -197,7 +197,7 @@ paths:
         name: confirmEmailRequest
         required: true
         schema:
-          $ref: '#/definitions/internal_controller.RequestEmailValidation'
+          $ref: '#/definitions/internal_controller.AddEmailRequest'
       responses:
         "204":
           description: No Content
@@ -213,7 +213,7 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/internal_controller.ErrorRes'
-      summary: Send a confirmation email to the authenticated user
+      summary: Add an unconfirmed email to the account.
       tags:
       - email
   /v1/account/link/email/token:
