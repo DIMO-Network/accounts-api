@@ -4,13 +4,11 @@
 package models
 
 var TableNames = struct {
-	Accounts           string
-	EmailConfirmations string
-	Emails             string
-	Wallets            string
+	Accounts string
+	Emails   string
+	Wallets  string
 }{
-	Accounts:           "accounts",
-	EmailConfirmations: "email_confirmations",
-	Emails:             "emails",
-	Wallets:            "wallets",
+	Accounts: "accounts",
+	Emails:   "emails",
+	Wallets:  "wallets",
 }

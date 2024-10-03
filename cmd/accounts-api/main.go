@@ -142,9 +142,6 @@ func main() {
 	//link some other email to the account, no JWT can be provider, so code is sent.
 	v1.Post("/link/email", accountController.LinkEmail)
 
-	//confirm the email code
-	v1.Post("/link/email/confirm", accountController.ConfirmEmail)
-
 	logger.Info().Msg("Server started on port " + settings.Port)
 
 	// Start Server

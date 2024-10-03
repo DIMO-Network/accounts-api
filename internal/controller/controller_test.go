@@ -119,7 +119,6 @@ func (s *AccountControllerTestSuite) SetupSuite() {
 	s.app.Post("/link/wallet/token", s.controller.LinkWalletToken)
 	s.app.Post("/link/email/token", s.controller.LinkEmailToken)
 	s.app.Post("/link/email", s.controller.LinkEmail)
-	s.app.Post("/link/email/confirm", s.controller.ConfirmEmail)
 
 }
 
@@ -160,7 +159,6 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_CreateAndDelete() {
 	}
 
 	s.Assert().Equal(dexEmailUsers[0].Email, userResp.Email.Address)
-	s.Assert().True(userResp.Email.Confirmed)
 	s.Assert().Nil(userResp.Wallet)
 
 	// Delete Account
@@ -320,7 +318,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailConfirm() 
 	s.Assert().Equal(200, createAcctResp.StatusCode)
 
 	// Link email via confirmation code
-	linkEmailBody := RequestEmailValidation{
+	linkEmailBody := AddEmailRequest{
 		Address: dexEmailUsers[0].Email,
 	}
 	linkEmailBodyBytes, _ := json.Marshal(linkEmailBody)
@@ -425,7 +423,7 @@ func (s *AccountControllerTestSuite) Test_ConflictingEmail_Challenge() {
 	createWalletAcctResp, _ := s.app.Test(createWalletAcctReq)
 	s.Assert().Equal(200, createWalletAcctResp.StatusCode)
 
-	linkEmailBody := RequestEmailValidation{
+	linkEmailBody := AddEmailRequest{
 		Address: dexEmailUsers[0].Email,
 	}
 

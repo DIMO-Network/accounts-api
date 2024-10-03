@@ -197,45 +197,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/account/link/email/confirm": {
-            "post": {
-                "consumes": [
-                    "application/json"
-                ],
-                "tags": [
-                    "email"
-                ],
-                "summary": "Submit an email confirmation key",
-                "parameters": [
-                    {
-                        "description": "Specifies the key from the email",
-                        "name": "confirmEmailRequest",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.CompleteEmailValidation"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "No Content"
-                    },
-                    "400": {
-                        "description": "Bad Request",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
-                        }
-                    },
-                    "403": {
-                        "description": "Forbidden",
-                        "schema": {
-                            "$ref": "#/definitions/internal_controller.ErrorRes"
-                        }
-                    }
-                }
-            }
-        },
         "/v1/account/link/email/token": {
             "post": {
                 "tags": [
@@ -343,16 +304,6 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "internal_controller.CompleteEmailValidation": {
-            "type": "object",
-            "properties": {
-                "code": {
-                    "description": "Code is the 6-digit number from the confirmation email",
-                    "type": "string",
-                    "example": "010990"
-                }
-            }
-        },
         "internal_controller.ErrorRes": {
             "type": "object",
             "properties": {
@@ -464,15 +415,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "koblitz@dimo.zone"
                 },
-                "codeExpiresAt": {
-                    "description": "CodeExpiresAt is the time at which the current confirmation code will expire. This will only\nbe present if we've sent an email but the code has not been sent back to us. In that case, Confirmed\nwill certainly be false.",
+                "confirmedAt": {
+                    "description": "ConfirmedAt indicates the time at which the user confirmed the email. It may be null.",
                     "type": "string",
-                    "example": "2021-12-01T09:01:12Z"
-                },
-                "confirmed": {
-                    "description": "Confirmed indicates whether the user has confirmed the address by entering a code.",
-                    "type": "boolean",
-                    "example": false
+                    "example": "2021-12-01T09:00:41Z"
                 }
             }
         },

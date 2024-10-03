@@ -224,13 +224,11 @@ var AccountWhere = struct {
 // AccountRels is where relationship names are stored.
 var AccountRels = struct {
 	ReferredByAccount  string
-	EmailConfirmation  string
 	Email              string
 	Wallet             string
 	ReferredByAccounts string
 }{
 	ReferredByAccount:  "ReferredByAccount",
-	EmailConfirmation:  "EmailConfirmation",
 	Email:              "Email",
 	Wallet:             "Wallet",
 	ReferredByAccounts: "ReferredByAccounts",
@@ -238,11 +236,10 @@ var AccountRels = struct {
 
 // accountR is where relationships are stored.
 type accountR struct {
-	ReferredByAccount  *Account           `boil:"ReferredByAccount" json:"ReferredByAccount" toml:"ReferredByAccount" yaml:"ReferredByAccount"`
-	EmailConfirmation  *EmailConfirmation `boil:"EmailConfirmation" json:"EmailConfirmation" toml:"EmailConfirmation" yaml:"EmailConfirmation"`
-	Email              *Email             `boil:"Email" json:"Email" toml:"Email" yaml:"Email"`
-	Wallet             *Wallet            `boil:"Wallet" json:"Wallet" toml:"Wallet" yaml:"Wallet"`
-	ReferredByAccounts AccountSlice       `boil:"ReferredByAccounts" json:"ReferredByAccounts" toml:"ReferredByAccounts" yaml:"ReferredByAccounts"`
+	ReferredByAccount  *Account     `boil:"ReferredByAccount" json:"ReferredByAccount" toml:"ReferredByAccount" yaml:"ReferredByAccount"`
+	Email              *Email       `boil:"Email" json:"Email" toml:"Email" yaml:"Email"`
+	Wallet             *Wallet      `boil:"Wallet" json:"Wallet" toml:"Wallet" yaml:"Wallet"`
+	ReferredByAccounts AccountSlice `boil:"ReferredByAccounts" json:"ReferredByAccounts" toml:"ReferredByAccounts" yaml:"ReferredByAccounts"`
 }
 
 // NewStruct creates a new relationship struct
@@ -255,13 +252,6 @@ func (r *accountR) GetReferredByAccount() *Account {
 		return nil
 	}
 	return r.ReferredByAccount
-}
-
-func (r *accountR) GetEmailConfirmation() *EmailConfirmation {
-	if r == nil {
-		return nil
-	}
-	return r.EmailConfirmation
 }
 
 func (r *accountR) GetEmail() *Email {
@@ -612,17 +602,6 @@ func (o *Account) ReferredByAccount(mods ...qm.QueryMod) accountQuery {
 	return Accounts(queryMods...)
 }
 
-// EmailConfirmation pointed to by the foreign key.
-func (o *Account) EmailConfirmation(mods ...qm.QueryMod) emailConfirmationQuery {
-	queryMods := []qm.QueryMod{
-		qm.Where("\"account_id\" = ?", o.ID),
-	}
-
-	queryMods = append(queryMods, mods...)
-
-	return EmailConfirmations(queryMods...)
-}
-
 // Email pointed to by the foreign key.
 func (o *Account) Email(mods ...qm.QueryMod) emailQuery {
 	queryMods := []qm.QueryMod{
@@ -775,123 +754,6 @@ func (accountL) LoadReferredByAccount(ctx context.Context, e boil.ContextExecuto
 					foreign.R = &accountR{}
 				}
 				foreign.R.ReferredByAccounts = append(foreign.R.ReferredByAccounts, local)
-				break
-			}
-		}
-	}
-
-	return nil
-}
-
-// LoadEmailConfirmation allows an eager lookup of values, cached into the
-// loaded structs of the objects. This is for a 1-1 relationship.
-func (accountL) LoadEmailConfirmation(ctx context.Context, e boil.ContextExecutor, singular bool, maybeAccount interface{}, mods queries.Applicator) error {
-	var slice []*Account
-	var object *Account
-
-	if singular {
-		var ok bool
-		object, ok = maybeAccount.(*Account)
-		if !ok {
-			object = new(Account)
-			ok = queries.SetFromEmbeddedStruct(&object, &maybeAccount)
-			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeAccount))
-			}
-		}
-	} else {
-		s, ok := maybeAccount.(*[]*Account)
-		if ok {
-			slice = *s
-		} else {
-			ok = queries.SetFromEmbeddedStruct(&slice, maybeAccount)
-			if !ok {
-				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeAccount))
-			}
-		}
-	}
-
-	args := make(map[interface{}]struct{})
-	if singular {
-		if object.R == nil {
-			object.R = &accountR{}
-		}
-		args[object.ID] = struct{}{}
-	} else {
-		for _, obj := range slice {
-			if obj.R == nil {
-				obj.R = &accountR{}
-			}
-
-			args[obj.ID] = struct{}{}
-		}
-	}
-
-	if len(args) == 0 {
-		return nil
-	}
-
-	argsSlice := make([]interface{}, len(args))
-	i := 0
-	for arg := range args {
-		argsSlice[i] = arg
-		i++
-	}
-
-	query := NewQuery(
-		qm.From(`accounts_api.email_confirmations`),
-		qm.WhereIn(`accounts_api.email_confirmations.account_id in ?`, argsSlice...),
-	)
-	if mods != nil {
-		mods.Apply(query)
-	}
-
-	results, err := query.QueryContext(ctx, e)
-	if err != nil {
-		return errors.Wrap(err, "failed to eager load EmailConfirmation")
-	}
-
-	var resultSlice []*EmailConfirmation
-	if err = queries.Bind(results, &resultSlice); err != nil {
-		return errors.Wrap(err, "failed to bind eager loaded slice EmailConfirmation")
-	}
-
-	if err = results.Close(); err != nil {
-		return errors.Wrap(err, "failed to close results of eager load for email_confirmations")
-	}
-	if err = results.Err(); err != nil {
-		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for email_confirmations")
-	}
-
-	if len(emailConfirmationAfterSelectHooks) != 0 {
-		for _, obj := range resultSlice {
-			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
-				return err
-			}
-		}
-	}
-
-	if len(resultSlice) == 0 {
-		return nil
-	}
-
-	if singular {
-		foreign := resultSlice[0]
-		object.R.EmailConfirmation = foreign
-		if foreign.R == nil {
-			foreign.R = &emailConfirmationR{}
-		}
-		foreign.R.Account = object
-	}
-
-	for _, local := range slice {
-		for _, foreign := range resultSlice {
-			if local.ID == foreign.AccountID {
-				local.R.EmailConfirmation = foreign
-				if foreign.R == nil {
-					foreign.R = &emailConfirmationR{}
-				}
-				foreign.R.Account = local
 				break
 			}
 		}
@@ -1323,56 +1185,6 @@ func (o *Account) RemoveReferredByAccount(ctx context.Context, exec boil.Context
 		}
 		related.R.ReferredByAccounts = related.R.ReferredByAccounts[:ln-1]
 		break
-	}
-	return nil
-}
-
-// SetEmailConfirmation of the account to the related item.
-// Sets o.R.EmailConfirmation to related.
-// Adds o to related.R.Account.
-func (o *Account) SetEmailConfirmation(ctx context.Context, exec boil.ContextExecutor, insert bool, related *EmailConfirmation) error {
-	var err error
-
-	if insert {
-		related.AccountID = o.ID
-
-		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
-			return errors.Wrap(err, "failed to insert into foreign table")
-		}
-	} else {
-		updateQuery := fmt.Sprintf(
-			"UPDATE \"accounts_api\".\"email_confirmations\" SET %s WHERE %s",
-			strmangle.SetParamNames("\"", "\"", 1, []string{"account_id"}),
-			strmangle.WhereClause("\"", "\"", 2, emailConfirmationPrimaryKeyColumns),
-		)
-		values := []interface{}{o.ID, related.Address}
-
-		if boil.IsDebug(ctx) {
-			writer := boil.DebugWriterFrom(ctx)
-			fmt.Fprintln(writer, updateQuery)
-			fmt.Fprintln(writer, values)
-		}
-		if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
-			return errors.Wrap(err, "failed to update foreign table")
-		}
-
-		related.AccountID = o.ID
-	}
-
-	if o.R == nil {
-		o.R = &accountR{
-			EmailConfirmation: related,
-		}
-	} else {
-		o.R.EmailConfirmation = related
-	}
-
-	if related.R == nil {
-		related.R = &emailConfirmationR{
-			Account: o,
-		}
-	} else {
-		related.R.Account = o
 	}
 	return nil
 }

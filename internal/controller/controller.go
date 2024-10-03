@@ -121,7 +121,6 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		email, err := models.Emails(
 			models.EmailWhere.Address.EQ(*userAccount.EmailAddress),
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
-			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.EmailConfirmation)),
 		).One(ctx, exec)
 		if err != nil {
 			return nil, err
@@ -131,7 +130,6 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		wallet, err := models.Wallets(
 			models.WalletWhere.Address.EQ(userAccount.EthereumAddress.Bytes()),
 			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
-			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.EmailConfirmation)),
 		).One(ctx, exec)
 		if err != nil {
 			return nil, err
@@ -210,14 +208,8 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 
 	if email != nil {
 		userResp.Email = &UserResponseEmail{
-			Address:   email.Address,
-			Confirmed: true,
-		}
-	} else if acct.R.EmailConfirmation != nil {
-		userResp.Email = &UserResponseEmail{
-			Address:       acct.R.EmailConfirmation.Address,
-			Confirmed:     false,
-			CodeExpiresAt: &acct.R.EmailConfirmation.ExpiresAt,
+			Address:     email.Address,
+			ConfirmedAt: email.ConfirmedAt.Ptr(),
 		}
 	}
 

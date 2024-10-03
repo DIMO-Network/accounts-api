@@ -21,12 +21,8 @@ type TokenBody struct {
 type UserResponseEmail struct {
 	// Address is the email address for the user.
 	Address string `json:"address" swaggertype:"string" example:"koblitz@dimo.zone"`
-	// Confirmed indicates whether the user has confirmed the address by entering a code.
-	Confirmed bool `example:"false" json:"confirmed"`
-	// CodeExpiresAt is the time at which the current confirmation code will expire. This will only
-	// be present if we've sent an email but the code has not been sent back to us. In that case, Confirmed
-	// will certainly be false.
-	CodeExpiresAt *time.Time `json:"codeExpiresAt" swaggertype:"string" example:"2021-12-01T09:01:12Z"`
+	// ConfirmedAt indicates the time at which the user confirmed the email. It may be null.
+	ConfirmedAt *time.Time `example:"2021-12-01T09:00:41Z" json:"confirmedAt"`
 }
 
 type UserResponseWeb3 struct {
@@ -74,8 +70,8 @@ type UserUpdateRequest struct {
 	CountryCode string `json:"countryCode,omitempty" swaggertype:"string" example:"USA"`
 }
 
-// RequestEmailValidation request body used for adding an email that cannot be authenticated via federated sign in to account
-type RequestEmailValidation struct {
+// AddEmailRequest request body used for adding an email that cannot be authenticated via federated sign in to account
+type AddEmailRequest struct {
 	Address string `json:"address" swaggertype:"string" example:"kilgore@kilgore.trout"`
 }
 

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/friendsofgo/errors"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
@@ -23,37 +24,44 @@ import (
 
 // Email is an object representing the database table.
 type Email struct {
-	Address   string `boil:"address" json:"address" toml:"address" yaml:"address"`
-	AccountID string `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
+	Address     string    `boil:"address" json:"address" toml:"address" yaml:"address"`
+	AccountID   string    `boil:"account_id" json:"account_id" toml:"account_id" yaml:"account_id"`
+	ConfirmedAt null.Time `boil:"confirmed_at" json:"confirmed_at,omitempty" toml:"confirmed_at" yaml:"confirmed_at,omitempty"`
 
 	R *emailR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L emailL  `boil:"-" json:"-" toml:"-" yaml:"-"`
 }
 
 var EmailColumns = struct {
-	Address   string
-	AccountID string
+	Address     string
+	AccountID   string
+	ConfirmedAt string
 }{
-	Address:   "address",
-	AccountID: "account_id",
+	Address:     "address",
+	AccountID:   "account_id",
+	ConfirmedAt: "confirmed_at",
 }
 
 var EmailTableColumns = struct {
-	Address   string
-	AccountID string
+	Address     string
+	AccountID   string
+	ConfirmedAt string
 }{
-	Address:   "emails.address",
-	AccountID: "emails.account_id",
+	Address:     "emails.address",
+	AccountID:   "emails.account_id",
+	ConfirmedAt: "emails.confirmed_at",
 }
 
 // Generated where
 
 var EmailWhere = struct {
-	Address   whereHelperstring
-	AccountID whereHelperstring
+	Address     whereHelperstring
+	AccountID   whereHelperstring
+	ConfirmedAt whereHelpernull_Time
 }{
-	Address:   whereHelperstring{field: "\"accounts_api\".\"emails\".\"address\""},
-	AccountID: whereHelperstring{field: "\"accounts_api\".\"emails\".\"account_id\""},
+	Address:     whereHelperstring{field: "\"accounts_api\".\"emails\".\"address\""},
+	AccountID:   whereHelperstring{field: "\"accounts_api\".\"emails\".\"account_id\""},
+	ConfirmedAt: whereHelpernull_Time{field: "\"accounts_api\".\"emails\".\"confirmed_at\""},
 }
 
 // EmailRels is where relationship names are stored.
@@ -84,9 +92,9 @@ func (r *emailR) GetAccount() *Account {
 type emailL struct{}
 
 var (
-	emailAllColumns            = []string{"address", "account_id"}
+	emailAllColumns            = []string{"address", "account_id", "confirmed_at"}
 	emailColumnsWithoutDefault = []string{"address", "account_id"}
-	emailColumnsWithDefault    = []string{}
+	emailColumnsWithDefault    = []string{"confirmed_at"}
 	emailPrimaryKeyColumns     = []string{"address"}
 	emailGeneratedColumns      = []string{}
 )
