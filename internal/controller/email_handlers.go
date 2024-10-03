@@ -69,7 +69,6 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct.UpdatedAt = time.Now()
 	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt)); err != nil {
 		return err
 	}
@@ -153,7 +152,6 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct.UpdatedAt = time.Now()
 	_, err = acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt))
 	if err != nil {
 		return err
