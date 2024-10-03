@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"math/rand"
+	"math/rand/v2"
 	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
@@ -24,7 +24,7 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 		// Generate a random 6-character code
 		codeB := make([]byte, 6)
 		for i := range codeB {
-			codeB[i] = referralCodeAlphabet[rand.Intn(len(referralCodeAlphabet))]
+			codeB[i] = referralCodeAlphabet[rand.IntN(len(referralCodeAlphabet))]
 		}
 		code := string(codeB)
 
