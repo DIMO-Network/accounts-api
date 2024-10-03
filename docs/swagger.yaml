@@ -26,11 +26,6 @@ definitions:
         example: ANBJN5
         type: string
     type: object
-  internal_controller.SubmitReferralCodeResponse:
-    properties:
-      message:
-        type: string
-    type: object
   internal_controller.TokenBody:
     properties:
       token:
@@ -273,7 +268,7 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/internal_controller.SubmitReferralCodeResponse'
+            $ref: '#/definitions/internal_controller.StandardRes'
         "400":
           description: Bad Request
           schema:

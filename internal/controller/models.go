@@ -58,10 +58,6 @@ type SubmitReferralCodeRequest struct {
 	Code string `json:"code" example:"ANBJN5"`
 }
 
-type SubmitReferralCodeResponse struct {
-	Message string `json:"message"`
-}
-
 // UserUpdateRequest describes a user's request to modify or delete certain fields
 // Currently contains only CountryCode as dedicated endpoints exist for other types
 // of updates a user might make

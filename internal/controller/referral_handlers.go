@@ -39,7 +39,7 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 // SubmitReferralCode godoc
 // @Summary Takes the referral code, validates and stores it
 // @Param submitReferralCodeRequest body controller.SubmitReferralCodeRequest true "ReferralCode is the 6-digit, alphanumeric referral code from another user."
-// @Success 200 {object} controller.SubmitReferralCodeResponse
+// @Success 200 {object} controller.StandardRes
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 500 {object} controller.ErrorRes
 // @Tags referral
@@ -117,7 +117,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return err
 	}
 
-	return c.JSON(SubmitReferralCodeResponse{
+	return c.JSON(StandardRes{
 		Message: "Referral code successfully submitted.",
 	})
 }

@@ -284,7 +284,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/internal_controller.SubmitReferralCodeResponse"
+                            "$ref": "#/definitions/internal_controller.StandardRes"
                         }
                     },
                     "400": {
@@ -341,14 +341,6 @@ const docTemplate = `{
                 "code": {
                     "type": "string",
                     "example": "ANBJN5"
-                }
-            }
-        },
-        "internal_controller.SubmitReferralCodeResponse": {
-            "type": "object",
-            "properties": {
-                "message": {
-                    "type": "string"
                 }
             }
         },
