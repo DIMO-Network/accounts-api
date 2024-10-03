@@ -69,8 +69,19 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
+	acct.UpdatedAt = time.Now()
+	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt)); err != nil {
+		return err
+	}
+
 	if err := tx.Commit(); err != nil {
 		return err
+	}
+
+	d.log.Info().Str("account", acct.ID).Msgf("Added unconfirmed email %s to account.", body.Address)
+
+	if err := d.cioService.SendCustomerIoEvent(acct.ID, &body.Address, nil); err != nil {
+		return fmt.Errorf("failed to send customer.io event while adding unconfirmed email: %w", err)
 	}
 
 	return c.JSON(StandardRes{
