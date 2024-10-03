@@ -4,7 +4,6 @@ go 1.23
 
 require (
 	github.com/DIMO-Network/shared v0.12.4
-	github.com/Khan/genqlient v0.7.0
 	github.com/MicahParks/keyfunc/v3 v3.3.5
 	github.com/customerio/cdp-analytics-go v0.0.0-20231102115827-d9af6a6d570c
 	github.com/docker/go-connections v0.5.0
@@ -106,7 +105,6 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.52.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	github.com/vektah/gqlparser/v2 v2.5.11 // indirect
 	github.com/volatiletech/inflect v0.0.1 // indirect
 	github.com/volatiletech/randomize v0.0.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
