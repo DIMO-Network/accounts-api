@@ -142,6 +142,26 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 }
 
 func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims, tx *sql.Tx) error {
+	if userAccount.EthereumAddress != nil {
+		conflict, err := models.WalletExists(ctx, tx, userAccount.EthereumAddress.Bytes())
+		if err != nil {
+			return err
+		}
+
+		if conflict {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Wallet %s is already linked to an account.", *userAccount.EthereumAddress))
+		}
+	} else if userAccount.EmailAddress != nil {
+		conflict, err := models.EmailExists(ctx, tx, *userAccount.EmailAddress)
+		if err != nil {
+			return err
+		}
+
+		if conflict {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s is already linked to an account.", *userAccount.EmailAddress))
+		}
+	}
+
 	referralCode, err := d.GenerateReferralCode(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to generate referral code: %w", err)
