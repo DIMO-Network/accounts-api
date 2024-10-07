@@ -59,7 +59,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 
 	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
-		return fmt.Errorf("failed to get user account to submit referral code: %w", err)
+		return err
 	}
 
 	if acct.ReferredBy.Valid {

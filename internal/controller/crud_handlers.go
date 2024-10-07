@@ -2,7 +2,6 @@ package controller
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"regexp"
 	"slices"
@@ -78,10 +77,6 @@ func (d *Controller) GetUserAccount(c *fiber.Ctx) error {
 
 	acct, err := d.getUserAccount(c.Context(), userAccount, d.dbs.DBS().Reader)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			// TODO(elffjs): Make this more precise.
-			return fiber.NewError(fiber.StatusNotFound, "No account found with this email or wallet.")
-		}
 		return err
 	}
 
@@ -172,9 +167,6 @@ func (d *Controller) DeleteUser(c *fiber.Ctx) error {
 
 	acct, err := d.getUserAccount(c.Context(), userAccount, tx)
 	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return err
-		}
 		return err
 	}
 

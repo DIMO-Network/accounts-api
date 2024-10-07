@@ -124,6 +124,9 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
 		).One(ctx, exec)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No account found with email %s.", *userAccount.EmailAddress))
+			}
 			return nil, err
 		}
 		return email.R.Account, nil
@@ -133,6 +136,9 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
 		).One(ctx, exec)
 		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No account found with wallet %s.", *userAccount.EthereumAddress))
+			}
 			return nil, err
 		}
 		return wallet.R.Account, nil
