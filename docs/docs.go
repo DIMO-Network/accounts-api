@@ -393,7 +393,7 @@ const docTemplate = `{
                     "description": "Wallet describes the user's blockchain account.",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/internal_controller.UserResponseWeb3"
+                            "$ref": "#/definitions/internal_controller.UserResponseWallet"
                         }
                     ]
                 }
@@ -414,7 +414,7 @@ const docTemplate = `{
                 }
             }
         },
-        "internal_controller.UserResponseWeb3": {
+        "internal_controller.UserResponseWallet": {
             "type": "object",
             "properties": {
                 "address": {

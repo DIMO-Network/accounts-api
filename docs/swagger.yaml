@@ -62,7 +62,7 @@ definitions:
         type: string
       wallet:
         allOf:
-        - $ref: '#/definitions/internal_controller.UserResponseWeb3'
+        - $ref: '#/definitions/internal_controller.UserResponseWallet'
         description: Wallet describes the user's blockchain account.
     type: object
   internal_controller.UserResponseEmail:
@@ -77,7 +77,7 @@ definitions:
         example: "2021-12-01T09:00:41Z"
         type: string
     type: object
-  internal_controller.UserResponseWeb3:
+  internal_controller.UserResponseWallet:
     properties:
       address:
         description: Address is the Ethereum address associated with the user.
