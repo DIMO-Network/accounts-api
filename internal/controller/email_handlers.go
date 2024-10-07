@@ -129,6 +129,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 
 	emailConflict, err := models.Emails(
 		models.EmailWhere.Address.EQ(*infos.EmailAddress),
+		models.EmailWhere.AccountID.NEQ(acct.ID),
 	).One(c.Context(), tx)
 	if err != nil {
 		if !errors.Is(err, sql.ErrNoRows) {
