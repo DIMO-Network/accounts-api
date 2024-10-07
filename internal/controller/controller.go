@@ -157,8 +157,8 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 
 	var cioWallet *common.Address
 	var cioEmail *string
-	switch *userAccount.ProviderID {
-	case "web3":
+
+	if userAccount.EthereumAddress != nil {
 		wallet := &models.Wallet{
 			AccountID: acct.ID,
 			Address:   (*userAccount.EthereumAddress).Bytes(),
@@ -169,7 +169,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		}
 
 		cioWallet = userAccount.EthereumAddress
-	case "apple", "google":
+	} else if userAccount.EmailAddress != nil {
 		email := models.Email{
 			AccountID: acct.ID,
 			Address:   *userAccount.EmailAddress,
