@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"regexp"
 	"time"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
@@ -25,9 +23,9 @@ type UserResponseEmail struct {
 	ConfirmedAt *time.Time `example:"2021-12-01T09:00:41Z" json:"confirmedAt"`
 }
 
-type UserResponseWeb3 struct {
+type UserResponseWallet struct {
 	// Address is the Ethereum address associated with the user.
-	Address common.Address `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
+	Address string `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 }
 
 type UserResponse struct {
@@ -35,9 +33,9 @@ type UserResponse struct {
 	ID string `json:"id" example:"2mD8CtraxOCAAwIeydt2Q4oCiAQ"`
 
 	// Email describes the user's email and the state of its confirmation.
-	Email *UserResponseEmail `json:"email"`
+	Email *UserResponseEmail `json:"email,omitempty"`
 	// Wallet describes the user's blockchain account.
-	Wallet *UserResponseWeb3 `json:"wallet"`
+	Wallet *UserResponseWallet `json:"wallet,omitempty"`
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode *string `json:"countryCode" swaggertype:"string" example:"USA"`
 	// AcceptedTOSAt is the time at which the user last agreed to the terms of service.

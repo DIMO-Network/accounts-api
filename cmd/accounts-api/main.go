@@ -14,6 +14,7 @@ import (
 	"github.com/DIMO-Network/accounts-api/internal/services/cio"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	jwtware "github.com/gofiber/contrib/jwt"
 	"github.com/gofiber/fiber/v2"
@@ -103,13 +104,20 @@ func main() {
 	))
 
 	emailSvc := services.NewEmailService(&settings)
-	customerIoSvc, err := cio.New(&settings, &logger)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Failed to start customer io service.")
-	}
-	defer customerIoSvc.Close()
 
-	accountController, err := controller.NewAccountController(ctx, dbs, emailSvc, customerIoSvc, &settings, &logger)
+	var cioSvc controller.CIOClient
+
+	if settings.DisableCustomerIOEvents {
+		cioSvc = &noOpCIO{}
+	} else {
+		var err error
+		cioSvc, err = cio.New(&settings, &logger)
+		if err != nil {
+			logger.Fatal().Err(err).Msg("Failed to create Customer.io client.")
+		}
+	}
+
+	accountController, err := controller.NewAccountController(ctx, dbs, emailSvc, cioSvc, &settings, &logger)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Failed to start account controller.")
 	}
@@ -148,7 +156,16 @@ func main() {
 	if err := app.Listen(":" + settings.Port); err != nil {
 		logger.Fatal().Err(err).Send()
 	}
+}
 
+type noOpCIO struct{}
+
+func (c *noOpCIO) SetEmail(id, email string) error {
+	return nil
+}
+
+func (c *noOpCIO) SetWallet(id string, wallet common.Address) error {
+	return nil
 }
 
 func migrateDatabase(ctx context.Context, _ zerolog.Logger, settings *db.Settings, command, migrationsDir string) error {

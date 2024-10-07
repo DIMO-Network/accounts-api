@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
 
@@ -69,7 +68,6 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	acct.UpdatedAt = time.Now()
 	_, err = acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.UpdatedAt))
 	if err != nil {
 		return err
@@ -79,8 +77,8 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, nil, infos.EthereumAddress); err != nil {
-		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
+	if err := d.cioService.SetWallet(acct.ID, *infos.EthereumAddress); err != nil {
+		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send wallet to Customer.io.")
 	}
 
 	return c.JSON(StandardRes{

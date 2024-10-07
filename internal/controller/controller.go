@@ -36,7 +36,8 @@ var rawConfirmationEmail string
 var rawCountryCodes []byte
 
 type CIOClient interface {
-	SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error
+	SetEmail(id, email string) error
+	SetWallet(id string, wallet common.Address) error
 }
 
 type Controller struct {
@@ -155,20 +156,19 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		return err
 	}
 
-	var cioWallet *common.Address
-	var cioEmail *string
-
 	if userAccount.EthereumAddress != nil {
 		wallet := &models.Wallet{
 			AccountID: acct.ID,
-			Address:   (*userAccount.EthereumAddress).Bytes(),
+			Address:   userAccount.EthereumAddress.Bytes(),
 		}
 
 		if err := wallet.Insert(ctx, tx, boil.Infer()); err != nil {
 			return fmt.Errorf("failed to insert wallet: %w", err)
 		}
 
-		cioWallet = userAccount.EthereumAddress
+		if err := d.cioService.SetWallet(acct.ID, *userAccount.EthereumAddress); err != nil {
+			d.log.Err(err).Msg("Error sending wallet information to Customer.io.")
+		}
 	} else if userAccount.EmailAddress != nil {
 		email := models.Email{
 			AccountID: acct.ID,
@@ -179,11 +179,9 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 			return fmt.Errorf("failed to insert email: %w", err)
 		}
 
-		cioEmail = userAccount.EmailAddress
-	}
-
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, cioEmail, cioWallet); err != nil {
-		return fmt.Errorf("failed to send customer.io event while creating user: %w", err)
+		if err := d.cioService.SetEmail(acct.ID, *userAccount.EmailAddress); err != nil {
+			d.log.Err(err).Msg("Error sending email information to Customer.io.")
+		}
 	}
 
 	return nil
@@ -214,8 +212,8 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 	}
 
 	if wallet != nil {
-		userResp.Wallet = &UserResponseWeb3{
-			Address: common.BytesToAddress(wallet.Address),
+		userResp.Wallet = &UserResponseWallet{
+			Address: common.BytesToAddress(wallet.Address).Hex(),
 		}
 	}
 

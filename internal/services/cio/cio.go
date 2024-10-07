@@ -16,17 +16,9 @@ type Client struct {
 }
 
 func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
-	client, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{
-		Callback: callbackI{
-			logger: logger,
-		},
-	})
+	client, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{})
 	if err != nil {
 		return nil, err
-	}
-
-	if settings.DisableCustomerIOEvents {
-		logger.Info().Msg("Customer.io events are disabled")
 	}
 
 	return &Client{
@@ -36,39 +28,16 @@ func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
 
 }
 
-func (c *Client) SendCustomerIoEvent(customerID string, email *string, wallet *common.Address) error {
-	if c.disableCustomerIOEvents {
-		return nil
-	}
-
-	userTraits := analytics.NewTraits()
-	if email != nil {
-		userTraits.SetEmail(*email)
-	}
-
-	if wallet != nil {
-		userTraits.Set(walletTrait, wallet.Hex())
-	}
-
+func (c *Client) SetEmail(id, email string) error {
 	return c.client.Enqueue(analytics.Identify{
-		UserId: customerID,
-		Traits: userTraits,
+		UserId: id,
+		Traits: analytics.NewTraits().SetEmail(email),
 	})
 }
 
-func (c *Client) Close() {
-	c.client.Close()
-}
-
-// callbackI is used to log when a message send succeeded or failed
-type callbackI struct {
-	logger *zerolog.Logger
-}
-
-func (c callbackI) Failure(m analytics.Message, err error) {
-	id := m.(analytics.Identify)
-	c.logger.Error().Err(err).Interface("traits", id.Traits).Msgf("failed to send customer io identify message for customer: %s", id.UserId)
-}
-
-func (c callbackI) Success(_ analytics.Message) {
+func (c *Client) SetWallet(id string, wallet common.Address) error {
+	return c.client.Enqueue(analytics.Identify{
+		UserId: id,
+		Traits: analytics.NewTraits().Set(walletTrait, wallet.Hex()),
+	})
 }

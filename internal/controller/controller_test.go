@@ -239,7 +239,7 @@ func (s *AccountControllerTestSuite) Test_EmailFirstAccount_LinkWallet() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[0].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Wallet)
-	s.Assert().Equal(userResp.Wallet.Address.Hex(), dexWalletUsers[0].Wallet)
+	s.Assert().Equal(userResp.Wallet.Address, dexWalletUsers[0].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
@@ -258,7 +258,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_CreateAndDelete() {
 
 	s.Assert().Nil(userResp.Email)
 	s.Require().NotNil(userResp.Wallet)
-	s.Assert().Equal(dexWalletUsers[1].Wallet, userResp.Wallet.Address.Hex())
+	s.Assert().Equal(dexWalletUsers[1].Wallet, userResp.Wallet.Address)
 
 	// Set identity svc to be consistent with eligible deletion state
 	test.IdentityServiceResponse = false
@@ -306,7 +306,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirstAccount_LinkEmailToken() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[2].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Wallet)
-	s.Assert().Equal(userResp.Wallet.Address.Hex(), dexWalletUsers[0].Wallet)
+	s.Assert().Equal(userResp.Wallet.Address, dexWalletUsers[0].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
@@ -493,7 +493,7 @@ func (s *AccountControllerTestSuite) Test_EmailFirst_AlternativeSignIn_Token() {
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[0].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Wallet)
-	s.Assert().Equal(userResp.Wallet.Address.Hex(), dexWalletUsers[2].Wallet)
+	s.Assert().Equal(userResp.Wallet.Address, dexWalletUsers[2].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 
@@ -526,7 +526,7 @@ func (s *AccountControllerTestSuite) Test_WalletFirst_AlternativeSignIn_Token() 
 	s.Assert().NotNil(userResp.Email)
 	s.Assert().Equal(dexEmailUsers[2].Email, userResp.Email.Address)
 	s.Assert().NotNil(userResp.Wallet)
-	s.Assert().Equal(userResp.Wallet.Address.Hex(), dexWalletUsers[0].Wallet)
+	s.Assert().Equal(userResp.Wallet.Address, dexWalletUsers[0].Wallet)
 	s.Require().NoError(test.DeleteAll(s.pdb.DBS().Writer))
 }
 

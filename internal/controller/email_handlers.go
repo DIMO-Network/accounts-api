@@ -79,8 +79,8 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 
 	d.log.Info().Str("account", acct.ID).Msgf("Added unconfirmed email %s to account.", body.Address)
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, &body.Address, nil); err != nil {
-		return fmt.Errorf("failed to send customer.io event while adding unconfirmed email: %w", err)
+	if err := d.cioService.SetEmail(acct.ID, body.Address); err != nil {
+		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
 	return c.JSON(StandardRes{
@@ -161,8 +161,8 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SendCustomerIoEvent(acct.ID, infos.EmailAddress, nil); err != nil {
-		return fmt.Errorf("failed to send customer.io event while linking email with token: %w", err)
+	if err := d.cioService.SetEmail(acct.ID, *infos.EmailAddress); err != nil {
+		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
 	d.log.Info().Str("account", acct.ID).Msgf("Linked email %s.", *infos.EmailAddress)
