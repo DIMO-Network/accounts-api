@@ -3,12 +3,12 @@ package controller
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"math/rand/v2"
 	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gofiber/fiber/v2"
 	"github.com/volatiletech/null/v8"
@@ -86,7 +86,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		qm.Load(models.AccountRels.Wallet),
 	).One(c.Context(), tx)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			return fiber.NewError(fiber.StatusBadRequest, "No user with that referral code found.")
 		}
 		return err
