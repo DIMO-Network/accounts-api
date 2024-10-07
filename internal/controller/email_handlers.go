@@ -113,10 +113,6 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if acct.R.Email != nil {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already linked with email %s.", acct.R.Email.Address))
-	}
-
 	var tb TokenBody
 	if err := c.BodyParser(&tb); err != nil {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
@@ -140,6 +136,19 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		}
 	} else {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s already linked to account %s.", *infos.EmailAddress, emailConflict.AccountID))
+	}
+
+	if acct.R.Email != nil {
+		if acct.R.Email.Address != *infos.EmailAddress {
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already linked to email %s.", acct.R.Email.Address))
+		}
+		if acct.R.Email.ConfirmedAt.Valid {
+			return fiber.NewError(fiber.StatusBadRequest, "Email already confirmed.")
+		}
+		_, err := acct.R.Email.Delete(c.Context(), tx)
+		if err != nil {
+			return err
+		}
 	}
 
 	email := models.Email{
