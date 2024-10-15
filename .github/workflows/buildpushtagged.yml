@@ -32,7 +32,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./resources/docker/Dockerfile
           push: true
           platforms: linux/amd64
           tags: dimozone/accounts-api:${{steps.tag.outputs.tag}}
