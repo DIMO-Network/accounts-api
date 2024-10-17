@@ -122,6 +122,7 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		email, err := models.Emails(
 			models.EmailWhere.Address.EQ(*userAccount.EmailAddress),
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
+			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.ReferredByAccount, models.AccountRels.Wallet)),
 		).One(ctx, exec)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -134,6 +135,7 @@ func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountCla
 		wallet, err := models.Wallets(
 			models.WalletWhere.Address.EQ(userAccount.EthereumAddress.Bytes()),
 			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.Email)),
+			qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.ReferredByAccount, models.AccountRels.Wallet)),
 		).One(ctx, exec)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
@@ -217,17 +219,9 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 	userResp := &UserResponse{
 		ID:            acct.ID,
 		CreatedAt:     acct.CreatedAt,
-		ReferralCode:  acct.ReferralCode,
-		ReferredBy:    acct.ReferredBy.String,
-		ReferredAt:    acct.ReferredAt.Ptr(),
 		AcceptedTOSAt: acct.AcceptedTosAt.Ptr(),
 		CountryCode:   acct.CountryCode.Ptr(),
 		UpdatedAt:     acct.UpdatedAt,
-	}
-
-	if acct.ReferredBy.Valid {
-		userResp.ReferredBy = acct.ReferredBy.String
-		userResp.ReferredAt = acct.ReferredAt.Ptr()
 	}
 
 	if email != nil {
@@ -240,6 +234,18 @@ func (d *Controller) formatUserAcctResponse(acct *models.Account, wallet *models
 	if wallet != nil {
 		userResp.Wallet = &UserResponseWallet{
 			Address: common.BytesToAddress(wallet.Address).Hex(),
+		}
+
+		var referredBy *string
+		if acct.R.ReferredByAccount != nil && acct.R.ReferredByAccount.R.Wallet != nil {
+			a := common.BytesToAddress(acct.R.ReferredByAccount.R.Wallet.Address).Hex()
+			referredBy = &a
+		}
+
+		userResp.Referral = &UserResponseReferral{
+			Code:       acct.ReferralCode,
+			ReferredAt: acct.ReferredAt.Ptr(),
+			ReferredBy: referredBy,
 		}
 	}
 

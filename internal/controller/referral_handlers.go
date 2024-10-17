@@ -43,7 +43,7 @@ func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
 // @Failure 400 {object} controller.ErrorRes
 // @Failure 500 {object} controller.ErrorRes
 // @Tags referral
-// @Router /v1/accounts/referral/submit [post]
+// @Router /v1/account/referral/submit [post]
 func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	userAccount, err := getUserAccountClaims(c)
 	if err != nil {
@@ -78,7 +78,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %s.", body.Code)
 	referralCode := body.Code
 	if !referralCodeRegex.MatchString(referralCode) {
-		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
+		return fiber.NewError(fiber.StatusBadRequest, "Referral code must consist of 6 digits and upper-case letters.")
 	}
 
 	refAcct, err := models.Accounts(
@@ -113,7 +113,11 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 
 	acct.ReferredBy = null.StringFrom(refAcct.ID)
 	acct.ReferredAt = null.TimeFrom(time.Now())
-	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.ReferredBy, models.AccountColumns.ReferredAt)); err != nil {
+	if _, err := acct.Update(c.Context(), tx, boil.Whitelist(models.AccountColumns.ReferredBy, models.AccountColumns.ReferredAt, models.AccountColumns.UpdatedAt)); err != nil {
+		return err
+	}
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
 

@@ -263,7 +263,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/accounts/referral/submit": {
+        "/v1/account/referral/submit": {
             "post": {
                 "tags": [
                     "referral"
@@ -384,6 +384,14 @@ const docTemplate = `{
                     "type": "string",
                     "example": "2mD8CtraxOCAAwIeydt2Q4oCiAQ"
                 },
+                "referral": {
+                    "description": "Referral describes the account's referral code and information about who, if anyone,\nreferred the account. This is only available if the account has a linked wallet.",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/internal_controller.UserResponseReferral"
+                        }
+                    ]
+                },
                 "updatedAt": {
                     "description": "UpdatedAt reflects the time of the most recent account changes.",
                     "type": "string",
@@ -411,6 +419,23 @@ const docTemplate = `{
                     "description": "ConfirmedAt indicates the time at which the user confirmed the email. It may be null.",
                     "type": "string",
                     "example": "2021-12-01T09:00:41Z"
+                }
+            }
+        },
+        "internal_controller.UserResponseReferral": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "description": "Code is the user's referral code.",
+                    "type": "string"
+                },
+                "referredAt": {
+                    "description": "The timestamp at which the user was referred. May be empty if the user wasn't referred.",
+                    "type": "string"
+                },
+                "referredBy": {
+                    "description": "ReferredBy is the address of the user, if any, who referred the calling user. It's possible\nfor this to be empty while ReferredAt is not, in the case when the referring user has deleted\ntheir account.",
+                    "type": "string"
                 }
             }
         },
