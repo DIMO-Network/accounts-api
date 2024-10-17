@@ -34,9 +34,9 @@ type UserResponseReferral struct {
 	// ReferredBy is the address of the user, if any, who referred the calling user. It's possible
 	// for this to be empty while ReferredAt is not, in the case when the referring user has deleted
 	// their account.
-	ReferredBy *string `json:"referredBy"`
+	ReferredBy *string `json:"referredBy,omitempty"`
 	// The timestamp at which the user was referred. May be empty if the user wasn't referred.
-	ReferredAt *time.Time `json:"referredAt"`
+	ReferredAt *time.Time `json:"referredAt,omitempty"`
 }
 
 type UserResponse struct {
