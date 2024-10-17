@@ -78,7 +78,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %s.", body.Code)
 	referralCode := body.Code
 	if !referralCodeRegex.MatchString(referralCode) {
-		return fiber.NewError(fiber.StatusBadRequest, "Referral code must be 6 characters and consist of digits and upper-case letters.")
+		return fiber.NewError(fiber.StatusBadRequest, "Referral code must consist of 6 digits and upper-case letters.")
 	}
 
 	refAcct, err := models.Accounts(
