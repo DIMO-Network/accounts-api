@@ -94,8 +94,8 @@ definitions:
         type: string
       referredBy:
         description: |-
-          ReferredBy is the address of the user who referred the calling user. It's possible for this
-          to be empty while ReferredAt is not, in the case when the referring user has deleted
+          ReferredBy is the address of the user, if any, who referred the calling user. It's possible
+          for this to be empty while ReferredAt is not, in the case when the referring user has deleted
           their account.
         type: string
     type: object
