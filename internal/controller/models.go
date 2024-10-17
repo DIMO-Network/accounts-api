@@ -28,6 +28,17 @@ type UserResponseWallet struct {
 	Address string `json:"address" swaggertype:"string" example:"0x142e0C7A098622Ea98E5D67034251C4dFA746B5d"`
 }
 
+type UserResponseReferral struct {
+	// Code is the user's referral code.
+	Code string `json:"code"`
+	// ReferredBy is the address of the user who referred the calling user. It's possible for this
+	// to be empty while ReferredAt is not, in the case when the referring user has deleted
+	// their account.
+	ReferredBy *string `json:"referredBy"`
+	// The timestamp at which the user was referred. May be empty if the user wasn't referred.
+	ReferredAt *time.Time `json:"referredAt"`
+}
+
 type UserResponse struct {
 	// ID is the user's DIMO-internal ID.
 	ID string `json:"id" example:"2mD8CtraxOCAAwIeydt2Q4oCiAQ"`
@@ -36,15 +47,15 @@ type UserResponse struct {
 	Email *UserResponseEmail `json:"email,omitempty"`
 	// Wallet describes the user's blockchain account.
 	Wallet *UserResponseWallet `json:"wallet,omitempty"`
+
+	// Referral describes the account's referral code and information about who, if anyone,
+	// referred the account. This is only available if the account has a linked wallet.
+	Referral *UserResponseReferral `json:"referral,omitempty"`
+
 	// CountryCode, if present, is a valid ISO 3166-1 alpha-3 country code.
 	CountryCode *string `json:"countryCode" swaggertype:"string" example:"USA"`
 	// AcceptedTOSAt is the time at which the user last agreed to the terms of service.
 	AcceptedTOSAt *time.Time `json:"acceptedTosAt,omitempty" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
-	// ReferralCode is the user's referral code to be given to others. It is an 8 alphanumeric code,
-	// only present if the account has a confirmed Ethereum address.
-	ReferralCode string     `json:"-" swaggertype:"string" example:"ANB95N"`
-	ReferredBy   string     `json:"-" swaggertype:"string" example:"0x3497B704a954789BC39999262510DE9B09Ff1366"`
-	ReferredAt   *time.Time `json:"-" swaggertype:"string" example:"2021-12-01T09:00:41Z"`
 
 	// CreatedAt is when the user first logged in.
 	CreatedAt time.Time `json:"createdAt" example:"2021-12-01T09:00:00Z"`
