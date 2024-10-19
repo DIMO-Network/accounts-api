@@ -50,6 +50,9 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	}
 
 	if acct.R.Email != nil {
+		if acct.R.Email.Address == body.Address {
+			return c.JSON(StandardRes{Message: "Account already linked to this email."})
+		}
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already has a linked email address %s.", acct.R.Email.Address))
 	}
 
