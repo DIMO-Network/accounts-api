@@ -49,6 +49,9 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
+	logger := d.log.With().Str("account", acct.ID).Logger()
+	c.Locals("logger", &logger)
+
 	if acct.R.Email != nil {
 		if acct.R.Email.Address == body.Address {
 			return c.JSON(StandardRes{Message: "Account already linked to this email."})
@@ -80,7 +83,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	d.log.Info().Str("account", acct.ID).Msgf("Added unconfirmed email %s to account.", body.Address)
+	logger.Info().Msgf("Added unconfirmed email %s to account.", body.Address)
 
 	if err := d.cioService.SetEmail(acct.ID, body.Address); err != nil {
 		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
