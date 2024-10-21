@@ -62,12 +62,11 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return err
 	}
 
-	if acct.ReferredBy.Valid {
-		return fiber.NewError(fiber.StatusBadRequest, "cannot accept more than one referral code per user")
-	}
+	logger := d.log.With().Str("account", acct.ID).Logger()
+	c.Locals("logger", &logger)
 
 	if acct.ReferredAt.Valid {
-		return fiber.NewError(fiber.StatusBadRequest, "already entered a referral code.")
+		return fiber.NewError(fiber.StatusBadRequest, "Already entered a referral code.")
 	}
 
 	var body SubmitReferralCodeRequest
@@ -75,7 +74,7 @@ func (d *Controller) SubmitReferralCode(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Couldn't parse request body.")
 	}
 
-	d.log.Info().Str("userId", acct.ID).Msgf("Got referral code %s.", body.Code)
+	logger.Info().Msgf("Got referral code %s.", body.Code)
 	referralCode := body.Code
 	if !referralCodeRegex.MatchString(referralCode) {
 		return fiber.NewError(fiber.StatusBadRequest, "Referral code must consist of 6 digits and upper-case letters.")

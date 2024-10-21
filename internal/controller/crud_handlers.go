@@ -112,6 +112,9 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 		return err
 	}
 
+	logger := d.log.With().Str("account", acct.ID).Logger()
+	c.Locals("logger", &logger)
+
 	var body UserUpdateRequest
 	if err := c.BodyParser(&body); err != nil {
 		return err
@@ -133,7 +136,7 @@ func (d *Controller) UpdateUser(c *fiber.Ctx) error {
 				return err
 			}
 
-			d.log.Info().Str("account", acct.ID).Msgf("Updated country to %s.", body.CountryCode)
+			logger.Info().Str("account", acct.ID).Msgf("Updated country to %s.", body.CountryCode)
 		}
 	}
 

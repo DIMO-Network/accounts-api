@@ -2,7 +2,6 @@ package controller
 
 import (
 	_ "embed"
-	"errors"
 	"fmt"
 
 	"github.com/DIMO-Network/accounts-api/models"
@@ -37,12 +36,15 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if acct.R.Email == nil {
-		return errors.New("no email address associated with user account")
-	}
+	logger := d.log.With().Str("account", acct.ID).Logger()
+	c.Locals("logger", &logger)
 
 	if acct.R.Wallet != nil {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already has a linked wallet, %s.", acct.R.Wallet.Address))
+	}
+
+	if acct.R.Email == nil {
+		return fmt.Errorf("no email or wallet associated with account")
 	}
 
 	var tb TokenBody
@@ -78,7 +80,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 	}
 
 	if err := d.cioService.SetWallet(acct.ID, *infos.EthereumAddress); err != nil {
-		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send wallet to Customer.io.")
+		logger.Err(err).Msg("Failed to send wallet to Customer.io.")
 	}
 
 	return c.JSON(StandardRes{
