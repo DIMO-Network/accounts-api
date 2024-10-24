@@ -23,6 +23,7 @@ import (
 	"github.com/segmentio/ksuid"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
@@ -199,8 +200,9 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 		}
 	} else if userAccount.EmailAddress != nil {
 		email := models.Email{
-			AccountID: acct.ID,
-			Address:   *userAccount.EmailAddress,
+			AccountID:   acct.ID,
+			Address:     *userAccount.EmailAddress,
+			ConfirmedAt: null.TimeFrom(time.Now()),
 		}
 
 		if err := email.Insert(ctx, tx, boil.Infer()); err != nil {

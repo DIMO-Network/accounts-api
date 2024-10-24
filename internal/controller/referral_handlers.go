@@ -19,7 +19,6 @@ import (
 var referralCodeAlphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 func (d *Controller) GenerateReferralCode(ctx context.Context) (string, error) {
-
 	for {
 		// Generate a random 6-character code
 		codeB := make([]byte, 6)
