@@ -90,7 +90,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	}
 
 	return c.JSON(StandardRes{
-		Message: fmt.Sprintf("Added unconfirmed email %s to account.", body.Address),
+		Message: fmt.Sprintf("Linked unconfirmed email %s to account.", body.Address),
 	})
 }
 
@@ -118,6 +118,9 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+	logger := d.log.With().Str("account", acct.ID).Logger()
+	c.Locals("logger", &logger)
 
 	var tb TokenBody
 	if err := c.BodyParser(&tb); err != nil {
@@ -178,10 +181,10 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	}
 
 	if err := d.cioService.SetEmail(acct.ID, *infos.EmailAddress); err != nil {
-		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
+		logger.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
-	d.log.Info().Str("account", acct.ID).Msgf("Linked email %s.", *infos.EmailAddress)
+	logger.Info().Msgf("Linked confirmed email %s.", *infos.EmailAddress)
 
 	return c.JSON(StandardRes{
 		Message: fmt.Sprintf("Linked email %s.", *infos.EmailAddress),
