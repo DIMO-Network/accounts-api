@@ -49,14 +49,8 @@ func (d *Controller) CreateAccount(c *fiber.Ctx) error {
 
 	if userAccount.EmailAddress != nil {
 		d.log.Info().Str("account", acct.ID).Msgf("Created account with email %s.", *userAccount.EmailAddress)
-		if err := d.cioService.SetEmail(acct.ID, *userAccount.EmailAddress); err != nil {
-			d.log.Err(err).Str("account", acct.ID).Msgf("Error updating Customer.io with email.")
-		}
 	} else if userAccount.EthereumAddress != nil {
 		d.log.Info().Str("account", acct.ID).Msgf("Created account with wallet %s.", *userAccount.EthereumAddress)
-		if err := d.cioService.SetWallet(acct.ID, *userAccount.EthereumAddress); err != nil {
-			d.log.Err(err).Str("account", acct.ID).Msgf("Error updating Customer.io with wallet.")
-		}
 	}
 
 	formattedAcct, err := d.formatUserAcctResponse(acct, acct.R.Wallet, acct.R.Email)
