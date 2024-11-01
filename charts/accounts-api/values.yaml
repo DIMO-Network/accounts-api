@@ -32,8 +32,6 @@ env:
   MON_PORT: 8888
   DIMO_REGISTRY_CHAIN_ID: 80002
   EMAIL_CODE_DURATION: 5m
-  BASE_IMAGE_URL: https://devices-api.dev.dimo.zone/v1/
-  BASE_VEHICLE_DATA_URI: https://device-data-api.dev.dimo.zone/v2/vehicles/
   EMAIL_PORT: '587'
   EMAIL_FROM: hello@dimo.co
   DISABLE_CUSTOMER_IO_EVENTS: false
