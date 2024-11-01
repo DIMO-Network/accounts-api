@@ -8,7 +8,7 @@ cronJob:
   schedule: 0 0 * * 0
 env:
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
-  DISABLE_CUSTOMER_IO_EVENTS: true
+  DISABLE_CUSTOMER_IO_EVENTS: false
 ingress:
   enabled: true
   className: nginx
