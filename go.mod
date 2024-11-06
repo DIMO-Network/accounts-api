@@ -3,7 +3,7 @@ module github.com/DIMO-Network/accounts-api
 go 1.23
 
 require (
-	github.com/DIMO-Network/shared v0.12.4
+	github.com/DIMO-Network/shared v0.12.5
 	github.com/MicahParks/keyfunc/v3 v3.3.5
 	github.com/customerio/cdp-analytics-go v0.0.0-20231102115827-d9af6a6d570c
 	github.com/docker/go-connections v0.5.0
@@ -15,15 +15,15 @@ require (
 	github.com/gofiber/swagger v1.1.0
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/pressly/goose/v3 v3.22.1
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/rs/zerolog v1.33.0
 	github.com/segmentio/ksuid v1.0.4
 	github.com/stretchr/testify v1.9.0
-	github.com/swaggo/swag v1.16.3
-	github.com/testcontainers/testcontainers-go v0.33.0
+	github.com/swaggo/swag v1.16.4
+	github.com/testcontainers/testcontainers-go v0.34.0
 	github.com/volatiletech/null/v8 v8.1.2
 	github.com/volatiletech/sqlboiler/v4 v4.16.2
-	github.com/volatiletech/strmangle v0.0.6
+	github.com/volatiletech/strmangle v0.0.8
 )
 
 require (
@@ -49,7 +49,7 @@ require (
 	github.com/containerd/containerd v1.7.18 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
-	github.com/cpuguy83/dockercfg v0.3.1 // indirect
+	github.com/cpuguy83/dockercfg v0.3.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
