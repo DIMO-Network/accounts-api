@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"log"
 	"net"
 	"os"
 	"runtime/debug"
@@ -162,7 +161,7 @@ func main() {
 
 	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
 	if err != nil {
-		log.Fatalf("failed to listen: %v", err)
+		logger.Fatal().Err(err).Msgf("Failed to listen for gRPC clients on port %s.", settings.GRPCPort)
 	}
 
 	go func() {
