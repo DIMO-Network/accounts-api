@@ -4,14 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"log"
+	"net"
 	"os"
 	"runtime/debug"
 
 	_ "github.com/DIMO-Network/accounts-api/docs"
 	"github.com/DIMO-Network/accounts-api/internal/config"
 	"github.com/DIMO-Network/accounts-api/internal/controller"
+	"github.com/DIMO-Network/accounts-api/internal/rpc"
 	"github.com/DIMO-Network/accounts-api/internal/services"
 	"github.com/DIMO-Network/accounts-api/internal/services/cio"
+	pb "github.com/DIMO-Network/accounts-api/pkg/grpc"
 	"github.com/DIMO-Network/shared"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,6 +27,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rs/zerolog"
+	"google.golang.org/grpc"
 )
 
 // @title DIMO Accounts API
@@ -151,6 +156,21 @@ func main() {
 	v1.Post("/link/email", accountController.LinkEmail)
 
 	logger.Info().Msg("Server started on port " + settings.Port)
+
+	serv := grpc.NewServer()
+	pb.RegisterAccountsServer(serv, &rpc.Server{DBS: dbs})
+
+	lis, err := net.Listen("tcp", ":"+settings.GRPCPort)
+	if err != nil {
+		log.Fatalf("failed to listen: %v", err)
+	}
+
+	go func() {
+		err := serv.Serve(lis)
+		if err != nil {
+			logger.Fatal().Err(err).Send()
+		}
+	}()
 
 	// Start Server
 	if err := app.Listen(":" + settings.Port); err != nil {
