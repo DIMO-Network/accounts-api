@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+option go_package = "github.com/DIMO-Network/accounts-api/pkg/grpc";
+
+import "google/protobuf/timestamp.proto";
+
+message Email {
+    string address = 1;
+}
+
+message Wallet {
+    bytes address = 1;
+}
+
+message Account {
+    string id = 1;
+    string country_code = 2;
+    Email email = 4;
+    Wallet wallet = 5;
+    google.protobuf.Timestamp created_at = 3;
+}
+
+message ListAccountsRequest {
+    string partial_email_address = 1;
+    bytes partial_wallet_address = 2;
+}
+
+message ListAccountsResponse {
+    repeated Account accounts = 1;
+}
+
+service Accounts {
+    rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+}
