@@ -36,7 +36,7 @@ func (s *Server) ListAccounts(ctx context.Context, in *pb.ListAccountsRequest) (
 		mods = append(mods, qm.Where(emailHas, in.PartialEmailAddress))
 	}
 	if len(in.PartialWalletAddress) != 0 {
-		mods = append(mods, qm.Where(walletHas, in.PartialEmailAddress))
+		mods = append(mods, qm.Where(walletHas, in.PartialWalletAddress))
 	}
 
 	accs, err := models.Accounts(mods...).All(ctx, s.DBS.DBS().Reader)
