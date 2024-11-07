@@ -47,7 +47,7 @@ service:
       port: 8080
       targetPort: http
       protocol: TCP
-    http:
+    grpc:
       port: 8086
       targetPort: grpc
       protocol: TCP
