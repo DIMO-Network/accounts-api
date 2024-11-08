@@ -15,9 +15,9 @@ message Wallet {
 message Account {
     string id = 1;
     string country_code = 2;
+    google.protobuf.Timestamp created_at = 3;
     Email email = 4;
     Wallet wallet = 5;
-    google.protobuf.Timestamp created_at = 3;
 }
 
 message ListAccountsRequest {
