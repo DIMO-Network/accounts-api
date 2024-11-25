@@ -120,14 +120,15 @@ func getUserAccountClaims(c *fiber.Ctx) (*AccountClaims, error) {
 func (d *Controller) getUserAccount(ctx context.Context, userAccount *AccountClaims, exec boil.ContextExecutor) (*models.Account, error) {
 	switch {
 	case userAccount.EmailAddress != nil:
+		normalEmail := normalizeEmail(*userAccount.EmailAddress)
 		email, err := models.Emails(
-			models.EmailWhere.Address.EQ(*userAccount.EmailAddress),
+			models.EmailWhere.Address.EQ(normalEmail),
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.Wallet)),
 			qm.Load(qm.Rels(models.EmailRels.Account, models.AccountRels.ReferredByAccount, models.AccountRels.Wallet)),
 		).One(ctx, exec)
 		if err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
-				return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No account found with email %s.", *userAccount.EmailAddress))
+				return nil, fiber.NewError(fiber.StatusNotFound, fmt.Sprintf("No account found with email %s.", normalEmail))
 			}
 			return nil, err
 		}
@@ -199,9 +200,11 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 			d.log.Err(err).Msg("Error sending wallet information to Customer.io.")
 		}
 	} else if userAccount.EmailAddress != nil {
+		normalEmail := normalizeEmail(*userAccount.EmailAddress)
+
 		email := models.Email{
 			AccountID:   acct.ID,
-			Address:     *userAccount.EmailAddress,
+			Address:     normalEmail,
 			ConfirmedAt: null.TimeFrom(time.Now()),
 		}
 
@@ -209,7 +212,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 			return fmt.Errorf("failed to insert email: %w", err)
 		}
 
-		if err := d.cioService.SetEmail(acct.ID, *userAccount.EmailAddress); err != nil {
+		if err := d.cioService.SetEmail(acct.ID, normalEmail); err != nil {
 			d.log.Err(err).Msg("Error sending email information to Customer.io.")
 		}
 	}
