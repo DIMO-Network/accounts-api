@@ -162,13 +162,14 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Wallet %s is already linked to an account.", *userAccount.EthereumAddress))
 		}
 	} else if userAccount.EmailAddress != nil {
-		conflict, err := models.EmailExists(ctx, tx, *userAccount.EmailAddress)
+		normalEmail := normalizeEmail(*userAccount.EmailAddress)
+		conflict, err := models.EmailExists(ctx, tx, normalEmail)
 		if err != nil {
 			return err
 		}
 
 		if conflict {
-			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s is already linked to an account.", *userAccount.EmailAddress))
+			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s is already linked to an account.", normalEmail))
 		}
 	}
 
