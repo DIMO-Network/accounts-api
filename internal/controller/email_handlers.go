@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/DIMO-Network/accounts-api/models"
@@ -12,6 +13,10 @@ import (
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
+
+func normalizeEmail(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
 
 // LinkEmail godoc
 // @Summary Add an unconfirmed email to the account.
@@ -34,8 +39,10 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	if !emailPattern.MatchString(body.Address) {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email address %q is invalid.", body.Address))
+	normalAddr := normalizeEmail(body.Address)
+
+	if !emailPattern.MatchString(normalAddr) {
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email address %q is invalid.", normalAddr))
 	}
 
 	tx, err := d.dbs.DBS().Writer.BeginTx(c.Context(), &sql.TxOptions{Isolation: sql.LevelSerializable})
@@ -53,20 +60,20 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 	c.Locals("logger", &logger)
 
 	if acct.R.Email != nil {
-		if acct.R.Email.Address == body.Address {
+		if acct.R.Email.Address == normalAddr {
 			return c.JSON(StandardRes{Message: "Account already linked to this email."})
 		}
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already has a linked email address %s.", acct.R.Email.Address))
 	}
 
-	if inUse, err := models.EmailExists(c.Context(), tx, body.Address); err != nil {
+	if inUse, err := models.EmailExists(c.Context(), tx, normalAddr); err != nil {
 		return err
 	} else if inUse {
 		return fiber.NewError(fiber.StatusBadRequest, "Email address already linked to another account.")
 	}
 
 	email := models.Email{
-		Address:     body.Address,
+		Address:     normalAddr,
 		AccountID:   acct.ID,
 		ConfirmedAt: null.TimeFromPtr(nil),
 	}
@@ -83,14 +90,14 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return err
 	}
 
-	logger.Info().Msgf("Added unconfirmed email %s to account.", body.Address)
+	logger.Info().Msgf("Added unconfirmed email %s to account.", normalAddr)
 
-	if err := d.cioService.SetEmail(acct.ID, body.Address); err != nil {
+	if err := d.cioService.SetEmail(acct.ID, normalAddr); err != nil {
 		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
 	return c.JSON(StandardRes{
-		Message: fmt.Sprintf("Linked unconfirmed email %s to account.", body.Address),
+		Message: fmt.Sprintf("Linked unconfirmed email %s to account.", normalAddr),
 	})
 }
 
@@ -136,8 +143,10 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "Token in the body does not have an email claim.")
 	}
 
+	normalEmail := normalizeEmail(*infos.EmailAddress)
+
 	emailConflict, err := models.Emails(
-		models.EmailWhere.Address.EQ(*infos.EmailAddress),
+		models.EmailWhere.Address.EQ(normalEmail),
 		models.EmailWhere.AccountID.NEQ(acct.ID),
 	).One(c.Context(), tx)
 	if err != nil {
@@ -145,11 +154,11 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 			return err
 		}
 	} else {
-		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s already linked to account %s.", *infos.EmailAddress, emailConflict.AccountID))
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email %s already linked to account %s.", normalEmail, emailConflict.AccountID))
 	}
 
 	if acct.R.Email != nil {
-		if acct.R.Email.Address != *infos.EmailAddress {
+		if acct.R.Email.Address != normalEmail {
 			return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already linked to email %s.", acct.R.Email.Address))
 		}
 		if acct.R.Email.ConfirmedAt.Valid {
@@ -162,7 +171,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 	}
 
 	email := models.Email{
-		Address:     *infos.EmailAddress,
+		Address:     normalEmail,
 		AccountID:   acct.ID,
 		ConfirmedAt: null.TimeFrom(time.Now()),
 	}
@@ -180,13 +189,13 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SetEmail(acct.ID, *infos.EmailAddress); err != nil {
+	if err := d.cioService.SetEmail(acct.ID, normalEmail); err != nil {
 		logger.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
-	logger.Info().Msgf("Linked confirmed email %s.", *infos.EmailAddress)
+	logger.Info().Msgf("Linked confirmed email %s.", normalEmail)
 
 	return c.JSON(StandardRes{
-		Message: fmt.Sprintf("Linked email %s.", *infos.EmailAddress),
+		Message: fmt.Sprintf("Linked email %s.", normalEmail),
 	})
 }
