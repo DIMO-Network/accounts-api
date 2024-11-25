@@ -7,7 +7,10 @@ import (
 	"github.com/DIMO-Network/accounts-api/models"
 	pb "github.com/DIMO-Network/accounts-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -35,7 +38,10 @@ func (s *Server) ListAccounts(ctx context.Context, in *pb.ListAccountsRequest) (
 	if in.PartialEmailAddress != "" {
 		mods = append(mods, qm.Where(emailHas, in.PartialEmailAddress))
 	}
-	if len(in.PartialWalletAddress) != 0 {
+	if addrLen := len(in.PartialWalletAddress); addrLen != 0 {
+		if addrLen > common.AddressLength {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Partial wallet address, at %d bytes, is too long.", addrLen))
+		}
 		mods = append(mods, qm.Where(walletHas, in.PartialWalletAddress))
 	}
 
