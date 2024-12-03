@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/DIMO-Network/accounts-api/models"
 	pb "github.com/DIMO-Network/accounts-api/pkg/grpc"
@@ -22,7 +23,7 @@ type Server struct {
 var emailJoin = fmt.Sprintf("%s ON %s = %s", models.TableNames.Emails, models.EmailTableColumns.AccountID, models.AccountTableColumns.ID)
 var walletJoin = fmt.Sprintf("%s ON %s = %s", models.TableNames.Wallets, models.WalletTableColumns.AccountID, models.AccountTableColumns.ID)
 
-var emailHas = fmt.Sprintf("position(lower(?) in lower(%s)) > 0", models.EmailTableColumns.Address)
+var emailHas = fmt.Sprintf("position(? in %s) > 0", models.EmailTableColumns.Address)
 var walletHas = fmt.Sprintf("position(? in %s) > 0", models.WalletTableColumns.Address)
 
 func (s *Server) ListAccounts(ctx context.Context, in *pb.ListAccountsRequest) (*pb.ListAccountsResponse, error) {
@@ -36,7 +37,7 @@ func (s *Server) ListAccounts(ctx context.Context, in *pb.ListAccountsRequest) (
 	}
 
 	if in.PartialEmailAddress != "" {
-		mods = append(mods, qm.Where(emailHas, in.PartialEmailAddress))
+		mods = append(mods, qm.Where(emailHas, strings.ToLower(in.PartialEmailAddress)))
 	}
 	if addrLen := len(in.PartialWalletAddress); addrLen != 0 {
 		if addrLen > common.AddressLength {
