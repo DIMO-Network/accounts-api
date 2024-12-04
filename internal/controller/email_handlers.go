@@ -66,10 +66,13 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Account already has a linked email address %s.", acct.R.Email.Address))
 	}
 
-	if inUse, err := models.EmailExists(c.Context(), tx, normalAddr); err != nil {
-		return err
-	} else if inUse {
-		return fiber.NewError(fiber.StatusBadRequest, "Email address already linked to another account.")
+	if existingUse, err := models.FindEmail(c.Context(), tx, normalAddr); err != nil {
+		if !errors.Is(err, sql.ErrNoRows) {
+			return err
+		}
+	} else {
+		logger.Warn().Msgf("Tried to link email %s in use by account %s.", normalAddr, existingUse.AccountID)
+		return fiber.NewError(fiber.StatusBadRequest, fmt.Sprintf("Email address %s already linked to another account.", normalAddr))
 	}
 
 	email := models.Email{
