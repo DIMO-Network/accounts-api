@@ -2,6 +2,8 @@ package rpc
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -57,6 +59,35 @@ func (s *Server) ListAccounts(ctx context.Context, in *pb.ListAccountsRequest) (
 
 	for i, a := range accs {
 		out.Accounts[i] = dbToRPC(a)
+	}
+
+	return out, nil
+}
+
+func (s *Server) TempReferral(ctx context.Context, req *pb.TempReferralRequest) (*pb.TempReferralResponse, error) {
+	if len(req.WalletAddress) != common.AddressLength {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Address must have length %d.", common.AddressLength))
+	}
+
+	wallet, err := models.Wallets(
+		models.WalletWhere.Address.EQ(req.WalletAddress),
+		qm.Load(qm.Rels(models.WalletRels.Account, models.AccountRels.ReferredByAccount, models.AccountRels.Wallet)),
+	).One(ctx, s.DBS.DBS().Reader)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, status.Error(codes.NotFound, fmt.Sprintf("No account found with wallet %s.", common.BytesToAddress(req.WalletAddress)))
+		}
+		return nil, err
+	}
+
+	out := &pb.TempReferralResponse{
+		AccountId:   wallet.R.Account.ID,
+		WasReferred: wallet.R.Account.ReferredAt.Valid,
+	}
+
+	if wallet.R.Account.R.ReferredByAccount != nil && wallet.R.Account.R.ReferredByAccount.R.Wallet != nil {
+		out.ReferrerAccountId = wallet.R.Account.R.ReferredByAccount.ID
+		out.ReferrerWalletAddress = wallet.R.Account.R.ReferredByAccount.R.Wallet.Address
 	}
 
 	return out, nil
