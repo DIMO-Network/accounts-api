@@ -77,7 +77,9 @@ func (s *Server) TempReferral(ctx context.Context, req *pb.TempReferralRequest) 
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, status.Error(codes.NotFound, fmt.Sprintf("No account found with wallet %s.", common.BytesToAddress(req.WalletAddress)))
 		}
+		return nil, err
 	}
+
 	out := &pb.TempReferralResponse{
 		AccountId:   wallet.R.Account.ID,
 		WasReferred: wallet.R.Account.ReferredAt.Valid,
