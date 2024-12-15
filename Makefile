@@ -121,3 +121,6 @@ tools-sqlboiler: ## Install sqlboiler dependency.
 	GOBIN=$(PATHINSTBIN) go install github.com/volatiletech/sqlboiler/v4@$(SQLBOILER_VERSION)
 
 tools: tools-golangci-lint tools-gqlgen tools-goose tools-sqlboiler ## Install all tool dependencies.
+
+proto:
+	protoc --go_out=. --go_opt=paths=source_relative --go-grpc_out=. --go-grpc_opt=paths=source_relative pkg/grpc/accounts.proto
