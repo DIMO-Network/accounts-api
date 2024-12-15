@@ -31,4 +31,16 @@ message ListAccountsResponse {
 
 service Accounts {
     rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+    rpc TempReferral(TempReferralRequest) returns (TempReferralResponse);
+}
+
+message TempReferralRequest {
+    bytes wallet_address = 1;
+}
+
+message TempReferralResponse {
+    string account_id = 1;
+    bool was_referred = 2;
+    string referrer_account_id = 3;
+    bytes referrer_wallet_address = 4;
 }
