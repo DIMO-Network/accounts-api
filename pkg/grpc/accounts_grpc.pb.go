@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion9
 
 const (
 	Accounts_ListAccounts_FullMethodName = "/Accounts/ListAccounts"
+	Accounts_GetAccount_FullMethodName   = "/Accounts/GetAccount"
 	Accounts_TempReferral_FullMethodName = "/Accounts/TempReferral"
 )
 
@@ -28,6 +29,7 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AccountsClient interface {
 	ListAccounts(ctx context.Context, in *ListAccountsRequest, opts ...grpc.CallOption) (*ListAccountsResponse, error)
+	GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*Account, error)
 	TempReferral(ctx context.Context, in *TempReferralRequest, opts ...grpc.CallOption) (*TempReferralResponse, error)
 }
 
@@ -49,6 +51,16 @@ func (c *accountsClient) ListAccounts(ctx context.Context, in *ListAccountsReque
 	return out, nil
 }
 
+func (c *accountsClient) GetAccount(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*Account, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Account)
+	err := c.cc.Invoke(ctx, Accounts_GetAccount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *accountsClient) TempReferral(ctx context.Context, in *TempReferralRequest, opts ...grpc.CallOption) (*TempReferralResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TempReferralResponse)
@@ -64,6 +76,7 @@ func (c *accountsClient) TempReferral(ctx context.Context, in *TempReferralReque
 // for forward compatibility.
 type AccountsServer interface {
 	ListAccounts(context.Context, *ListAccountsRequest) (*ListAccountsResponse, error)
+	GetAccount(context.Context, *GetAccountRequest) (*Account, error)
 	TempReferral(context.Context, *TempReferralRequest) (*TempReferralResponse, error)
 	mustEmbedUnimplementedAccountsServer()
 }
@@ -77,6 +90,9 @@ type UnimplementedAccountsServer struct{}
 
 func (UnimplementedAccountsServer) ListAccounts(context.Context, *ListAccountsRequest) (*ListAccountsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListAccounts not implemented")
+}
+func (UnimplementedAccountsServer) GetAccount(context.Context, *GetAccountRequest) (*Account, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAccount not implemented")
 }
 func (UnimplementedAccountsServer) TempReferral(context.Context, *TempReferralRequest) (*TempReferralResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TempReferral not implemented")
@@ -120,6 +136,24 @@ func _Accounts_ListAccounts_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Accounts_GetAccount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAccountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AccountsServer).GetAccount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: Accounts_GetAccount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AccountsServer).GetAccount(ctx, req.(*GetAccountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _Accounts_TempReferral_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TempReferralRequest)
 	if err := dec(in); err != nil {
@@ -148,6 +182,10 @@ var Accounts_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListAccounts",
 			Handler:    _Accounts_ListAccounts_Handler,
+		},
+		{
+			MethodName: "GetAccount",
+			Handler:    _Accounts_GetAccount_Handler,
 		},
 		{
 			MethodName: "TempReferral",

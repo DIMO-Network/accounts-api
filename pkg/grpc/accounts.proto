@@ -18,11 +18,24 @@ message Account {
     google.protobuf.Timestamp created_at = 3;
     Email email = 4;
     Wallet wallet = 5;
+    Referral referral = 6;
+}
+
+message Referral {
+    string code = 1;
+    string referred_by = 2;
+    google.protobuf.Timestamp referred_at = 3;
 }
 
 message ListAccountsRequest {
     string partial_email_address = 1;
     bytes partial_wallet_address = 2;
+}
+
+message GetAccountRequest {
+    string id = 1;
+    string email_address = 2;
+    bytes wallet_address = 3;
 }
 
 message ListAccountsResponse {
@@ -31,6 +44,8 @@ message ListAccountsResponse {
 
 service Accounts {
     rpc ListAccounts(ListAccountsRequest) returns (ListAccountsResponse);
+    rpc GetAccount(GetAccountRequest) returns (Account);
+
     rpc TempReferral(TempReferralRequest) returns (TempReferralResponse);
 }
 

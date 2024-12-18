@@ -5,12 +5,14 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/DIMO-Network/accounts-api/models"
 	pb "github.com/DIMO-Network/accounts-api/pkg/grpc"
 	"github.com/DIMO-Network/shared/db"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/segmentio/ksuid"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -64,6 +66,60 @@ func (s *Server) ListAccounts(ctx context.Context, in *pb.ListAccountsRequest) (
 	return out, nil
 }
 
+// Copying here. Yes we are monster.
+var emailPattern = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+
+func normalizeEmail(s string) string {
+	return strings.ToLower(strings.TrimSpace(s))
+}
+
+func (s *Server) GetAccount(ctx context.Context, req *pb.GetAccountRequest) (*pb.Account, error) {
+	var mods = []qm.QueryMod{
+		qm.Load(models.AccountRels.Email),
+		qm.Load(models.AccountRels.Wallet),
+		qm.LeftOuterJoin(emailJoin),
+		qm.LeftOuterJoin(walletJoin),
+	}
+
+	initLen := len(mods)
+
+	// TODO: Validate these before querying, just to eliminate problems.
+	if req.Id != "" {
+		_, err := ksuid.Parse(req.Id)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("The provided id %q is not a valid KSUID.", req.Id))
+		}
+		mods = append(mods, models.AccountWhere.ID.EQ(req.Id))
+	}
+	if req.EmailAddress != "" {
+		email := normalizeEmail(req.EmailAddress)
+		if !emailPattern.MatchString(email) {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("The provided email %q is not valid.", email))
+		}
+		mods = append(mods, models.EmailWhere.Address.EQ(email))
+	}
+	if len(req.WalletAddress) != 0 { // Could be an else.
+		if len(req.WalletAddress) != common.AddressLength {
+			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("The provided address has length %d, not %d.", len(req.WalletAddress), common.AddressLength))
+		}
+		mods = append(mods, models.WalletWhere.Address.EQ(req.WalletAddress))
+	}
+
+	if provided := len(mods) - initLen; provided != 1 {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("We require exactly one identifier, but %d were provided.", provided))
+	}
+
+	acc, err := models.Accounts(mods...).One(ctx, s.DBS.DBS().Reader)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, status.Error(codes.NotFound, "No account found.")
+		}
+		return nil, err
+	}
+
+	return dbToRPC(acc), nil
+}
+
 func (s *Server) TempReferral(ctx context.Context, req *pb.TempReferralRequest) (*pb.TempReferralResponse, error) {
 	if len(req.WalletAddress) != common.AddressLength {
 		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("Address must have length %d.", common.AddressLength))
@@ -97,6 +153,9 @@ func dbToRPC(acc *models.Account) *pb.Account {
 	out := &pb.Account{
 		Id:        acc.ID,
 		CreatedAt: timestamppb.New(acc.CreatedAt),
+		Referral: &pb.Referral{
+			Code: acc.ReferralCode,
+		},
 	}
 
 	if acc.CountryCode.Valid {
@@ -112,6 +171,14 @@ func dbToRPC(acc *models.Account) *pb.Account {
 		out.Wallet = &pb.Wallet{
 			Address: acc.R.Wallet.Address,
 		}
+	}
+
+	if acc.ReferredAt.Valid {
+		out.Referral.ReferredAt = timestamppb.New(acc.ReferredAt.Time)
+	}
+	if acc.ReferredBy.Valid {
+		// Could skip the check and always make this assignment. Preferring explicitness.
+		out.Referral.ReferredBy = acc.ReferredBy.String
 	}
 
 	return out
