@@ -36,6 +36,7 @@ message GetAccountRequest {
     string id = 1;
     string email_address = 2;
     bytes wallet_address = 3;
+    string referral_code = 4;
 }
 
 message ListAccountsResponse {

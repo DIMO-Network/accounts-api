@@ -73,6 +73,8 @@ func normalizeEmail(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
 }
 
+var referralCodeRegex = regexp.MustCompile(`^[A-Z0-9]{6}$`)
+
 func (s *Server) GetAccount(ctx context.Context, req *pb.GetAccountRequest) (*pb.Account, error) {
 	var mods = []qm.QueryMod{
 		qm.Load(models.AccountRels.Email),
@@ -103,6 +105,12 @@ func (s *Server) GetAccount(ctx context.Context, req *pb.GetAccountRequest) (*pb
 			return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("The provided address has length %d, not %d.", len(req.WalletAddress), common.AddressLength))
 		}
 		mods = append(mods, models.WalletWhere.Address.EQ(req.WalletAddress))
+	}
+	if req.ReferralCode != "" {
+		if !referralCodeRegex.MatchString(req.ReferralCode) {
+			return nil, status.Error(codes.InvalidArgument, "Referral codes are 6 upper-case alphanumeric characters.")
+		}
+		mods = append(mods, models.AccountWhere.ReferralCode.EQ(req.ReferralCode))
 	}
 
 	if provided := len(mods) - initLen; provided != 1 {
