@@ -25,7 +25,6 @@ func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
 		client:                  client,
 		disableCustomerIOEvents: settings.DisableCustomerIOEvents,
 	}, nil
-
 }
 
 func (c *Client) SetEmail(id, email string) error {
