@@ -79,7 +79,7 @@ func (d *Controller) LinkWalletToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SetWallet(acct.ID, *infos.EthereumAddress); err != nil {
+	if err := d.cioService.SetWallet(c.Context(), acct.ID, *infos.EthereumAddress); err != nil {
 		logger.Err(err).Msg("Failed to send wallet to Customer.io.")
 	}
 
