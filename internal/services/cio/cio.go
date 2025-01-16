@@ -44,6 +44,7 @@ func (c *Client) SetEmail(ctx context.Context, id, email string) error {
 	if c.mixClient != nil {
 		pp := mixpanel.NewPeopleProperties(id, nil)
 		pp.SetReservedProperty(mixpanel.PeopleEmailProperty, email)
+		// TODO(elffjs): Really ought to bail if this fails for context reasons.
 		err = errors.Join(err, c.mixClient.PeopleSet(ctx, []*mixpanel.PeopleProperties{pp}))
 	}
 
