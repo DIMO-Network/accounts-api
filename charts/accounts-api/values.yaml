@@ -28,6 +28,7 @@ env:
   DB_PORT: 5432
   GRPC_PORT: 8086
   DB_NAME: accounts_api
+  DB_SSL_MODE: require
   PORT: 8080
   JWT_KEY_SET_URL: https://auth.dev.dimo.zone/keys
   MON_PORT: 8888
