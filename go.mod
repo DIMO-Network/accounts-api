@@ -3,7 +3,7 @@ module github.com/DIMO-Network/accounts-api
 go 1.23
 
 require (
-	github.com/DIMO-Network/shared v0.12.7
+	github.com/DIMO-Network/shared v0.12.9
 	github.com/MicahParks/keyfunc/v3 v3.3.10
 	github.com/customerio/cdp-analytics-go v0.0.0-20241122010508-c8b722f2b82c
 	github.com/docker/go-connections v0.5.0
@@ -14,6 +14,7 @@ require (
 	github.com/gofiber/fiber/v2 v2.52.6
 	github.com/gofiber/swagger v1.1.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/mixpanel/mixpanel-go v1.2.1
 	github.com/pressly/goose/v3 v3.24.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/rs/zerolog v1.33.0
@@ -77,7 +78,6 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mfridman/interpolate v0.0.2 // indirect
-	github.com/mixpanel/mixpanel-go v1.2.1 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/patternmatcher v0.6.0 // indirect
 	github.com/moby/sys/sequential v0.5.0 // indirect
