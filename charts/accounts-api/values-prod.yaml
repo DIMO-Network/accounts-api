@@ -7,7 +7,6 @@ cronJob:
   enabled: false
   schedule: 0 0 * * 0
 env:
-  DB_SSL_MODE: disable
   JWT_KEY_SET_URL: https://auth.dimo.zone/keys
   DISABLE_CUSTOMER_IO_EVENTS: false
 ingress:
