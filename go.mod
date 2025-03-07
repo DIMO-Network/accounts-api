@@ -7,7 +7,7 @@ require (
 	github.com/MicahParks/keyfunc/v3 v3.3.10
 	github.com/customerio/cdp-analytics-go v0.0.0-20241122010508-c8b722f2b82c
 	github.com/docker/go-connections v0.5.0
-	github.com/ethereum/go-ethereum v1.14.12
+	github.com/ethereum/go-ethereum v1.14.13
 	github.com/friendsofgo/errors v0.9.2
 	github.com/goccy/go-json v0.10.4
 	github.com/gofiber/contrib/jwt v1.0.10
