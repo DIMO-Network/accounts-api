@@ -2,7 +2,6 @@ package cio
 
 import (
 	"context"
-	"errors"
 
 	"github.com/DIMO-Network/accounts-api/internal/config"
 	analytics "github.com/customerio/cdp-analytics-go"
@@ -38,33 +37,16 @@ func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) SetEmail(ctx context.Context, id string, wallet common.Address, email string) error {
-	// TODO(elffjs): This join is pretty gross. Separate these two services.
-	var err error
-	if c.mixClient != nil {
-		pp := mixpanel.NewPeopleProperties(id, nil)
-		pp.SetReservedProperty(mixpanel.PeopleEmailProperty, email)
-		// TODO(elffjs): Really ought to bail if this fails for context reasons.
-		err = errors.Join(err, c.mixClient.PeopleSet(ctx, []*mixpanel.PeopleProperties{pp}))
-	}
-
-	return errors.Join(err, c.client.Enqueue(analytics.Identify{
+func (c *Client) SetEmail(ctx context.Context, wallet common.Address, email string) error {
+	return c.client.Enqueue(analytics.Identify{
 		UserId: wallet.Hex(),
 		Traits: analytics.NewTraits().SetEmail(email),
-	}))
+	})
 }
 
-func (c *Client) SetWallet(ctx context.Context, id string, wallet common.Address) error {
-	var err error
-	if c.mixClient != nil {
-		pp := mixpanel.NewPeopleProperties(id, map[string]any{
-			walletTrait: wallet.Hex(),
-		})
-		err = errors.Join(err, c.mixClient.PeopleSet(ctx, []*mixpanel.PeopleProperties{pp}))
-	}
-
-	return errors.Join(err, c.client.Enqueue(analytics.Identify{
+func (c *Client) SetWallet(ctx context.Context, wallet common.Address) error {
+	return c.client.Enqueue(analytics.Identify{
 		UserId: wallet.Hex(),
 		Traits: analytics.NewTraits().Set(walletTrait, wallet.Hex()),
-	}))
+	})
 }
