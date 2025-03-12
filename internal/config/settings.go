@@ -25,7 +25,6 @@ type Settings struct {
 	IdentityAPIURL          string      `yaml:"IDENTITY_API_URL"`
 	EmailCodeDuration       string      `yaml:"EMAIL_CODE_DURATION"`
 	CustomerIOAPIKey        string      `yaml:"CUSTOMER_IO_API_KEY"`
-	MixpanelProjectToken    string      `yaml:"MIXPANEL_PROJECT_TOKEN"`
 	DisableCustomerIOEvents bool        `yaml:"DISABLE_CUSTOMER_IO_EVENTS"`
 }
 
