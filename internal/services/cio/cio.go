@@ -17,7 +17,7 @@ type Client struct {
 	disableCustomerIOEvents bool
 }
 
-func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {\
+func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
 	client, err := analytics.NewWithConfig(settings.CustomerIOAPIKey, analytics.Config{})
 	if err != nil {
 		return nil, err
