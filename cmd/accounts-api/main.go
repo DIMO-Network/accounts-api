@@ -179,7 +179,7 @@ func main() {
 
 type noOpCIO struct{}
 
-func (c *noOpCIO) SetEmail(ctx context.Context, id, email string) error {
+func (c *noOpCIO) SetEmail(ctx context.Context, id string, wallet common.Address, email string) error {
 	return nil
 }
 

@@ -37,8 +37,8 @@ var rawConfirmationEmail string
 var rawCountryCodes []byte
 
 type CIOClient interface {
-	SetEmail(context context.Context, id, email string) error
-	SetWallet(context context.Context, id string, wallet common.Address) error
+	SetEmail(ctx context.Context, id string, wallet common.Address, email string) error
+	SetWallet(ctx context.Context, id string, wallet common.Address) error
 }
 
 type Controller struct {
@@ -213,7 +213,7 @@ func (d *Controller) createUser(ctx context.Context, userAccount *AccountClaims,
 			return fmt.Errorf("failed to insert email: %w", err)
 		}
 
-		if err := d.cioService.SetEmail(ctx, acct.ID, normalEmail); err != nil {
+		if err := d.cioService.SetEmail(ctx, acct.ID, *userAccount.EthereumAddress, normalEmail); err != nil {
 			d.log.Err(err).Msg("Error sending email information to Customer.io.")
 		}
 	}

@@ -38,7 +38,7 @@ func New(settings *config.Settings, logger *zerolog.Logger) (*Client, error) {
 	}, nil
 }
 
-func (c *Client) SetEmail(ctx context.Context, id, email string) error {
+func (c *Client) SetEmail(ctx context.Context, id string, wallet common.Address, email string) error {
 	// TODO(elffjs): This join is pretty gross. Separate these two services.
 	var err error
 	if c.mixClient != nil {
@@ -49,7 +49,7 @@ func (c *Client) SetEmail(ctx context.Context, id, email string) error {
 	}
 
 	return errors.Join(err, c.client.Enqueue(analytics.Identify{
-		UserId: id,
+		UserId: wallet.Hex(),
 		Traits: analytics.NewTraits().SetEmail(email),
 	}))
 }
@@ -64,7 +64,7 @@ func (c *Client) SetWallet(ctx context.Context, id string, wallet common.Address
 	}
 
 	return errors.Join(err, c.client.Enqueue(analytics.Identify{
-		UserId: id,
+		UserId: wallet.Hex(),
 		Traits: analytics.NewTraits().Set(walletTrait, wallet.Hex()),
 	}))
 }

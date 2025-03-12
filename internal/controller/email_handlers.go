@@ -95,7 +95,7 @@ func (d *Controller) LinkEmail(c *fiber.Ctx) error {
 
 	logger.Info().Msgf("Added unconfirmed email %s to account.", normalAddr)
 
-	if err := d.cioService.SetEmail(c.Context(), acct.ID, normalAddr); err != nil {
+	if err := d.cioService.SetEmail(c.Context(), acct.ID, *userAccount.EthereumAddress, normalAddr); err != nil {
 		d.log.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
@@ -192,7 +192,7 @@ func (d *Controller) LinkEmailToken(c *fiber.Ctx) error {
 		return err
 	}
 
-	if err := d.cioService.SetEmail(c.Context(), acct.ID, normalEmail); err != nil {
+	if err := d.cioService.SetEmail(c.Context(), acct.ID, *userAccount.EthereumAddress, normalEmail); err != nil {
 		logger.Err(err).Str("account", acct.ID).Msg("Failed to send email to Customer.io.")
 	}
 
