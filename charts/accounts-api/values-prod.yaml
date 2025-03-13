@@ -18,9 +18,13 @@ ingress:
     nginx.ingress.kubernetes.io/enable-cors: 'true'
     nginx.ingress.kubernetes.io/cors-allow-origin: '*'
     nginx.ingress.kubernetes.io/limit-rps: '50'
-    external-dns.alpha.kubernetes.io/hostname: accounts-api.dimo.zone
+    external-dns.alpha.kubernetes.io/hostname: accounts-api.dimo.zone, profiles.dimo.co
   hosts:
     - host: accounts-api.dimo.zone
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+    - host: profiles.dimo.co
       paths:
         - path: /
           pathType: ImplementationSpecific
